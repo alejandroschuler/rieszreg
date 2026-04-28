@@ -90,3 +90,61 @@ def test_public_api_exports():
     assert hasattr(rieszboost, "ATE")
     assert hasattr(rieszboost, "TSM")
     assert hasattr(rieszboost, "AdditiveShift")
+
+
+def test_early_stopping_halts_before_max_rounds():
+    n = 1000
+    x_tr, a_tr, _ = _simulate(n, seed=10)
+    x_va, a_va, _ = _simulate(n, seed=11)
+    rows_tr = _to_rows(x_tr, a_tr)
+    rows_va = _to_rows(x_va, a_va)
+
+    booster = fit(
+        rows_tr,
+        ATE(),
+        feature_keys=("a", "x"),
+        valid_rows=rows_va,
+        num_boost_round=2000,
+        early_stopping_rounds=20,
+        learning_rate=0.05,
+        max_depth=4,
+        seed=0,
+    )
+    # Should stop well before 2000 rounds on this small problem.
+    assert booster.best_iteration is not None
+    assert booster.best_iteration < 1500
+    assert booster.best_score is not None
+
+
+def test_riesz_loss_matches_metric_at_best_iteration():
+    n = 800
+    x_tr, a_tr, _ = _simulate(n, seed=20)
+    x_va, a_va, _ = _simulate(n, seed=21)
+    rows_tr = _to_rows(x_tr, a_tr)
+    rows_va = _to_rows(x_va, a_va)
+
+    booster = fit(
+        rows_tr,
+        ATE(),
+        feature_keys=("a", "x"),
+        valid_rows=rows_va,
+        num_boost_round=200,
+        early_stopping_rounds=20,
+        learning_rate=0.05,
+        max_depth=4,
+        seed=0,
+    )
+    held_out = booster.riesz_loss(rows_va, ATE())
+    assert pytest.approx(held_out, rel=1e-6) == booster.best_score
+
+
+def test_early_stopping_requires_valid_rows():
+    rows = _to_rows(*(_simulate(50, seed=0)[:2]))
+    with pytest.raises(ValueError):
+        fit(
+            rows,
+            ATE(),
+            feature_keys=("a", "x"),
+            num_boost_round=10,
+            early_stopping_rounds=5,
+        )

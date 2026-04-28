@@ -34,13 +34,19 @@ General-purpose gradient-boosting library for Riesz representers, implementing L
 - `build_augmented` + `fit` + `RieszBooster.predict` on the xgboost fast path.
 - ATE / TSM / AdditiveShift estimand factories.
 - `init={0, float, 'm1'}` initialization; m1 traces m on a constant alpha=1.
-- 12 tests passing, including end-to-end ATE Riesz recovery on the Lee-Schuler binary-treatment DGP (RMSE 0.64 at n=4000 — better than Lee-Schuler's reported 0.92 at n=500, as expected).
+- Early stopping on held-out Riesz loss; `RieszBooster.best_iteration` and predict-with-best-iteration baked in.
+- K-fold cross-fitting (`crossfit.crossfit`) with optional inner-split early stopping.
+- Diagnostics (`diagnostics.diagnose`) — RMS, |α| quantiles, extreme-row count, near-positivity and outlier-extrapolation warnings, held-out Riesz loss.
+- 24 tests passing, including end-to-end ATE Riesz recovery on the Lee-Schuler binary-treatment DGP (RMSE 0.64 at n=4000 — better than Lee-Schuler's reported 0.92 at n=500, as expected).
+
+## Known sharp edges
+
+- Boosting can extrapolate aggressively in low-overlap regions of α̂. Use shallow trees (`max_depth=3`), ridge (`reg_lambda≥10`), and early stopping; nested-CV early stopping does NOT always trigger when the inner-validation slice happens to miss the outliers — `diagnose` will warn when max |α̂| dwarfs the 99th percentile.
 
 ## What's next (per `~/.claude/plans/i-d-like-to-write-crystalline-raven.md`)
 
-- Cross-fitting, diagnostics (‖α̂‖, overlap warnings), early-stopping on validation Riesz loss.
 - lightgbm engine adapter.
 - Slow general path with sklearn/JAX base learners.
-- Longitudinal/LMTP estimand factory.
+- Longitudinal/LMTP estimand factory and ATT factory.
 - R wrapper via reticulate.
 - Bregman extension (v2; design `LossSpec` abstraction now so v2 is additive).

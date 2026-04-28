@@ -93,12 +93,24 @@ def _make_objective(a: np.ndarray, b: np.ndarray, eps: float = 1e-6):
     return obj
 
 
+def _make_riesz_metric(a_val: np.ndarray, b_val: np.ndarray, n_val_rows: int):
+    """xgboost custom_metric returning the per-row validation Riesz loss
+    (1/n) Σ_i [α(z_i)² - 2 m(z_i, α)] = (1/n) Σ_j [a_j F_j² + b_j F_j]."""
+    def metric(predt: np.ndarray, dval) -> tuple[str, float]:
+        del dval
+        loss = float(np.sum(a_val * predt**2 + b_val * predt) / n_val_rows)
+        return "riesz_loss", loss
+    return metric
+
+
 def fit(
     rows: Sequence[dict[str, Any]],
     m: Callable,
     feature_keys: Sequence[str],
     *,
+    valid_rows: Sequence[dict[str, Any]] | None = None,
     num_boost_round: int = 100,
+    early_stopping_rounds: int | None = None,
     learning_rate: float = 0.1,
     max_depth: int = 5,
     reg_lambda: float = 1.0,
@@ -106,19 +118,17 @@ def fit(
     base_score: float = 0.0,
     seed: int = 0,
     init: str | float = 0.0,
+    verbose_eval: bool | int = False,
 ) -> "RieszBooster":
-    """Fit a Riesz representer to the user's m via the fast augmented-data path."""
+    """Fit a Riesz representer to the user's m via the fast augmented-data path.
+
+    If `valid_rows` is given, a per-row validation Riesz loss is computed each
+    round; pair with `early_stopping_rounds` to halt when it stops improving.
+    """
     aug = build_augmented(rows, m, feature_keys)
 
-    # Initialization: 0 (default) or 'm1' (alpha = m(z, 1)).
     if init == "m1":
-        # Trace m on the first row with alpha returning 1, then... actually
-        # init='m1' for Riesz representer means setting alpha_0 = sum of
-        # coefficients from m. Computed per-row at predict time would be
-        # ideal; for boosting we set base_score to mean over rows of sum(c).
-        per_row = []
-        for z in rows:
-            per_row.append(sum(c for c, _ in trace(m, z)))
+        per_row = [sum(c for c, _ in trace(m, z)) for z in rows]
         base_score = float(np.mean(per_row))
     elif isinstance(init, (int, float)):
         base_score = float(init)
@@ -135,16 +145,35 @@ def fit(
         "seed": seed,
         "disable_default_eval_metric": 1,
     }
+
+    evals: list[tuple] = []
+    custom_metric = None
+    if valid_rows is not None:
+        aug_val = build_augmented(valid_rows, m, feature_keys)
+        dvalid = xgb.DMatrix(aug_val.features)
+        evals = [(dvalid, "valid")]
+        custom_metric = _make_riesz_metric(aug_val.a, aug_val.b, len(valid_rows))
+    elif early_stopping_rounds is not None:
+        raise ValueError("early_stopping_rounds requires valid_rows to be provided")
+
     booster = xgb.train(
         params,
         dtrain,
         num_boost_round=num_boost_round,
         obj=_make_objective(aug.a, aug.b),
+        evals=evals,
+        custom_metric=custom_metric,
+        early_stopping_rounds=early_stopping_rounds,
+        verbose_eval=verbose_eval,
     )
+    best_iteration = getattr(booster, "best_iteration", None)
+    best_score = getattr(booster, "best_score", None)
     return RieszBooster(
         booster=booster,
         feature_keys=tuple(feature_keys),
         base_score=base_score,
+        best_iteration=best_iteration,
+        best_score=float(best_score) if best_score is not None else None,
     )
 
 
@@ -153,29 +182,31 @@ class RieszBooster:
     booster: xgb.Booster
     feature_keys: tuple[str, ...]
     base_score: float
+    best_iteration: int | None = None
+    best_score: float | None = None
+
+    def _predict_dmatrix(self, dmatrix) -> np.ndarray:
+        if self.best_iteration is not None:
+            return self.booster.predict(
+                dmatrix, iteration_range=(0, self.best_iteration + 1)
+            )
+        return self.booster.predict(dmatrix)
 
     def predict(self, rows: Sequence[dict[str, Any]]) -> np.ndarray:
         X = np.asarray(
             [[row[k] for k in self.feature_keys] for row in rows], dtype=float
         )
-        return self.booster.predict(xgb.DMatrix(X))
+        return self._predict_dmatrix(xgb.DMatrix(X))
 
     def predict_array(self, X: np.ndarray) -> np.ndarray:
-        return self.booster.predict(xgb.DMatrix(np.asarray(X, dtype=float)))
+        return self._predict_dmatrix(xgb.DMatrix(np.asarray(X, dtype=float)))
 
     def riesz_loss(
         self,
         rows: Sequence[dict[str, Any]],
         m: Callable,
     ) -> float:
-        """Empirical Riesz loss alpha(z)^2 - 2*m(z, alpha) on rows."""
-        preds = self.predict(rows)
-        m_vals = np.zeros(len(rows))
-        for i, z in enumerate(rows):
-            for coef, point in trace(m, z):
-                m_vals[i] += coef * float(
-                    self.predict_array(
-                        np.asarray([[point[k] for k in self.feature_keys]])
-                    )[0]
-                )
-        return float(np.mean(preds**2 - 2.0 * m_vals))
+        """Empirical Riesz loss (1/n) Σ [α(z)² - 2 m(z, α)] on rows."""
+        aug = build_augmented(rows, m, self.feature_keys)
+        F = self.predict_array(aug.features)
+        return float(np.sum(aug.a * F**2 + aug.b * F) / len(rows))

@@ -39,19 +39,49 @@ pi = 1 / (1 + np.exp(-(-0.02*x - x**2 + 4*np.log(x + 0.3) + 1.5)))
 a = rng.binomial(1, pi)
 rows = [{"a": int(ai), "x": float(xi)} for ai, xi in zip(a, x)]
 
-# Fit the Riesz representer for the ATE — no propensity score involved
+# 80/20 train/valid split for early stopping
+n_tr = int(0.8 * n)
+train_rows, valid_rows = rows[:n_tr], rows[n_tr:]
+
 booster = rieszboost.fit(
-    rows,
+    train_rows,
     rieszboost.ATE(),               # m(z, alpha) = alpha(1, x) - alpha(0, x)
     feature_keys=("a", "x"),
-    num_boost_round=300,
+    valid_rows=valid_rows,
+    num_boost_round=2000,
+    early_stopping_rounds=20,       # halt when held-out Riesz loss stops improving
     learning_rate=0.05,
     max_depth=4,
 )
 
 alpha_hat = booster.predict(rows)
 # alpha_hat ≈ A/π(X) - (1-A)/(1-π(X)) — without ever estimating π(X)
+
+# Diagnostics — magnitude, tail extremes, near-positivity warnings
+print(rieszboost.diagnose(booster=booster, rows=valid_rows, m=rieszboost.ATE()).summary())
 ```
+
+## Cross-fitting for downstream inference
+
+When you'll plug α̂ into a TMLE / one-step / DML estimator, use cross-fitting so the predictions you use are out-of-fold:
+
+```python
+result = rieszboost.crossfit(
+    rows,
+    rieszboost.ATE(),
+    feature_keys=("a", "x"),
+    n_folds=5,
+    early_stopping_inner_split=0.2,  # carve a held-out slice inside each fold
+    num_boost_round=2000,
+    early_stopping_rounds=20,
+    learning_rate=0.05,
+    max_depth=3,
+    reg_lambda=10.0,                 # keep extrapolation tame
+)
+alpha_hat_oof = result.alpha_hat   # shape (n,) — out-of-fold predictions
+```
+
+> **Note on hyperparameters.** Boosted Riesz representers can extrapolate aggressively at low-overlap boundaries. Shallower trees (`max_depth=3`) and a heavier ridge (`reg_lambda=10`) plus early stopping keep the tails under control. Always run `rieszboost.diagnose(...)` on the fit and inspect the warnings.
 
 ## Custom estimands
 
@@ -82,16 +112,15 @@ More planned: `ATT`, `Longitudinal` (LMTP-style), stochastic-shift variants.
 - Fast path: data augmentation + xgboost custom objective (gradient `2aF + b`, Hessian `2a`).
 - ATE / TSM / AdditiveShift estimand factories.
 - `init={0, float, "m1"}` initialization.
-- `RieszBooster.predict(rows)` and `RieszBooster.riesz_loss(rows, m)` for held-out diagnostics.
+- Early stopping on held-out Riesz loss (`valid_rows=` + `early_stopping_rounds=`).
+- K-fold cross-fitting (`rieszboost.crossfit(...)`) with optional inner-split early stopping.
+- Diagnostics (`rieszboost.diagnose(...)`): RMS, extremes, |α| quantiles, near-positivity warnings, held-out Riesz loss.
 
 ## On the roadmap
 
-- Cross-fitting helpers (K-fold sample splitting).
-- Early stopping on validation Riesz loss.
-- Diagnostics (‖α̂‖, max/min, overlap warnings).
 - lightgbm engine adapter.
 - Slow general path with sklearn / JAX base learners (for derivatives, integrals against known densities).
-- Longitudinal/LMTP estimand factory.
+- Longitudinal/LMTP estimand factory and ATT factory.
 - R wrapper via reticulate.
 - Bregman extension (Hines & Miles / Kato 2026).
 
