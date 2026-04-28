@@ -4,11 +4,11 @@ title: "Quickstart — ATE in 30 lines"
 
 {{< include _setup.qmd >}}
 
-This page fits a Riesz representer for the average treatment effect on a synthetic dataset, end to end. Pick the language tab you want — your choice persists across the whole site.
+This page fits a Riesz representer for the average treatment effect on a synthetic dataset. Pick the language tab on any code block; your choice persists across the site.
 
 ## Simulate
 
-A binary treatment with covariate-driven assignment and known propensity $\pi(x)$. We will recover $\alpha_0(a, x) = a/\pi(x) - (1-a)/(1-\pi(x))$ without ever estimating $\pi$.
+Binary treatment with known propensity $\pi(x)$. We will recover $\alpha_0(a, x) = a/\pi(x) - (1-a)/(1-\pi(x))$ without estimating $\pi$.
 
 ::: {.panel-tabset group="lang"}
 
@@ -44,7 +44,7 @@ head(df)
 
 ## Fit
 
-`RieszBooster` is an sklearn-style estimator: configure on the constructor (the estimand owns its input schema, so no `feature_keys=` repeated on every call), then `.fit(df)`. Early stopping uses an internal validation split sized by `validation_fraction`.
+Configure the booster on the constructor, then call `.fit(df)`. Early stopping uses an internal validation split sized by `validation_fraction`.
 
 ::: {.panel-tabset group="lang"}
 
@@ -85,9 +85,9 @@ cat(sprintf(
 
 :::
 
-## Predict and compare to the closed-form representer
+## Predict and compare to the closed form
 
-This is a synthetic example, so we have access to $\alpha_0$ and can score the fit directly.
+We know $\alpha_0$ here, so we can score the fit directly.
 
 ::: {.panel-tabset group="lang"}
 
@@ -147,7 +147,7 @@ abline(0, 1, lty = 2)
 
 ## Diagnostics
 
-Always inspect the fit before using $\hat\alpha$ downstream. `.diagnose()` reports the magnitude distribution, near-positivity warnings, and the held-out Riesz loss.
+Inspect the fit before using $\hat\alpha$ downstream. `.diagnose()` reports the magnitude distribution, positivity warnings, and the held-out Riesz loss.
 
 ::: {.panel-tabset group="lang"}
 
@@ -165,8 +165,8 @@ cat(booster$diagnose(df)$summary)
 
 :::
 
-## Where next
+## Next
 
-- For inference (TMLE / one-step / DML), out-of-fold predictions via [scikit-learn integration](sklearn-integration.qmd).
-- Built-ins beyond ATE and how to write your own: [estimands](estimands.qmd).
-- Reading `.diagnose()` carefully + tuning recipes: [diagnostics and tuning](diagnostics-and-tuning.qmd).
+- [scikit-learn integration](sklearn-integration.qmd) for out-of-fold predictions used in TMLE / one-step / DML.
+- [Estimands](estimands.qmd) for the other built-ins and custom $m$.
+- [Diagnostics and tuning](diagnostics-and-tuning.qmd) for reading `.diagnose()` and choosing hyperparameters.

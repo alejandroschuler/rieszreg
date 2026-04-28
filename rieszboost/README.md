@@ -217,11 +217,13 @@ R-side and Python-side predictions are bitwise-identical on the same data.
 
 ## On the roadmap
 
-Active priorities:
+The active list is empty — all original v0.0.1 items have shipped:
 
-1. **Testing plan** — see [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md). Property-based tests, numerical regression baselines, sklearn `check_estimator` conformance, backend-equivalence checks, performance regression tracking.
+- Six built-in estimand factories with worked examples (synthetic + real-data: Lalonde ATE, NHEFS shift).
+- Two backends, four losses, full sklearn integration, R6 wrapper, save / load (cross-language).
+- Six-layer test suite (smoke + regression baselines + backend equivalence + edge cases + property + sklearn conformance + perf bench). See [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md).
 
-Real-data examples (Lalonde for ATE under selection, NHEFS for shift, etc.) would also be welcome additions on top of the synthetic-DGP demos in `examples/`.
+Future work would focus on CI wiring, real-data examples beyond the two shipped, and additional Bregman losses (e.g. Itakura-Saito for audio-style ratios) as use cases emerge.
 
 Considered and dropped:
 

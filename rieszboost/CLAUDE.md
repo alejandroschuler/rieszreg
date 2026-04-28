@@ -10,6 +10,16 @@ The README's `## Status` and `## Roadmap` sections must stay current too — whe
 
 The same rule applies to the user guide at `docs/` (Quarto website, knitr engine, deployed to GitHub Pages on every push to main). Any change to the public API surface (Python in `python/rieszboost/` OR R in `r/rieszboost/R/`) must update both `README.md` AND the relevant page in `docs/` in the same edit. On bilingual pages (every page with executable code uses R + Python tabsets via `::: {.panel-tabset group="lang"}`), update BOTH the `{python}` tab and the `{r}` tab — the R wrapper is a first-class citizen, not an afterthought. The pre-commit hook at `.githooks/pre-commit` enforces this — a public-API change with no `docs/*.qmd` or `README.md` change in the same commit is rejected. Activate the hook once per clone with `git config core.hooksPath .githooks`. Bypass only for genuinely doc-irrelevant changes (internal refactor, tests, comments) with `--no-verify`.
 
+### Doc tone rules
+
+User-facing docs (`docs/*.qmd`, `README.md`) describe what's currently in the package, in plain instructive prose matching the [ngboost user guide](https://stanfordmlgroup.github.io/ngboost/intro.html). Two failure modes the pre-commit hook also checks for:
+
+1. **No design-decision metacommentary.** Don't explain the API's negative space — what we removed, intentionally didn't build, or chose between. Examples to avoid: "there is intentionally no bespoke `crossfit()` function", "no separate `feature_keys=` argument", "the design rule is to lean on…", "we chose X over Y", "intentionally out of scope", "by design". The user only cares what they CAN call. Just describe what the function does and how to use it; if a sentence describes what isn't there, delete it. The API design rule below is for the maintainer; it doesn't belong in user docs.
+
+2. **No AI-flavored hedge or editorial framing.** Avoid phrases like "the workhorse", "the right choice for almost every", "almost never needs tuning", "the natural way/API", "rather than reinvent". Avoid em-dashes peppered through prose; use periods or rewrite. Sentences should be short (8-15 words on average), active voice, no excessive parentheticals.
+
+The hook greps the staged diff (added lines only) for the worst offenders and blocks the commit; bypass with `--no-verify` if it's a false positive.
+
 ## Per-estimand example rule
 
 **Every built-in estimand factory must have a worked example** in `examples/`. When you add a new factory (e.g. a new shift variant, a new IPSI form, a longitudinal helper), the change is not done until there's a runnable script demonstrating it on a realistic DGP, with the EEE/one-step plug-in built around it where applicable.

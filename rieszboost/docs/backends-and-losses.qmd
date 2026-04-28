@@ -4,28 +4,29 @@ title: "Backends and losses"
 
 {{< include _setup.qmd >}}
 
-`RieszBooster` decouples three orthogonal concerns: the **estimand** (what functional you're after), the **loss** (which Bregman-Riesz objective minimizes the right thing for that functional), and the **backend** (what does the actual gradient boosting). The defaults — `XGBoostBackend` + `SquaredLoss` — are right for almost every problem; this page covers when and how to swap them.
+`RieszBooster` takes three orthogonal configuration objects: an **estimand** (the linear functional you want to fit), a **loss** (the Bregman-Riesz objective), and a **backend** (the gradient-boosting implementation). The defaults are `XGBoostBackend` and `SquaredLoss`. This page covers when to swap them.
 
 ## The default backend: `XGBoostBackend`
 
-Data augmentation + xgboost custom objective. Each row $z_i$ contributes (a) itself with quadratic coefficient $a=1$, $b=0$ and (b) a counterfactual augmented row at every point $\alpha$ is evaluated at by $m(z_i, \cdot)$, with quadratic coefficient $a=0$ and linear coefficient $b = -2 \cdot \text{coef}$. The Riesz loss is then a per-row weighted regression that xgboost handles via its custom objective interface.
+Each row $z_i$ contributes (a) itself with quadratic coefficient $a=1$, $b=0$, and (b) one augmented row at every point $\alpha$ is evaluated at by $m(z_i, \cdot)$, with $a=0$ and $b = -2 \cdot \text{coef}$. The Riesz loss becomes a per-row weighted regression that xgboost handles via its custom-objective interface.
 
-Two knobs on the backend itself:
+`XGBoostBackend` has two knobs of its own:
 
 ```python
 XGBoostBackend(hessian_floor=2.0, gradient_only=False)
 ```
 
-- **`hessian_floor`** — a lower bound on the per-row Hessian fed to xgboost. Counterfactual rows have $H = 2a = 0$; without a floor, xgboost's leaf-weight Newton step (`-G/(H+λ)`) is degenerate at those leaves. The default of 2.0 matches the natural Hessian on original rows. Almost never needs tuning.
-- **`gradient_only`** — short-circuit the second-order Hessian and use `H = 1` everywhere (Lee-Schuler Algorithm 2 / Friedman 2001 first-order gradient boosting). Empirically *worse* than the default at matched hyperparameters; the second-order leaf weighting helps even though our Hessian is partly artificial. Reach for `gradient_only=True` only when reproducing the reference implementation byte-for-byte.
+`hessian_floor` is the lower bound on the per-row Hessian fed to xgboost. Counterfactual rows have $H = 2a = 0$; without a floor, xgboost's leaf-weight Newton step (`-G/(H+λ)`) is degenerate at those leaves. The default of 2.0 matches the natural Hessian on original rows.
 
-`max_depth`, `reg_lambda`, `subsample`, `learning_rate`, `n_estimators`, `early_stopping_rounds` are passed in from `RieszBooster` constructor — they're standard xgboost knobs; see [diagnostics and tuning](diagnostics-and-tuning.qmd) for guidance.
+`gradient_only` short-circuits the second-order Hessian and uses $H = 1$ everywhere — first-order gradient boosting (Friedman 2001 / Lee-Schuler Algorithm 2). Set `True` to reproduce the Lee-Schuler reference implementation exactly.
 
-## `SklearnBackend`: gradient boosting on any base learner
+`max_depth`, `reg_lambda`, `subsample`, `learning_rate`, `n_estimators`, and `early_stopping_rounds` are passed through from the `RieszBooster` constructor.
 
-If you want a non-tree base learner — kernel ridge, an MLP, a custom regressor — pass a `base_learner_factory`: a zero-arg callable that returns a fresh sklearn-compatible `.fit(X, y)/.predict(X)` regressor each round.
+## `SklearnBackend`
 
-The backend implements first-order gradient boosting with line search: per round, fit the weak learner to the negative gradient of the Riesz loss, then closed-form solve for the optimal step size under a quadratic surrogate, then update the running prediction.
+To use a non-tree base learner, pass a `base_learner_factory`: a zero-arg callable returning a fresh sklearn-compatible regressor each round.
+
+The backend implements first-order gradient boosting with closed-form line search. Each round: fit the weak learner to the negative gradient of the Riesz loss, solve for the optimal step size under a quadratic surrogate, update the running prediction.
 
 ::: {.panel-tabset group="lang"}
 
@@ -68,9 +69,8 @@ pi <- 1 / (1 + exp(-(8 * x - 4)))
 a  <- rbinom(n, 1, pi)
 df <- data.frame(a = as.numeric(a), x = x)
 
-# Build the Python factory directly via reticulate so we get a fresh sklearn
-# object each call. Passing an R function would also work — reticulate handles
-# R-callable -> Python-callable conversion.
+# Build the Python factory directly via reticulate so each round gets a
+# fresh sklearn object.
 sk_kr <- reticulate::import("sklearn.kernel_ridge", convert = FALSE)
 factory <- reticulate::py_func(function() sk_kr$KernelRidge(alpha = 1.0,
                                                              kernel = "rbf",
@@ -95,24 +95,24 @@ cat(sprintf("corr = %.3f, RMSE = %.3f\n",
 
 :::
 
-`SklearnBackend` is slower than `XGBoostBackend` (no native parallel tree splits) but the API surface is the same. It's the right choice when (a) the data is genuinely better fit by something non-tree (e.g. smooth low-dimensional problems where kernel ridge dominates), or (b) you need to run inside an environment that can't install xgboost.
+`SklearnBackend` is slower than `XGBoostBackend` (no parallel tree splits). Use it when the data is better fit by a non-tree learner (e.g. low-dimensional problems where kernel ridge dominates), or when xgboost is unavailable in your environment.
 
-::: {.callout-tip title="When to skip xgboost entirely"}
-`SklearnBackend` doesn't import xgboost. If your environment is xgboost-hostile (alpine container, Python build with no OpenMP) you can ship `rieszboost` with `SklearnBackend` as the default by passing `backend=SklearnBackend(...)` to every `RieszBooster` and never installing xgboost. The library itself only lazy-imports xgboost.
+::: {.callout-tip title="Skipping xgboost"}
+`SklearnBackend` does not import xgboost. The library lazy-imports xgboost only when `XGBoostBackend` is used, so you can run `rieszboost` in xgboost-hostile environments (alpine containers, builds without OpenMP) by passing `backend=SklearnBackend(...)` and never installing xgboost.
 :::
 
 ## Losses
 
-| Loss | Potential $\phi$ | Link $\eta \to \alpha$ | Domain | When to reach for it |
+| Loss | Potential $\phi$ | Link $\eta \to \alpha$ | Domain | Use for |
 |---|---|---|---|---|
-| `SquaredLoss` | $t^2$ | identity | $\mathbb{R}$ | Default. Right choice for almost every estimand. |
-| `KLLoss` | $t \log t$ | exp | $(0, \infty)$ | Density-ratio targets (TSM, IPSI). Guarantees $\hat\alpha > 0$. Requires all $m$-coefficients $\geq 0$. |
-| `BernoulliLoss` | $t \log t + (1-t)\log(1-t)$ | sigmoid | $(0, 1)$ | $\alpha_0$ known to lie in $(0, 1)$ by problem structure (rare for representers; saturates at the bounds otherwise). Same coefficient-sign restriction as `KLLoss`. |
-| `BoundedSquaredLoss(lo, hi)` | $t^2$ + sigmoid-scaled link | $\mathrm{lo} + (\mathrm{hi}-\mathrm{lo}) \cdot \sigma$ | $(\mathrm{lo}, \mathrm{hi})$ | Squared-loss fits with hard prior bounds (e.g. trimmed-propensity ratios). Pick bounds tightly around $\alpha_0$ — generous bounds saturate the link and slow boosting. |
+| `SquaredLoss` | $t^2$ | identity | $\mathbb{R}$ | Default. |
+| `KLLoss` | $t \log t$ | exp | $(0, \infty)$ | Density-ratio targets (TSM, IPSI). Guarantees $\hat\alpha > 0$. Requires non-negative $m$-coefficients. |
+| `BernoulliLoss` | $t \log t + (1-t)\log(1-t)$ | sigmoid | $(0, 1)$ | $\alpha_0$ known to lie in $(0, 1)$. Same coefficient-sign restriction as `KLLoss`. |
+| `BoundedSquaredLoss(lo, hi)` | $t^2$ + sigmoid-scaled link | $\mathrm{lo} + (\mathrm{hi}-\mathrm{lo}) \cdot \sigma$ | $(\mathrm{lo}, \mathrm{hi})$ | Squared-loss fit with prior bounds (e.g. trimmed-propensity ratios). |
 
-`SquaredLoss` is the standard Lee-Schuler / Chernozhukov objective: $\phi(t) = t^2$, identity link $\eta = \alpha$. Per-row loss $a \cdot \alpha^2 + b \cdot \alpha$.
+`SquaredLoss` is the standard Lee-Schuler / Chernozhukov objective. Per-row loss in $\alpha$-space: $a \cdot \alpha^2 + b \cdot \alpha$.
 
-`KLLoss` ($\phi(t) = t \log t$, exp link) targets density ratios. The exponential link guarantees $\hat\alpha > 0$ regardless of leaf updates.
+`KLLoss` ($\phi = t \log t$, exp link) targets density ratios. The exponential link keeps $\hat\alpha > 0$.
 
 ::: {.panel-tabset group="lang"}
 
@@ -130,7 +130,7 @@ booster = RieszBooster(
 ).fit(df)
 
 alpha_hat = booster.predict(df)
-print(f"min α̂ = {alpha_hat.min():.4f} (always ≥ 0 with KLLoss)")
+print(f"min α̂ = {alpha_hat.min():.4f}")
 print(f"mean α̂ on treated rows = {alpha_hat[a == 1].mean():.3f}")
 ```
 
@@ -146,23 +146,22 @@ booster <- RieszBooster$new(
 )
 booster$fit(df)
 alpha_hat <- booster$predict(df)
-cat(sprintf("min alpha_hat = %.4f (always >= 0 with KLLoss)\n",
-            min(alpha_hat)))
+cat(sprintf("min alpha_hat = %.4f\n", min(alpha_hat)))
 cat(sprintf("mean alpha_hat on treated rows = %.3f\n",
             mean(alpha_hat[a == 1])))
 ```
 
 :::
 
-`KLLoss` requires all augmented `b` coefficients to be $\le 0$ — equivalent to all $m$-coefficients being non-negative. Most density-ratio estimands satisfy this; it's checked at fit time and raises with a clear error if you try `KLLoss` on (say) ATE.
+`KLLoss` requires all augmented `b` coefficients $\le 0$, equivalent to all $m$-coefficients being non-negative. The check happens at fit time and raises with a clear error if violated.
 
-::: {.callout-warning title="When NOT to use KLLoss"}
-On the augmented dataset, pure-counterfactual rows (a=0, b<0) have no minimum in η under KL — leaf weights at low-overlap points can extrapolate. The squared loss is structurally more stable; reach for KL only when its positivity guarantee is genuinely needed.
+::: {.callout-warning title="When KLLoss can be unstable"}
+Pure-counterfactual rows ($a=0$, $b<0$) have no minimum in $\eta$ under KL — leaf weights at low-overlap points can extrapolate. Use `SquaredLoss` unless the positivity guarantee is needed.
 :::
 
 ### `BoundedSquaredLoss` for hard prior bounds
 
-If you know $\alpha_0 \in [\text{lo}, \text{hi}]$ (e.g. you've trimmed propensities to $[\varepsilon, 1-\varepsilon]$ so $1/\pi \in [1, 1/\varepsilon]$), `BoundedSquaredLoss(lo, hi)` keeps predictions in that box via a sigmoid-scaled link. The per-row loss in $\alpha$-space is unchanged from `SquaredLoss`; the link reparameterizes $\eta$ so $\hat\alpha$ saturates at the bounds rather than extrapolating past them.
+If you know $\alpha_0 \in [\text{lo}, \text{hi}]$ (e.g. you've trimmed propensities to $[\varepsilon, 1-\varepsilon]$ so $1/\pi \in [1, 1/\varepsilon]$), `BoundedSquaredLoss(lo, hi)` keeps predictions in that box via a sigmoid-scaled link. The per-row loss in $\alpha$-space matches `SquaredLoss`; the link reparameterizes $\eta$ so $\hat\alpha$ saturates at the bounds rather than extrapolating past them.
 
 ::: {.panel-tabset group="lang"}
 
@@ -176,7 +175,7 @@ booster = RieszBooster(
     n_estimators=200, learning_rate=0.05, max_depth=3,
 ).fit(df)
 alpha_hat = booster.predict(df)
-print(f"alpha_hat in ({alpha_hat.min():.3f}, {alpha_hat.max():.3f})  (bounded by construction)")
+print(f"alpha_hat in ({alpha_hat.min():.3f}, {alpha_hat.max():.3f})")
 ```
 
 ## R
@@ -189,25 +188,25 @@ booster <- RieszBooster$new(
 )
 booster$fit(df)
 alpha_hat <- booster$predict(df)
-cat(sprintf("alpha_hat in (%.3f, %.3f)  (bounded by construction)\n",
+cat(sprintf("alpha_hat in (%.3f, %.3f)\n",
             min(alpha_hat), max(alpha_hat)))
 ```
 
 :::
 
 ::: {.callout-tip title="Pick bounds tightly"}
-Generous bounds make the sigmoid link saturate over most of $\eta$, so boosting steps barely move predictions. Set `lo` and `hi` to your actual prior on $\alpha_0$, not safe-but-loose extremes.
+Generous bounds make the sigmoid link saturate over most of $\eta$, so boosting steps barely move predictions. Set `lo` and `hi` to your prior on $\alpha_0$.
 :::
 
-`BernoulliLoss` is the same idea with $\text{lo}=0$, $\text{hi}=1$ and the natural Bernoulli Bregman potential — only useful when $\alpha_0$ is genuinely a probability.
+`BernoulliLoss` is the same construction with $\text{lo}=0$, $\text{hi}=1$ and the Bernoulli Bregman potential. Use it when $\alpha_0$ is a probability.
 
 ## Custom losses
 
 ::: {.callout-note title="Python-only"}
-Custom `LossSpec` subclasses are currently Python-only. The R wrapper exposes `SquaredLoss()` and `KLLoss()`; for a custom loss in R, define it in Python and call from R via reticulate.
+Custom `LossSpec` subclasses are Python-only. From R, define the subclass in Python via `reticulate::py_run_string` and pass the instance to `RieszBooster$new(loss=...)`.
 :::
 
-The `LossSpec` protocol is small. Implement six methods:
+Implement the `LossSpec` protocol:
 
 ```python
 class LossSpec(Protocol):
@@ -224,11 +223,11 @@ class LossSpec(Protocol):
     def hessian(self, a, b, eta, hessian_floor):
         """∂²loss_row/∂η² (floored)."""
     def default_init_alpha(self) -> float:
-        """Sensible α-space default for `init=` if user doesn't override."""
+        """α-space default for `init=` if user doesn't override."""
     def validate_coefficients(self, b: np.ndarray) -> None:
         """Raise if (a, b) violate this loss's domain."""
 ```
 
-`SquaredLoss` (35 lines) and `KLLoss` (45 lines) in [`python/rieszboost/losses.py`](https://github.com/alejandroschuler/rieszboost/blob/main/python/rieszboost/losses.py) are the templates. Anything you implement composes with both backends and every estimand without further changes.
+[`SquaredLoss`](https://github.com/alejandroschuler/rieszboost/blob/main/python/rieszboost/losses.py) and `KLLoss` are short reference implementations.
 
-The Bregman extension follows Hines & Miles ([2510.16127](https://arxiv.org/abs/2510.16127)) and Kato ([2601.07752](https://arxiv.org/abs/2601.07752)) — for the math, those are the references.
+The Bregman extension follows Hines & Miles ([2510.16127](https://arxiv.org/abs/2510.16127)) and Kato ([2601.07752](https://arxiv.org/abs/2601.07752)).

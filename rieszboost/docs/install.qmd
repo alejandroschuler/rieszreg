@@ -6,8 +6,6 @@ title: "Install"
 
 ## Python
 
-The Python package is the source of truth — install it first whether you plan to use Python or R.
-
 ```sh
 git clone https://github.com/alejandroschuler/rieszboost.git
 cd rieszboost
@@ -21,7 +19,7 @@ python3 -m venv .venv
 brew install libomp
 ```
 
-Linux runners (including GitHub Actions ubuntu-latest) ship `libgomp1` preinstalled, so no extra step is needed there.
+Linux distributions (and GitHub Actions ubuntu-latest) ship `libgomp1`; no extra step is needed.
 
 ### Verify
 
@@ -45,32 +43,28 @@ print("rieszboost (R wrapper) OK")
 
 ## R wrapper (optional)
 
-The R package is a thin R6 mirror around the Python implementation via [reticulate](https://rstudio.github.io/reticulate/). It does not require a separate install of any algorithmic dependency — everything runs in the Python venv.
+The R package is an R6 wrapper that calls the Python implementation through [reticulate](https://rstudio.github.io/reticulate/). It does not require any separate algorithmic dependency.
 
-Three steps the first time you use it:
+First-time setup:
 
-1. Install the R package dependencies (`reticulate`, `R6`):
+1. Install the R package dependencies:
    ```r
    install.packages(c("reticulate", "R6"))
    ```
-2. Either install the R wrapper as a package or dev-load it from the source tree. For this guide we dev-load:
+2. Load the R wrapper. For this guide we dev-load it from the source tree:
    ```r
    pkgload::load_all("r/rieszboost")
    ```
-3. Point reticulate at the Python venv where you installed `rieszboost`:
+3. Point reticulate at the Python venv:
    ```r
    use_python_rieszboost(".venv/bin/python")
    ```
-   You can also set the env var `RETICULATE_PYTHON` before R starts:
+   Or set the environment variable before R starts:
    ```sh
    export RETICULATE_PYTHON=/path/to/rieszboost/.venv/bin/python
    ```
 
-After that, every R example in this guide runs verbatim.
-
-::: {.callout-note title="What R covers"}
-The R wrapper exports every public Python class except the symbolic tracer for **custom** `m()` (see [estimands](estimands.qmd) and [r-interface](r-interface.qmd)). All built-in estimands, both losses, both backends, and the entire `RieszBooster` API are first-class in R.
-:::
+The R API exposes every built-in estimand, both losses, both backends, and the full `RieszBooster` interface. The symbolic tracer for custom `m()` is Python-only; see [r-interface](r-interface.qmd) for how to call it from R.
 
 ## Tests
 

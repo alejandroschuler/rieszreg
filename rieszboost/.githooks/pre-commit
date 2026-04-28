@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
-# Block commits that touch the public API without touching the docs.
-# Bypass for genuinely doc-irrelevant changes with: git commit --no-verify
+# Pre-commit checks for rieszboost docs.
+#
+# 1. Block commits that touch the public API without touching the docs.
+# 2. Block commits whose staged docs/*.qmd files contain known anti-patterns:
+#    - design-decision metacommentary ("intentionally no X", "the design rule")
+#    - AI-flavored hedge phrases ("almost every problem", "the right choice")
+#
+# Bypass with: git commit --no-verify
 set -euo pipefail
 
 staged=$(git diff --cached --name-only)
 
-# Files that define the public surface — change one and docs probably need updating.
+# ----------------------------------------------------------------------
+# Check 1: public-API change without a docs update.
+# ----------------------------------------------------------------------
 public_api_changed=$(echo "$staged" | grep -E '^(python/rieszboost/(__init__|estimator|estimand|augmentation|losses|diagnostics|tracer)\.py|python/rieszboost/backends/.*\.py|r/rieszboost/R/.*\.R)$' || true)
-
-# Doc files that count as "the docs were touched".
 docs_changed=$(echo "$staged" | grep -E '^(docs/.*\.qmd|docs/_quarto\.yml|README\.md)$' || true)
 
 if [[ -n "$public_api_changed" && -z "$docs_changed" ]]; then
@@ -21,9 +27,70 @@ if [[ -n "$public_api_changed" && -z "$docs_changed" ]]; then
   echo "quickstart or install steps changed), then re-stage and re-commit."
   echo ""
   echo "On bilingual pages (most of them), update BOTH the {python} and {r}"
-  echo "tabs — the R wrapper is a first-class citizen."
+  echo "tabs. The R wrapper is a first-class citizen."
   echo ""
   echo "If this change genuinely cannot affect docs (internal refactor,"
   echo "test-only, comment fix), bypass with: git commit --no-verify"
   exit 1
+fi
+
+# ----------------------------------------------------------------------
+# Check 2: forbidden phrases in staged docs/*.qmd or README.md.
+#
+# The docs describe what's currently in the package, in plain instructive
+# prose matching the ngboost user guide's tone. Two failure modes:
+#
+# A) Design-decision metacommentary. Phrases like "there is intentionally
+#    no bespoke crossfit() function" or "no separate feature_keys= argument"
+#    describe the API's negative space and date the docs. Just describe
+#    what the function DOES; what it isn't is irrelevant to the user.
+#
+# B) AI-flavored hedge / editorial framing. Phrases like "the workhorse",
+#    "the right choice for almost every", "almost never needs tuning",
+#    "intentionally", "by design", "the design rule says". They read as
+#    AI-flavored and don't carry information.
+#
+# This check greps the diff (lines being ADDED, not the whole file) so
+# pre-existing instances don't keep firing. Only blocks if you're staging
+# new or modified content that contains the patterns.
+# ----------------------------------------------------------------------
+docs_for_lint=$(echo "$staged" | grep -E '^(docs/.*\.qmd|README\.md)$' || true)
+
+if [[ -n "$docs_for_lint" ]]; then
+  # Patterns to flag. Case-insensitive.
+  forbidden_regex='(intentionally (no|absent|out of scope|not)|by design|the design rule|design rule (is|says)|no bespoke|no separate [a-z_]+= ?argument|almost (every|never)|right (choice|for almost)|the workhorse|the natural (api|way|approach|choice)|don'\''t reinvent|rather than reinvent|reinvent it|we chose [a-z]+ over)'
+
+  # Get only added lines from the staged diff (lines starting with `+`,
+  # excluding the `+++` file header), then grep them.
+  hits=$(git diff --cached --unified=0 -- $docs_for_lint \
+         | grep -E '^\+[^+]' \
+         | grep -iE "$forbidden_regex" \
+         || true)
+
+  if [[ -n "$hits" ]]; then
+    echo "ERROR: doc tone violations in staged changes."
+    echo ""
+    echo "Lines being added contain phrases that read as design-decision"
+    echo "metacommentary or AI-flavored hedges. Rewrite to describe what"
+    echo "the API IS, not what it isn't or why we chose this design."
+    echo ""
+    echo "Offending lines:"
+    echo "$hits" | sed 's/^/  /'
+    echo ""
+    echo "Examples to avoid:"
+    echo "  BAD : 'There is intentionally no bespoke crossfit() function'"
+    echo "  GOOD: 'Cross-fit with sklearn.model_selection.cross_val_predict'"
+    echo ""
+    echo "  BAD : 'XGBoostBackend is right for almost every problem'"
+    echo "  GOOD: 'XGBoostBackend is the default. Use SklearnBackend for non-tree base learners.'"
+    echo ""
+    echo "  BAD : 'The estimand owns its input schema, so no separate"
+    echo "         feature_keys= argument'"
+    echo "  GOOD: (delete the sentence)"
+    echo ""
+    echo "Tone target: the ngboost user guide. Direct, instructive, short."
+    echo ""
+    echo "Bypass for false positives with: git commit --no-verify"
+    exit 1
+  fi
 fi

@@ -1,6 +1,6 @@
 # Testing plan
 
-Today's suite: 82 Python tests + ~11 R parity tests. The first three layers from the original plan (numerical regression baselines, backend equivalence, edge cases) have shipped; layers 4–6 (sklearn `check_estimator`, hypothesis property tests, performance regression tracking) are next.
+All six layers from the original plan have shipped. Today's suite: ~107 Python tests + ~11 R parity tests + a perf-regression bench script. Coverage spans tracer algebra, end-to-end recovery on synthetic and real data, sklearn integration & conformance, serialization, edge cases, numerical regression baselines, backend equivalence, and property-based invariants.
 
 ## What we have today
 
@@ -39,7 +39,9 @@ Lives in `python/tests/regression/baselines.json` + `test_baselines.py`. To rege
 
 10 edge cases: extra DataFrame columns ignored, single-row data, all-treated / all-control input, LocalShift with no rows below threshold, `validation_fraction=0` with early stopping (auto-split fallback), explicit `eval_set` overriding internal split, StochasticIntervention with empty per-row sample lists, prediction on out-of-distribution X, ndarray with wrong feature count → clear error. Lives in `test_edge_cases.py`.
 
-### 4. Property-based tests (medium-high leverage)
+### 4. ✓ Property-based tests (`hypothesis`)
+
+Linearity-in-m for the tracer; augmentation invariance under row permutation; reproducibility under fixed `random_state`; factory_spec round-trip for every built-in estimand; loss link round-trip for all four losses; analytic gradient matches finite-difference. Lives in `test_property.py`.
 
 Use `hypothesis` to generate random valid data and assert invariants:
 
@@ -49,13 +51,13 @@ Use `hypothesis` to generate random valid data and assert invariants:
 - **Estimand round-trip**: `Estimand(feature_keys=keys, m=m)` followed by `build_augmented` produces rows whose features match `keys` exactly.
 - **Score monotonicity (smoke)**: more boosting rounds → lower training Riesz loss (within reason).
 
-### 5. sklearn conformance (medium leverage)
+### 5. ✓ sklearn `check_estimator` conformance
 
-`sklearn.utils.estimator_checks.check_estimator(RieszBooster(estimand=ATE()))` runs a battery of API conformance tests sklearn ships. We currently pass `clone`, `get_params`, `cross_val_predict`, `GridSearchCV` by hand-rolled tests. `check_estimator` runs ~30 more. Some will fail (we don't accept `y` properly, the augmentation requires float features, etc.); ignore the irrelevant ones via `expected_failed_checks`. **Goal: opt out of the truly-N/A checks explicitly so any new failure is a real bug.**
+Runs the structural subset of sklearn's check suite (clone, tags, repr, `do_not_raise_errors_in_init_or_set_params`, mixin order). About 30 of sklearn's 41 stock checks generate random-shape `(X, y)` pairs that don't match our fixed input schema; those are documented as N/A in `SKIP_CHECKS`. Lives in `test_sklearn_conformance.py`.
 
-### 6. Performance regression (low leverage today, useful when the codebase grows)
+### 6. ✓ Performance regression baseline
 
-Track wall time on a reference workload — e.g., ATE fit on n=10000 rows, depth=4, 200 rounds — across commits. Not a unit test; a separate benchmark script that gets run periodically (or on PRs) and writes results to a CSV. We're not going to spend a day on this now, but the entry point should exist so it's cheap to extend.
+Standalone bench script at `tests/regression/bench.py` that times an ATE fit on a fixed reference workload (n=8000, 200 trees of depth 4) and appends one row to a `bench_results.csv` with timestamp, git SHA, host, and Python/platform info. Run manually before/after performance-sensitive changes — the CSV gives a within-host trend. Not a unit test; the suite is fast enough that we don't need a perf gate yet.
 
 ## Testing infrastructure decisions
 
@@ -67,8 +69,9 @@ Track wall time on a reference workload — e.g., ATE fit on n=10000 rows, depth
 
 ## What's next
 
-Top three layers landed in commit. Remaining priorities:
+All six original layers shipped. Future work:
 
-1. **(4) hypothesis property tests** — start with linearity-in-m and reproducibility-with-seed. Catches bugs in the tracer arithmetic and any future stochastic backend changes.
-2. **(5) sklearn `check_estimator`** — opt out of the truly-N/A checks explicitly so any new failure is a real bug. Probably ~half a day to wire up.
-3. **(6) performance regression** — only worth doing once the codebase grows; for now the active suite runs in <15 seconds total.
+- **CI**: wire up GitHub Actions so the suite runs on every PR. The Quarto docs site already has a CI workflow; mirror that for tests.
+- **`@pytest.mark.slow`**: introduce when the suite passes ~30 s. Right now (~15 s end-to-end on a laptop) it's not worth the indirection.
+- **Numerical baselines for KL / Bernoulli / BoundedSquared losses**: the regression baseline currently pins ATE / ATT-partial / LASE-partial only. Add one for each non-default loss to catch loss-engine regressions.
+- **Hypothesis profile tuning**: the property suite uses default hypothesis settings (~100 examples each). For the slower ones (`test_fit_is_reproducible_given_random_state`) we cap at 10. If a property test ever finds a bug, dial up `max_examples` for that test specifically.

@@ -4,7 +4,7 @@ title: "Estimands"
 
 {{< include _setup.qmd >}}
 
-An **estimand** in `rieszboost` is a self-contained description of the linear functional you want to fit. It carries (a) the column names $\alpha$ is indexed by, (b) any per-row payload columns $m$ needs (e.g. pre-sampled treatments for stochastic interventions), and (c) the opaque `m(z, alpha)` callable itself. The `RieszBooster` reads this off the estimand object — there's no separate `feature_keys=` argument.
+An `Estimand` describes the linear functional you want to fit. It holds three pieces of information: the column names $\alpha$ is indexed by (`feature_keys`), any per-row payload columns $m$ needs such as pre-sampled treatments for stochastic interventions (`extra_keys`), and the `m(z, alpha)` callable.
 
 This page covers the six built-in factories and how to write your own.
 
@@ -19,7 +19,7 @@ This page covers the six built-in factories and how to write your own.
 | `LocalShift(delta, threshold, ...)` | $\mathbf{1}\{a < \text{threshold}\} \cdot (\alpha(a + \delta, x) - \alpha(a, x))$ | LASE *partial parameter*; same caveat as ATT. See `examples/lee_schuler/continuous_dgp.py`. |
 | `StochasticIntervention(samples_key, ...)` | $\frac{1}{K} \sum_k \alpha(a'_k, x)$ | IPSI via Monte Carlo over the intervention density — see [`examples/stochastic_intervention.py`](https://github.com/alejandroschuler/rieszboost/blob/main/examples/stochastic_intervention.py) |
 
-Same call sites in both languages — kwargs match.
+The R and Python factories take the same arguments.
 
 ::: {.panel-tabset group="lang"}
 
@@ -46,7 +46,7 @@ LocalShift(delta = 0.3, threshold = 0.7)
 
 ## Stochastic intervention: pre-sample, then fit
 
-`StochasticIntervention` is the IPSI workhorse. It needs a per-row list of treatment values drawn from your intervention density. Build that column once, before fitting.
+`StochasticIntervention` needs a list of treatment values drawn from the intervention density on each row. Build that column once before fitting.
 
 ::: {.panel-tabset group="lang"}
 
@@ -96,16 +96,16 @@ mean(booster$predict(df))
 
 :::
 
-The `extra_keys` field on the estimand declares which payload columns to pull through; in this case it's `("shift_samples",)`. `RieszBooster` handles the wiring.
+`StochasticIntervention` sets `extra_keys=("shift_samples",)` so `RieszBooster.fit(df)` pulls that column through to `m` along with the features.
 
 ## Custom estimands
 
-If none of the built-ins fit your functional, write `m(z, alpha)` directly and wrap it in an `Estimand`. The library traces $m$ symbolically to extract the linear-form structure.
+To fit a functional not covered by the built-ins, write `m(z, alpha)` and wrap it in an `Estimand`. The library traces $m$ to extract the linear-form structure.
 
-The rule: $m$ must be a **finite linear combination of point evaluations of $\alpha$**, built only with `+`, `-`, scalar `*`, and calls to `alpha(...)`. Anything outside that algebra (squaring, adding constants, integrals) raises immediately.
+$m$ must be a finite linear combination of point evaluations of $\alpha$, built with `+`, `-`, scalar `*`, and calls to `alpha(...)`. Squaring, adding constants, integrals, and other non-linear operations raise.
 
 ::: {.callout-note title="Python-only"}
-Custom `m()` requires the symbolic tracer, which is currently Python-only. R users have two options: (1) use a built-in factory, or (2) define your `m()` in Python and call it from R via reticulate. See [r-interface](r-interface.qmd) for the recipe.
+Custom `m()` is Python-only. From R, define `m` in Python via `reticulate::py_run_string` and pass the resulting `Estimand` to `RieszBooster$new(estimand=...)`. See the [R interface page](r-interface.qmd) for the recipe.
 :::
 
 ```{python}
@@ -125,7 +125,7 @@ est = Estimand(
 print(est)
 ```
 
-The estimand is now a first-class object you can pass to `RieszBooster`:
+Pass the estimand to `RieszBooster`:
 
 ```{python}
 rng = np.random.default_rng(0)
@@ -140,7 +140,7 @@ booster.predict(df)[:5]
 
 ### What the tracer rejects
 
-The error messages are designed to point you at the offending operation. A few examples:
+The errors point at the offending operation:
 
 ```{python}
 #| error: true
@@ -160,11 +160,11 @@ def bad_constant(z, alpha):
 trace(Estimand(feature_keys=("a", "x"), m=bad_constant), {"a": 0, "x": 0.5})
 ```
 
-If the operation you actually want is genuinely outside the linear-form algebra (a derivative or integral of $\alpha$, say), you've left the regime the augmented-data approach can handle. The roadmap includes a slow path for general $m$ via base-learner gradient boosting; today, restate the estimand if possible (e.g. Monte-Carlo-sample the intervention density and use `StochasticIntervention`).
+For estimands with integrals or derivatives of $\alpha$ (outside the finite-linear-form algebra), Monte-Carlo-sample and use `StochasticIntervention` if applicable.
 
 ## Feature keys, extra keys
 
-For reference, the `Estimand` dataclass has four fields:
+The `Estimand` dataclass has these fields:
 
 ```python
 @dataclass
@@ -177,4 +177,4 @@ class Estimand:
                                        # round-trips through save / load
 ```
 
-`RieszBooster` reads `feature_keys + extra_keys` off the estimand at fit time to construct the row dicts passed to `m`. Stick to that contract and the booster handles everything else.
+`RieszBooster` reads `feature_keys` and `extra_keys` to assemble the row dicts passed to `m`.

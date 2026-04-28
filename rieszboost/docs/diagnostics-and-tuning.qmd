@@ -4,13 +4,13 @@ title: "Diagnostics and tuning"
 
 {{< include _setup.qmd >}}
 
-Tuning $\hat\alpha$ is different from tuning a regression model. The Riesz loss has no held-out reference (you don't observe $\alpha_0$ on real data), so the validation curve from `early_stopping_rounds` is *the* signal during training. After the fit, `.diagnose()` surfaces failure modes — extreme tail values, near-positivity violations, single-point extrapolation — that often matter more for downstream variance than the bulk fit quality.
+You don't observe $\alpha_0$ on real data, so the validation curve from `early_stopping_rounds` is the only training-time signal. After fitting, `.diagnose()` reports magnitude statistics and warnings about extreme tail values, near-positivity violations, and single-point extrapolation. Those warnings often matter more for downstream variance than the bulk fit quality.
 
-This page walks through `.diagnose()` on a deliberately under-tuned booster (so the warnings actually fire) and then maps each warning to the hyperparameter that fixes it.
+This page walks through `.diagnose()` on an under-tuned booster (so the warnings fire) and maps each warning to the hyperparameter that fixes it.
 
 ## Setup: a low-overlap dataset
 
-We push the propensity close to 0 in part of the covariate space — exactly the regime where naive inverse-propensity weighting falls apart and where the booster's tuning matters most.
+We push the propensity close to 0 in part of the covariate space. This is where naive inverse-propensity weighting falls apart.
 
 ::: {.panel-tabset group="lang"}
 
@@ -23,7 +23,6 @@ from rieszboost import RieszBooster, ATE
 rng = np.random.default_rng(0)
 n = 2000
 x = rng.uniform(0, 1, n)
-# Aggressive logit so π(x) ≈ 0 for small x
 pi = 1 / (1 + np.exp(-(8.0 * x - 5.0)))
 a = rng.binomial(1, pi)
 df = pd.DataFrame({"a": a.astype(float), "x": x})
@@ -45,9 +44,9 @@ cat(sprintf("min pi(x) = %.3f, fraction with pi(x) < 0.05 = %.2f\n",
 
 :::
 
-## A deliberately greedy fit
+## A greedy fit
 
-Deep trees, no regularization, no early stopping — almost guaranteed to extrapolate badly in the low-π region.
+Deep trees, no regularization, no early stopping. This will extrapolate badly in the low-π region.
 
 ::: {.panel-tabset group="lang"}
 
@@ -57,9 +56,9 @@ Deep trees, no regularization, no early stopping — almost guaranteed to extrap
 greedy = RieszBooster(
     estimand=ATE(),
     n_estimators=300,
-    learning_rate=0.3,    # too high
-    max_depth=8,          # too deep
-    reg_lambda=0.0,       # no L2
+    learning_rate=0.3,
+    max_depth=8,
+    reg_lambda=0.0,
 ).fit(df)
 
 print(greedy.diagnose(df).summary())
@@ -85,18 +84,18 @@ cat(greedy$diagnose(df)$summary)
 
 The summary has three parts.
 
-**Magnitude block.** RMS, mean, min/max, and `|alpha|` quantiles. The 99th percentile and the max are the load-bearing numbers. Healthy fits typically have max $\le$ a few times the 99th percentile. Max far above the 99th percentile is the signature of a **single-point extrapolation outlier** — one leaf in the boosted forest is far from any training data and the linear extrapolation has run away.
+**Magnitude block.** RMS, mean, min/max, and `|alpha|` quantiles. The 99th percentile and the max are the load-bearing numbers. Healthy fits have max no more than a few times the 99th percentile. Max far above the 99th percentile signals a single-point extrapolation outlier: one leaf is far from any training data and its prediction has run away.
 
-**Extreme rows.** Rows where $|\hat\alpha|$ exceeds `extreme_threshold` (default 30). The downstream IF estimator's variance is dominated by the largest few weights, so even 1% of rows over the threshold is enough to inflate confidence intervals.
+**Extreme rows.** Rows where $|\hat\alpha|$ exceeds `extreme_threshold` (default 30). Downstream IF estimator variance is dominated by the largest few weights, so even 1% of rows over the threshold inflates confidence intervals.
 
-**Warnings block.** Two automatic checks fire when `.diagnose()` thinks something is wrong:
+**Warnings.** Two automatic checks:
 
-1. *"X% of rows have $|\hat\alpha| >$ threshold — possible near-positivity violation."* Either the data has genuine near-positivity (in which case truncate `extreme_threshold` lower and report the loss-of-overlap honestly) or the booster is over-fitting (tune as below).
-2. *"max $|\hat\alpha|$ is >10× the 99th percentile — likely a single extrapolation outlier."* The booster found a leaf with no nearby training data and extrapolated. Tighten trees, increase `reg_lambda`, or stop earlier.
+1. *"X% of rows have $|\hat\alpha| >$ threshold — possible near-positivity violation."* Either the data has genuine near-positivity (truncate `extreme_threshold` and report the loss of overlap), or the booster is over-fitting (tune as below).
+2. *"max $|\hat\alpha|$ is >10× the 99th percentile — likely a single extrapolation outlier."* The booster found a leaf with no nearby training data. Tighten trees, increase `reg_lambda`, or stop earlier.
 
 ## A tuned fit
 
-Same data, sane hyperparameters, with early stopping on a held-out split.
+Same data with sensible hyperparameters and early stopping.
 
 ::: {.panel-tabset group="lang"}
 
@@ -140,28 +139,28 @@ cat(tuned$diagnose(df)$summary)
 
 :::
 
-The greedy fit's max $|\hat\alpha|$ shrinks by an order of magnitude, the extreme-row count drops, and the warnings clear (or at least become honest signals about the data rather than the fit).
+The max $|\hat\alpha|$ shrinks by an order of magnitude, the extreme-row count drops, and the warnings clear.
 
 ## Tuning recipe
 
-| Knob | Default | When to change | Why |
+| Knob | Default | When to change | Effect |
 |---|---|---|---|
-| `max_depth` | 4 | Drop to 2–3 if you see extrapolation outliers | Shallow trees can't carve out a high-magnitude leaf for a single point. |
-| `learning_rate` | 0.05 | Drop to 0.02 for harder problems | Smaller updates mean each tree contributes less; the ensemble has more trees to recover. Pair with higher `n_estimators`. |
-| `n_estimators` + `early_stopping_rounds` | 200, None | Always: set `n_estimators` generously (1000-2000), `early_stopping_rounds=20` | The validation split picks the right size for you. The default of 200 is for unit tests, not real fits. |
-| `validation_fraction` | 0.0 | 0.2 whenever you set `early_stopping_rounds` | Internal split for early stopping. (Or pass `eval_set=` explicitly.) |
-| `reg_lambda` | 1.0 | Bump to 5–10 for low-overlap data | xgboost L2 on leaf weights — directly damps the magnitude of any single leaf. |
-| `subsample` | 1.0 | Try 0.5–0.8 with very large $n$ | Stochastic boosting; sometimes helps, often doesn't matter for tabular Riesz problems. |
+| `max_depth` | 4 | Drop to 2–3 for extrapolation outliers | Shallow trees can't carve out a high-magnitude leaf for a single point. |
+| `learning_rate` | 0.05 | Drop to 0.02 for harder problems | Smaller updates per tree; pair with higher `n_estimators`. |
+| `n_estimators` + `early_stopping_rounds` | 200, `None` | Set `n_estimators=1000-2000` and `early_stopping_rounds=20` | The validation split picks the iteration count. |
+| `validation_fraction` | 0.0 | Set to 0.2 with `early_stopping_rounds` | Internal split for early stopping. Alternative: pass `eval_set=` explicitly. |
+| `reg_lambda` | 1.0 | Bump to 5–10 for low-overlap data | xgboost L2 on leaf weights; damps the magnitude of any single leaf. |
+| `subsample` | 1.0 | Try 0.5–0.8 with very large $n$ | Stochastic boosting. |
 
-For the backend itself, the most consequential knobs are exposed on `XGBoostBackend`:
+`XGBoostBackend` exposes two more knobs:
 
-| Knob (on `XGBoostBackend(...)`) | Default | When to change |
+| Knob | Default | When to change |
 |---|---|---|
-| `gradient_only` | `False` | `True` to match Lee-Schuler Algorithm 2 / Friedman 2001 exactly. Empirically *worse* than the default at matched hyperparameters; reach for it only when reproducing the reference paper. |
-| `hessian_floor` | `2.0` | Almost never. Floors the per-row Hessian on counterfactual rows so leaf-weight Newton steps stay stable. The default matches the natural Hessian of original-data rows; lower it only with reason. |
+| `gradient_only` | `False` | Set `True` to reproduce Lee-Schuler Algorithm 2 / Friedman 2001 exactly. |
+| `hessian_floor` | `2.0` | Lower bound on the per-row Hessian. The default matches the natural Hessian of original-data rows. |
 
-See [backends and losses](backends-and-losses.qmd) for the full backend story.
+See [backends and losses](backends-and-losses.qmd) for the backend protocol.
 
-## A note on what `.diagnose()` is *not*
+## What `.diagnose()` does not do
 
-It does not estimate the closed-form $\alpha_0$ to compare against — there isn't one in general. It does not decide whether your sample size is enough. It is a sanity check on the fitted object and a smoke alarm for two specific failure modes (positivity, outlier extrapolation). For the actual quality of the fit, the held-out Riesz loss (`best_score_`) is the number to track during tuning, and the downstream estimator's bootstrap CI is the number to report.
+It does not estimate $\alpha_0$ for comparison; that closed form is generally unavailable. It does not assess sample size. It checks magnitude and the two failure modes above. For fit quality, track the held-out Riesz loss (`best_score_`). For downstream confidence intervals, use the bootstrap on the plug-in estimator.

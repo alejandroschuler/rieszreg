@@ -4,11 +4,11 @@ title: "scikit-learn integration"
 
 {{< include _setup.qmd >}}
 
-`RieszBooster` is an `sklearn.base.BaseEstimator`. Anything in `sklearn.model_selection` works on it without adapter code: cross-fitting, hyperparameter search, pipelines, model cloning. **There is intentionally no bespoke `crossfit()` function** — the design rule is to lean on scikit-learn's well-tested machinery rather than reinvent it.
+`RieszBooster` is an `sklearn.base.BaseEstimator`. It composes with `cross_val_predict`, `GridSearchCV`, `Pipeline`, `clone`, and the rest of `sklearn.model_selection`.
 
-## Cross-fitting for downstream inference
+## Cross-fitting
 
-Plug-in $\hat\alpha$ in a one-step / TMLE / DML estimator must be **out-of-fold** to avoid bias from over-fitting. `cross_val_predict` does this for any sklearn estimator.
+Plug-in $\hat\alpha$ in a one-step / TMLE / DML estimator must be out-of-fold. Use `cross_val_predict`:
 
 ::: {.panel-tabset group="lang"}
 
@@ -49,9 +49,8 @@ pi <- 1 / (1 + exp(-(-0.02 * x - x^2 + 4 * log(x + 0.3) + 1.5)))
 a  <- rbinom(n, 1, pi)
 df <- data.frame(a = as.numeric(a), x = x)
 
-# The cleanest cross-fit from R is to call the sklearn function via
-# reticulate, passing the underlying Python estimator object. The R6 wrapper
-# exposes it as `$py`.
+# Call sklearn directly via reticulate, passing the underlying Python
+# estimator from `booster$py`.
 sk_ms <- reticulate::import("sklearn.model_selection", convert = FALSE)
 booster <- RieszBooster$new(
   estimand = ATE(),
@@ -69,11 +68,11 @@ length(alpha_oof); head(alpha_oof)
 
 :::
 
-Each fold runs its own internal early-stopping split — there is nothing to thread between folds.
+Each fold runs its own internal early-stopping split.
 
-## Hyperparameter search with `GridSearchCV`
+## Hyperparameter search
 
-Score is **negative** held-out Riesz loss (sklearn convention: higher is better), so `GridSearchCV` selects the configuration with the smallest loss without any sign-flipping on your end.
+`RieszBooster.score(X)` returns negative held-out Riesz loss, so `GridSearchCV` selects the configuration with the lowest loss.
 
 ::: {.panel-tabset group="lang"}
 
@@ -97,7 +96,7 @@ grid = GridSearchCV(
 print("best params:", grid.best_params_)
 print(f"best score (neg Riesz loss): {grid.best_score_:.4f}")
 
-best = grid.best_estimator_  # already a refitted RieszBooster
+best = grid.best_estimator_
 alpha_hat = best.predict(df)
 alpha_hat[:5]
 ```
@@ -129,18 +128,16 @@ cat(sprintf("best score (neg Riesz loss): %.4f\n",
 
 :::
 
-## What composability buys you
+## Other sklearn integrations
 
-Because `RieszBooster` is a regular `BaseEstimator`:
+`RieszBooster` exposes the standard `BaseEstimator` interface:
 
-- **`clone(booster)`** returns a fresh unfitted copy with the same hyperparameters — useful when you want to fit the same configuration on multiple data subsets.
-- **`Pipeline`** can wrap a feature-engineering step in front of the booster.
-- **`HalvingGridSearchCV`, `RandomizedSearchCV`, `BayesSearchCV`** (skopt) all work without modification.
-- **`get_params()` / `set_params()`** introspect/mutate the configuration; this is what the search classes use under the hood.
+- `clone(booster)` returns a fresh unfitted copy with the same hyperparameters.
+- `Pipeline` wraps a feature-engineering step in front of the booster.
+- `HalvingGridSearchCV`, `RandomizedSearchCV`, `BayesSearchCV` (skopt) work without modification.
+- `get_params()` / `set_params()` are used by the search classes to introspect and mutate the configuration.
 
-The general principle: anywhere scikit-learn's documentation says "any sklearn estimator," `RieszBooster` slots in.
+## See also
 
-## Where next
-
-- For an end-to-end EEE estimator that consumes `alpha_oof` as the Riesz weight, see [`examples/lee_schuler/binary_dgp.py`](https://github.com/alejandroschuler/rieszboost/blob/main/examples/lee_schuler/binary_dgp.py) in the repo.
-- For tuning intuition (which knobs matter for $\hat\alpha$ specifically), see [diagnostics and tuning](diagnostics-and-tuning.qmd).
+- [`examples/lee_schuler/binary_dgp.py`](https://github.com/alejandroschuler/rieszboost/blob/main/examples/lee_schuler/binary_dgp.py) builds an EEE estimator using `cross_val_predict` to produce out-of-fold $\hat\alpha$.
+- [Diagnostics and tuning](diagnostics-and-tuning.qmd) covers which hyperparameters to vary in a grid search.
