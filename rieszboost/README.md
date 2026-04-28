@@ -113,6 +113,7 @@ More planned: stochastic-shift / IPSI variants. Full LMTP-style longitudinal int
 - Fast path: data augmentation + xgboost custom objective (gradient `2aF + b`, Hessian `2a`).
 - Slow general path: Friedman MART on the augmented dataset with any sklearn-compatible base learner — `rieszboost.general_fit(..., base_learner=lambda: KernelRidge(...))`.
 - ATE / ATT / TSM / AdditiveShift estimand factories.
+- R wrapper via reticulate — bitwise-identical predictions across languages.
 - `init={0, float, "m1"}` initialization.
 - Early stopping on held-out Riesz loss (`valid_rows=` + `early_stopping_rounds=`).
 - K-fold cross-fitting (`rieszboost.crossfit(...)`) with optional inner-split early stopping.
@@ -122,7 +123,6 @@ More planned: stochastic-shift / IPSI variants. Full LMTP-style longitudinal int
 
 - lightgbm engine adapter.
 - Stochastic-intervention / IPSI estimands (slow path with integral evaluation).
-- R wrapper via reticulate.
 - Examples gallery (Lalonde, NHEFS shift, two-stage longitudinal).
 - Bregman extension (Hines & Miles / Kato 2026).
 
@@ -136,10 +136,53 @@ See `CLAUDE.md` and `~/.claude/plans/i-d-like-to-write-crystalline-raven.md` for
 - [Hines & Miles (2510.16127)](https://arxiv.org/abs/2510.16127) and [Kato (2601.07752)](https://arxiv.org/abs/2601.07752) — Bregman-divergence generalization.
 - [van der Laan et al. (2501.11868)](https://arxiv.org/abs/2501.11868) — auto-DML for smooth functionals beyond linear.
 
+## R interface
+
+Same library, callable from R via reticulate. Install Python rieszboost into a venv first, then point R at it:
+
+```r
+# from the repo root
+Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))
+pkgload::load_all("r/rieszboost")   # or install from r/rieszboost/
+
+df <- data.frame(a = ..., x = ...)
+n_tr <- floor(0.8 * nrow(df))
+
+fit <- fit_riesz(
+  data = df[1:n_tr, ],
+  m = ATE(treatment = "a", covariates = "x"),
+  feature_keys = c("a", "x"),
+  valid_data = df[(n_tr + 1):nrow(df), ],
+  num_boost_round = 2000L,
+  early_stopping_rounds = 20L,
+  learning_rate = 0.05,
+  max_depth = 3L,
+  reg_lambda = 10
+)
+alpha_hat <- predict(fit, df)
+
+# Cross-fitting and diagnostics work the same way:
+res <- crossfit(df, ATE("a", "x"), c("a", "x"), n_folds = 5L,
+                early_stopping_inner_split = 0.2,
+                num_boost_round = 1000L, early_stopping_rounds = 20L,
+                learning_rate = 0.05, max_depth = 3L, reg_lambda = 10)
+print(diagnose_alpha(booster = fit, data = df, m = ATE("a", "x")))
+```
+
+R-side and Python-side predictions are bitwise-identical on the same data.
+
 ## Tests
 
 ```sh
+# Python
 .venv/bin/python -m pytest python/tests -v
+
+# R (run from repo root)
+Rscript -e '
+  Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))
+  pkgload::load_all("r/rieszboost")
+  testthat::test_dir("r/rieszboost/tests/testthat")
+'
 ```
 
 ## License

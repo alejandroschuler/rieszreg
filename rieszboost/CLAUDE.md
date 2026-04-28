@@ -11,7 +11,7 @@ General-purpose gradient-boosting library for Riesz representers, implementing L
 - `python/` — primary implementation. Library is `rieszboost/`; tests in `tests/`. Build/dependency config in `pyproject.toml`.
 - `reference/` — arXiv source for the relevant papers (gitignored). See `reference/README.md` for the index and refetch script.
 - `.venv/` — local Python venv (gitignored once we add a top-level `.gitignore`).
-- `r/` — R wrapper via reticulate (not yet built; reuse the Python core when added).
+- `r/rieszboost/` — R wrapper via reticulate. Same API as Python: `fit_riesz`, `predict.RieszBooster`, `crossfit`, `diagnose_alpha`, and the `ATE`/`ATT`/`TSM`/`AdditiveShift` factories. Custom user-supplied m() must currently be written in Python — the LinearForm tracer is Python-only. Run R tests via `pkgload::load_all` + `testthat::test_dir`; the parity test confirms R/Python predictions are bitwise-identical.
 
 ## Run tests
 
@@ -38,7 +38,8 @@ General-purpose gradient-boosting library for Riesz representers, implementing L
 - Early stopping on held-out Riesz loss in both engines; `best_iteration` + predict-with-best-iteration baked in.
 - K-fold cross-fitting (`crossfit.crossfit`) with optional inner-split early stopping.
 - Diagnostics (`diagnostics.diagnose`) — RMS, |α| quantiles, extreme-row count, near-positivity and outlier-extrapolation warnings, held-out Riesz loss.
-- 31 tests passing, including end-to-end ATE/ATT Riesz recovery on the Lee-Schuler binary-treatment DGP (ATE RMSE 0.64 at n=4000, ATT RMSE 0.33 — both better than Lee-Schuler's reported numbers at n=500).
+- 31 Python tests + 13 R tests passing, including end-to-end ATE/ATT Riesz recovery on the Lee-Schuler binary-treatment DGP (ATE RMSE 0.64 at n=4000, ATT RMSE 0.33 — both better than Lee-Schuler's reported numbers at n=500) and a R↔Python prediction-parity check.
+- R wrapper via reticulate — same surface as Python.
 
 ## Longitudinal / LMTP
 
