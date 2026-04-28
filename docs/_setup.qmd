@@ -1,0 +1,32 @@
+```{r}
+#| include: false
+# Resolve the project root — works for top-level and nested .qmd pages.
+.project_root <- Sys.getenv("QUARTO_PROJECT_DIR", unset = NA)
+if (is.na(.project_root) || .project_root == "") {
+  # Fallback: walk up from the qmd's directory looking for _quarto.yml.
+  .here <- normalizePath(getwd(), mustWork = FALSE)
+  while (.here != "/" && !file.exists(file.path(.here, "_quarto.yml"))) {
+    .here <- dirname(.here)
+  }
+  .project_root <- .here
+}
+
+# Point reticulate at the project venv. The rieszboost venv currently holds
+# rieszreg + rieszboost + krrr (editable installs).
+if (Sys.getenv("RETICULATE_PYTHON") == "") {
+  for (cand in c(file.path(.project_root, "../.venv"),
+                 file.path(.project_root, "../rieszboost/.venv"))) {
+    if (dir.exists(cand)) {
+      reticulate::use_virtualenv(normalizePath(cand, mustWork = FALSE), required = TRUE)
+      break
+    }
+  }
+}
+
+# Dev-load the rieszboost R wrapper. krrr's R wrapper is loaded on demand
+# by pages that use it.
+suppressMessages(pkgload::load_all(
+  file.path(.project_root, "../rieszboost/r/rieszboost"),
+  quiet = TRUE
+))
+```

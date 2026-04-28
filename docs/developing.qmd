@@ -1,0 +1,126 @@
+---
+title: "Developing"
+---
+
+## Repo layout
+
+```
+RieszReg/
+├── rieszreg/                 # meta-package: shared abstractions
+│   ├── python/rieszreg/
+│   │   ├── __init__.py            # public API surface
+│   │   ├── estimands/             # Estimand + 6 factories + tracer
+│   │   ├── losses/                # LossSpec Protocol + 4 losses
+│   │   ├── augmentation.py        # build_augmented + AugmentedDataset
+│   │   ├── backends/base.py       # Backend Protocol, FitResult, Predictor + loader registry
+│   │   ├── diagnostics.py         # Diagnostics dataclass + diagnose()
+│   │   ├── estimator.py           # RieszEstimator (sklearn BaseEstimator)
+│   │   └── testing/               # canonical DGPs, conformance, parity utilities
+│   └── r/rieszreg/                # shared R6 base class (planned)
+├── rieszboost/               # gradient-boosting backends + RieszBooster
+│   ├── python/rieszboost/
+│   │   ├── estimator.py           # RieszBooster(RieszEstimator)
+│   │   └── backends/{xgboost,sklearn}.py
+│   └── r/rieszboost/              # R6 wrapper
+├── krrr/                     # kernel-ridge backend + KernelRieszRegressor
+│   ├── python/krrr/
+│   │   ├── estimator.py           # KernelRieszRegressor(RieszEstimator)
+│   │   ├── backend.py             # KernelRidgeBackend
+│   │   ├── kernels.py             # kernel algebra
+│   │   └── solvers/               # direct, nystrom_cg, rff, falkon
+│   └── r/krrr/                    # R6 wrapper
+├── docs/                     # this user guide (Quarto website)
+├── reference/                # arXiv paper index
+├── RIESZREG_DESIGN.md        # meta-package design + learner-package contract
+└── README.md
+```
+
+## Run tests
+
+```sh
+.venv/bin/python -m pytest rieszboost/python/tests -v
+.venv/bin/python -m pytest krrr/python/tests -v
+
+Rscript -e '
+  Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))
+  pkgload::load_all("rieszboost/r/rieszboost")
+  testthat::test_dir("rieszboost/r/rieszboost/tests/testthat")
+'
+```
+
+`xgboost` requires `libomp` on macOS: `brew install libomp` once.
+
+## Tracer
+
+The user writes `m(z, alpha)` with `+`, `-`, scalar `*`, and calls to `alpha(...)`. `rieszreg.estimands.tracer` passes a `Tracer` in as `alpha`; each call returns a single-term `LinearForm`, and Python's operator overloading composes them. The result has `.as_pairs()` returning `[(coef, point), ...]`, which `build_augmented` consumes. Operations outside the linear-form algebra (squaring, integrals, constants) raise at trace time.
+
+## Adding an estimand factory
+
+Estimand factories belong in `rieszreg.estimands.base`, not in the implementation packages. A factory returns an `Estimand`:
+
+```python
+def MyEstimand(param, treatment="a", covariates=("x",)) -> Estimand:
+    cov = tuple(covariates)
+    def m(z, alpha):
+        x_kwargs = {k: z[k] for k in cov}
+        return alpha(**{treatment: param, **x_kwargs})
+    return Estimand(feature_keys=(treatment, *cov), m=m, name=f"MyEstimand({param})",
+                    factory_spec={"factory": "MyEstimand", "args": {"param": param, ...}})
+```
+
+Then:
+
+1. Add to `_FACTORY_REGISTRY` in `rieszreg/python/rieszreg/estimands/base.py` so the round-trip serialization registry knows about it.
+2. Export from `rieszreg/python/rieszreg/__init__.py`.
+3. Add R wrappers in `rieszboost/r/rieszboost/R/rieszboost.R` and `krrr/r/krrr/R/krrr.R` (R wrappers re-export from rieszreg via reticulate).
+4. Update `docs/estimands.qmd` with a row in the built-ins table and a runnable example in both languages.
+5. Add a test under `rieszreg/python/tests/`.
+6. Add a worked example under one of the implementation packages' `examples/`.
+
+## Adding a `LossSpec`
+
+Losses also belong in `rieszreg`, not the backends.
+
+1. Add the class to `rieszreg/python/rieszreg/losses/<name>.py`.
+2. Wire into `rieszreg/python/rieszreg/losses/__init__.py` (export + `loss_from_spec` registry).
+3. Add R wrappers.
+4. Update `docs/losses.qmd` with a runnable example.
+5. Test in `rieszreg/python/tests/`.
+6. Implementation packages whose backend supports the new loss should add a smoke test confirming it works on a small DGP.
+
+## Adding a backend
+
+Implement the `Backend` Protocol from `rieszreg/python/rieszreg/backends/base.py`. One method, `fit_augmented(...)`, returning a `FitResult` whose `predictor` implements `predict_eta` and `predict_alpha`. Register the predictor's loader so save/load round-trip works:
+
+```python
+from rieszreg.backends import register_predictor_loader
+register_predictor_loader("my-kind", MyPredictor.load)
+```
+
+The backend sees an `AugmentedDataset` and a `LossSpec`. It does not need to know about the estimand or the tracer. `XGBoostBackend`, `SklearnBackend`, and `KernelRidgeBackend` are reference implementations.
+
+A new implementation package (e.g. `rieszforest`, `rieszneural`) follows the [contract in RIESZREG_DESIGN.md, Part B](https://github.com/alejandroschuler/RieszReg/blob/main/RIESZREG_DESIGN.md): depend on `rieszreg`, implement the `Backend` Protocol, satisfy the sklearn-conformance subset, contribute docs pages here.
+
+## Living-doc rule
+
+Public-API changes update both `README.md` and the relevant `docs/*.qmd` page in the same commit. On bilingual pages, update both the Python and R tabs.
+
+The pre-commit hook at `.githooks/pre-commit` (currently per-package; a meta-project version is on the roadmap) enforces this. Activate per clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+The hook also greps the staged diff for two doc anti-patterns and blocks if it finds them: design-decision metacommentary (sentences describing the API's negative space, e.g. what's omitted, deferred, or rejected) and AI-flavored hedges (editorial framing, sweeping qualifiers, ornamental noun phrases). Match the [ngboost user guide](https://stanfordmlgroup.github.io/ngboost/intro.html) tone: direct, instructive, short.
+
+For internal refactors that don't touch any signature, test additions, or comment fixes: `git commit --no-verify`.
+
+## Local docs render
+
+```sh
+quarto preview docs/        # live-reload at http://localhost:port
+quarto render docs/         # one-shot build to docs/_site/
+open docs/_site/index.html
+```
+
+Renders take ~30s with the `_freeze/` cache, ~3 minutes cold. Editing a single `.qmd` only re-renders that page.

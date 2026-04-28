@@ -1,0 +1,66 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - "*.qmd"
+    - "backends/*.qmd"
+
+website:
+  title: "RieszReg"
+  description: "Riesz regression for semiparametric inference — user guide."
+  search: true
+  page-navigation: true
+  navbar:
+    right:
+      - icon: github
+        href: https://github.com/alejandroschuler/RieszReg
+        aria-label: GitHub
+  sidebar:
+    style: floating
+    contents:
+      - index.qmd
+      - section: "Concepts"
+        contents:
+          - intro.qmd
+          - estimands.qmd
+          - losses.qmd
+      - section: "Get started"
+        contents:
+          - install.qmd
+          - quickstart.qmd
+      - section: "Usage"
+        contents:
+          - sklearn-integration.qmd
+          - diagnostics.qmd
+          - save-and-load.qmd
+          - r-interface.qmd
+      - section: "Backends"
+        contents:
+          - backends/index.qmd
+          - backends/boosting.qmd
+          - backends/kernel.qmd
+      - developing.qmd
+      - references.qmd
+
+format:
+  html:
+    theme:
+      light: cosmo
+      dark: darkly
+    css: styles.css
+    code-copy: true
+    code-overflow: wrap
+    code-link: true
+    toc: true
+    toc-depth: 3
+    fig-width: 7
+    fig-height: 4.5
+
+# knitr is the default — it executes both {r} chunks natively and {python}
+# chunks via reticulate. Each .qmd that has executable code starts with a
+# hidden setup chunk that points reticulate at a venv with rieszreg,
+# rieszboost, and krrr installed and dev-loads the R wrappers.
+execute:
+  freeze: auto
+  echo: true
+  warning: false

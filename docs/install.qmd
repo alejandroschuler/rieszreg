@@ -1,0 +1,87 @@
+---
+title: "Install"
+---
+
+{{< include _setup.qmd >}}
+
+`rieszreg` holds the shared abstractions; pick at least one implementation package for an actual fitter.
+
+## Python
+
+```sh
+git clone https://github.com/alejandroschuler/RieszReg.git
+cd RieszReg
+python3 -m venv .venv
+.venv/bin/pip install -e rieszreg/python
+.venv/bin/pip install -e rieszboost/python   # gradient boosting backend
+.venv/bin/pip install -e krrr/python         # kernel ridge backend
+```
+
+`rieszboost`'s `XGBoostBackend` requires OpenMP. On macOS:
+
+```sh
+brew install libomp
+```
+
+Linux distributions (and GitHub Actions ubuntu-latest) ship `libgomp1`; no extra step is needed. `krrr` has no system prerequisites; an optional GPU backend uses [`falkon`](https://falkonml.github.io/falkon/) (`pip install -e 'krrr/python[falkon]'`).
+
+### Verify
+
+::: {.panel-tabset group="lang"}
+
+## Python
+
+```{python}
+import rieszreg, rieszboost
+from rieszreg import ATE, RieszEstimator
+from rieszboost import RieszBooster
+print("rieszreg", rieszreg.__version__ if hasattr(rieszreg, '__version__') else "OK")
+print("rieszboost", "OK")
+```
+
+## R
+
+```{r}
+print("rieszboost (R wrapper) OK")
+```
+
+:::
+
+## R wrappers (optional)
+
+The R packages are R6 wrappers that call the Python implementations through [reticulate](https://rstudio.github.io/reticulate/). They do not require any separate algorithmic dependency.
+
+First-time setup:
+
+1. Install the R package dependencies:
+   ```r
+   install.packages(c("reticulate", "R6"))
+   ```
+2. Load the R wrappers. For this guide we dev-load them from the source tree:
+   ```r
+   pkgload::load_all("rieszboost/r/rieszboost")
+   pkgload::load_all("krrr/r/krrr")
+   ```
+3. Point reticulate at the Python venv:
+   ```r
+   use_python_rieszboost(".venv/bin/python")
+   ```
+   Or set the environment variable before R starts:
+   ```sh
+   export RETICULATE_PYTHON=/path/to/RieszReg/.venv/bin/python
+   ```
+
+The R API exposes every built-in estimand, every loss, and the full estimator interface for each backend. The symbolic tracer for custom `m()` is Python-only; see [r-interface](r-interface.qmd) for how to call it from R.
+
+## Tests
+
+```{.bash}
+.venv/bin/python -m pytest rieszboost/python/tests -v
+.venv/bin/python -m pytest krrr/python/tests -v
+
+Rscript -e '
+  Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))
+  pkgload::load_all("rieszboost/r/rieszboost")
+  testthat::test_dir("rieszboost/r/rieszboost/tests/testthat")
+'
+```

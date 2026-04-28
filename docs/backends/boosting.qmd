@@ -1,0 +1,127 @@
+---
+title: "Boosting backend (rieszboost)"
+---
+
+{{< include ../_setup.qmd >}}
+
+`rieszboost` provides two boosting backends and the `RieszBooster` convenience class. `XGBoostBackend` is the default; `SklearnBackend` runs Friedman gradient boosting against any sklearn-compatible base learner.
+
+The augmentation engine produces per-row quadratic ($a$) and linear ($b$) coefficients. Each original row contributes $a=1$, $b=0$; each $(c, p)$ pair from $m(z, \cdot)$ contributes $a=0$, $b=-2c$. The Riesz loss becomes a per-row weighted regression that xgboost handles via its custom-objective interface.
+
+## `XGBoostBackend`
+
+The default. Boosts in η-space; the predictor applies the loss spec's link to convert to α.
+
+```python
+XGBoostBackend(hessian_floor=2.0, gradient_only=False)
+```
+
+`hessian_floor` is the lower bound on the per-row Hessian fed to xgboost. Counterfactual rows have $H = 2a = 0$; without a floor, xgboost's leaf-weight Newton step (`-G/(H+λ)`) is degenerate at those leaves. The default of 2.0 matches the natural Hessian on original rows.
+
+`gradient_only` short-circuits the second-order Hessian and uses $H = 1$ everywhere — first-order gradient boosting (Friedman 2001 / Lee-Schuler Algorithm 2). Set `True` to reproduce the Lee-Schuler reference implementation exactly.
+
+`max_depth`, `reg_lambda`, `subsample`, `learning_rate`, `n_estimators`, and `early_stopping_rounds` are passed through from the `RieszBooster` constructor.
+
+## Tuning recipe
+
+| Knob | Default | When to change | Effect |
+|---|---|---|---|
+| `max_depth` | 4 | Drop to 2–3 for extrapolation outliers | Shallow trees can't carve out a high-magnitude leaf for a single point. |
+| `learning_rate` | 0.05 | Drop to 0.02 for harder problems | Smaller updates per tree; pair with higher `n_estimators`. |
+| `n_estimators` + `early_stopping_rounds` | 200, `None` | Set `n_estimators=1000-2000` and `early_stopping_rounds=20` | The validation split picks the iteration count. |
+| `validation_fraction` | 0.0 | Set to 0.2 with `early_stopping_rounds` | Internal split for early stopping. Alternative: pass `eval_set=` explicitly. |
+| `reg_lambda` | 1.0 | Bump to 5–10 for low-overlap data | xgboost L2 on leaf weights; damps the magnitude of any single leaf. |
+| `subsample` | 1.0 | Try 0.5–0.8 with very large $n$ | Stochastic boosting. |
+
+`XGBoostBackend` exposes two more knobs:
+
+| Knob | Default | When to change |
+|---|---|---|
+| `gradient_only` | `False` | Set `True` to reproduce Lee-Schuler Algorithm 2 / Friedman 2001 exactly. |
+| `hessian_floor` | `2.0` | Lower bound on the per-row Hessian. The default matches the natural Hessian of original-data rows. |
+
+See the [diagnostics page](../diagnostics.qmd) for the warnings each knob addresses.
+
+## `SklearnBackend`
+
+To use a non-tree base learner, pass a `base_learner_factory`: a zero-arg callable returning a fresh sklearn-compatible regressor each round.
+
+The backend implements first-order gradient boosting with closed-form line search. Each round: fit the weak learner to the negative gradient of the Riesz loss, solve for the optimal step size under a quadratic surrogate, update the running prediction.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+
+```{python}
+import numpy as np, pandas as pd
+from sklearn.kernel_ridge import KernelRidge
+from rieszboost import RieszBooster, SklearnBackend
+from rieszreg import ATE
+
+rng = np.random.default_rng(0)
+n = 1000
+x = rng.uniform(0, 1, n)
+pi = 1 / (1 + np.exp(-(8 * x - 4)))
+a = rng.binomial(1, pi)
+df = pd.DataFrame({"a": a.astype(float), "x": x})
+
+booster = RieszBooster(
+    estimand=ATE(),
+    backend=SklearnBackend(lambda: KernelRidge(alpha=1.0, kernel="rbf", gamma=2.0)),
+    n_estimators=80,
+    learning_rate=0.05,
+    early_stopping_rounds=10,
+    validation_fraction=0.2,
+).fit(df)
+
+alpha_hat  = booster.predict(df)
+true_alpha = a / pi - (1 - a) / (1 - pi)
+print(f"corr = {np.corrcoef(alpha_hat, true_alpha)[0,1]:.3f}, "
+      f"RMSE = {np.sqrt(np.mean((alpha_hat - true_alpha)**2)):.3f}")
+```
+
+## R
+
+```{r}
+set.seed(0)
+n  <- 1000
+x  <- runif(n)
+pi <- 1 / (1 + exp(-(8 * x - 4)))
+a  <- rbinom(n, 1, pi)
+df <- data.frame(a = as.numeric(a), x = x)
+
+# Build the Python factory directly via reticulate so each round gets a
+# fresh sklearn object.
+sk_kr <- reticulate::import("sklearn.kernel_ridge", convert = FALSE)
+factory <- reticulate::py_func(function() sk_kr$KernelRidge(alpha = 1.0,
+                                                             kernel = "rbf",
+                                                             gamma = 2.0))
+
+booster <- RieszBooster$new(
+  estimand = ATE(),
+  backend = SklearnBackend(base_learner_factory = factory),
+  n_estimators = 80L,
+  learning_rate = 0.05,
+  early_stopping_rounds = 10L,
+  validation_fraction = 0.2
+)
+booster$fit(df)
+
+alpha_hat  <- booster$predict(df)
+true_alpha <- a / pi - (1 - a) / (1 - pi)
+cat(sprintf("corr = %.3f, RMSE = %.3f\n",
+            cor(alpha_hat, true_alpha),
+            sqrt(mean((alpha_hat - true_alpha)^2))))
+```
+
+:::
+
+`SklearnBackend` is slower than `XGBoostBackend` (no parallel tree splits). Use it when the data is better fit by a non-tree learner (e.g. low-dimensional problems where kernel ridge dominates), or when xgboost is unavailable in your environment.
+
+::: {.callout-tip title="Skipping xgboost"}
+`SklearnBackend` does not import xgboost. The library lazy-imports xgboost only when `XGBoostBackend` is used, so you can run `rieszboost` in xgboost-hostile environments (alpine containers, builds without OpenMP) by passing `backend=SklearnBackend(...)` and never installing xgboost.
+:::
+
+## Reference parity
+
+`rieszboost` cross-checks against [Lee's reference implementation](https://github.com/kaitlynjlee/boosting_for_rr). With `gradient_only=True`, `learning_rate = lr_ref / 2`, and `reg_lambda=0`, predictions match to Pearson 0.998 / 0.986 on the binary-DGP example. See [`rieszboost/examples/lee_schuler/COMPARISON.md`](https://github.com/alejandroschuler/RieszReg/blob/main/rieszboost/examples/lee_schuler/COMPARISON.md) for the full report.

@@ -1,0 +1,41 @@
+# Sibling implementation packages live in their own repos.
+rieszboost/
+krrr/
+
+# Local virtualenvs
+.venv/
+**/.venv/
+
+# Python build artifacts
+__pycache__/
+**/__pycache__/
+*.pyc
+*.egg-info/
+**/*.egg-info/
+.pytest_cache/
+**/.pytest_cache/
+.hypothesis/
+**/.hypothesis/
+build/
+dist/
+
+# Quarto build outputs (the docs/_freeze cache IS committed, on purpose)
+docs/_site/
+docs/.quarto/
+
+# OS / editor cruft
+.DS_Store
+**/.DS_Store
+.vscode/
+.idea/
+
+# R artifacts
+**/.Rhistory
+**/.Rproj.user/
+**/*.Rcheck/
+**/*.tar.gz
+
+# arXiv paper sources are gitignored; the index README + refetch script are committed
+reference/*/
+!reference/.gitignore
+!reference/README.md

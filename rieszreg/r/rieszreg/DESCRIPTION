@@ -1,0 +1,22 @@
+Package: rieszreg
+Type: Package
+Title: Shared Abstractions for Riesz Regression
+Version: 0.0.1
+Authors@R: c(person("Alejandro", "Schuler", role = c("aut", "cre"),
+                    email = "aschuler@berkeley.edu"))
+Description: Shared estimand factories, Bregman-Riesz losses, and the
+    base R6 estimator class used by every implementation package in the
+    RieszReg family (rieszboost, krrr, future). Implementation packages
+    add concrete backends and convenience subclasses; this package holds
+    the abstractions they share.
+License: TBD
+Encoding: UTF-8
+Imports:
+    R6,
+    reticulate (>= 1.30)
+Suggests:
+    testthat (>= 3.0.0),
+    pkgload
+SystemRequirements: Python (>= 3.10), the Python package 'rieszreg'
+Config/testthat/edition: 3
+RoxygenNote: 7.3.0

@@ -1,0 +1,45 @@
+---
+title: "RieszReg"
+subtitle: "Riesz regression for semiparametric inference"
+engine: knitr
+---
+
+The `rieszreg` family estimates the Riesz representer $\alpha_0$ of a linear functional $\theta(P) = \mathbb{E}[m(Z, g_0)]$, the building block of one-step, TMLE, and DML estimators in semiparametric inference.
+
+The meta-package `rieszreg` holds the shared abstractions: `Estimand` factories, Bregman-Riesz `LossSpec`s, the augmentation engine, the `Backend` Protocol, and the sklearn-compatible `RieszEstimator` orchestrator. Implementation packages provide concrete backends:
+
+- [`rieszboost`](backends/boosting.qmd) — gradient boosting (xgboost / sklearn) implementing [Lee & Schuler (arXiv:2501.04871)](https://arxiv.org/abs/2501.04871).
+- [`krrr`](backends/kernel.qmd) — closed-form kernel ridge regression following [Singh (arXiv:2102.11076)](https://arxiv.org/abs/2102.11076).
+
+R and Python predictions are bitwise-identical on the same input. Most pages present every code example in both languages; pick a tab and your choice persists across the site.
+
+## Two ways to compose
+
+```python
+# Convenience class with sensible defaults baked in:
+from rieszboost import RieszBooster
+from rieszreg import ATE
+booster = RieszBooster(estimand=ATE(), n_estimators=200)
+booster.fit(X)
+
+# Or compose explicitly: pick any backend, pass it to RieszEstimator
+from rieszreg import RieszEstimator, ATE, SquaredLoss
+from rieszboost.backends import XGBoostBackend
+est = RieszEstimator(estimand=ATE(), loss=SquaredLoss(), backend=XGBoostBackend())
+est.fit(X)
+```
+
+Both routes are first-class. The convenience class is just `RieszEstimator` with the backend defaulted.
+
+## Pages
+
+- **Concepts.** [What's a Riesz representer](intro.qmd) · [Estimands](estimands.qmd) · [Losses](losses.qmd).
+- **Get started.** [Install](install.qmd) · [Quickstart](quickstart.qmd).
+- **Usage.** [scikit-learn integration](sklearn-integration.qmd) · [Diagnostics](diagnostics.qmd) · [Save and load](save-and-load.qmd) · [R interface](r-interface.qmd).
+- **Backends.** [Overview](backends/index.qmd) · [Boosting](backends/boosting.qmd) · [Kernel](backends/kernel.qmd).
+- [Developing](developing.qmd).
+- [References](references.qmd).
+
+::: {.callout-tip title="Code execution"}
+Every code block in this guide ran at build time. The numbers and figures came from the version of `rieszreg`, `rieszboost`, and `krrr` that produced this page.
+:::
