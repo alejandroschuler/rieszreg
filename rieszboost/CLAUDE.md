@@ -2,11 +2,13 @@
 
 General-purpose gradient-boosting library for Riesz representers, implementing Lee & Schuler ([arXiv:2501.04871](https://arxiv.org/abs/2501.04871)).
 
-## Living-doc rule
+## Living-doc rule (README + docs/)
 
-`README.md` is a living document — update it in the same edit whenever a change touches the public API surface (new estimand factory, new function exported from `rieszboost.__init__`, new engine), the supported feature list, the install/run instructions, or the quickstart example. If a change makes any line in the README false or outdated, the change is not done until the README is fixed. The README is the user-facing contract; CLAUDE.md is the implementation-side notes.
+`README.md` is a living document — update it in the same edit whenever a change touches the public API surface (new estimand factory, new function exported from `rieszboost.__init__`, new backend, new loss), the supported feature list, the install/run instructions, or the quickstart example. If a change makes any line in the README false or outdated, the change is not done until the README is fixed. The README is the user-facing contract; CLAUDE.md is the implementation-side notes.
 
 The README's `## Status` and `## Roadmap` sections must stay current too — when a roadmap item ships, move it to "What works today" (or remove if mentioned elsewhere) **in the same commit**. When scope shifts (an item is dropped, deferred, or replaced by something new), update the roadmap with the rationale. Don't let either section drift behind reality. Same applies to any analogous status table in `examples/README.md`.
+
+The same rule applies to the user guide at `docs/` (Quarto website, knitr engine, deployed to GitHub Pages on every push to main). Any change to the public API surface (Python in `python/rieszboost/` OR R in `r/rieszboost/R/`) must update both `README.md` AND the relevant page in `docs/` in the same edit. On bilingual pages (every page with executable code uses R + Python tabsets via `::: {.panel-tabset group="lang"}`), update BOTH the `{python}` tab and the `{r}` tab — the R wrapper is a first-class citizen, not an afterthought. The pre-commit hook at `.githooks/pre-commit` enforces this — a public-API change with no `docs/*.qmd` or `README.md` change in the same commit is rejected. Activate the hook once per clone with `git config core.hooksPath .githooks`. Bypass only for genuinely doc-irrelevant changes (internal refactor, tests, comments) with `--no-verify`.
 
 ## Per-estimand example rule
 
@@ -37,6 +39,8 @@ R-side mirrors this: R6 classes (`RieszBooster$new(estimand=, loss=, ...)$fit(df
 - `reference/` — arXiv source for the relevant papers (gitignored). See `reference/README.md` for the index and refetch script.
 - `.venv/` — local Python venv (gitignored once we add a top-level `.gitignore`).
 - `r/rieszboost/` — R6 wrapper via reticulate. Construct with `RieszBooster$new(estimand=, loss=, ...)`; `$fit(df)`, `$predict(df)`, `$score(df)`, `$diagnose(df)`. All estimand factories (`ATE()`, `ATT()`, `TSM()`, `AdditiveShift()`, `LocalShift()`, `StochasticIntervention()`) and loss specs (`SquaredLoss()`, `KLLoss()`) and backends (`XGBoostBackend()`, `SklearnBackend()`) are exposed. Custom user-supplied m() must currently be written in Python — the LinearForm tracer is Python-only. Run R tests via `pkgload::load_all` + `testthat::test_dir`; the parity test confirms R/Python predictions are bitwise-identical.
+- `docs/` — Quarto website (user guide). knitr engine (executes `{r}` chunks natively, `{python}` chunks via reticulate). Deployed to GitHub Pages by `.github/workflows/docs.yml` on push to main. Render locally with `quarto preview docs/`; one-shot build to `docs/_site/` with `quarto render docs/`. The `docs/_freeze/` directory IS committed to git (Quarto cache for CI speed); `docs/_site/` and `docs/.quarto/` are gitignored.
+- `.githooks/pre-commit` — enforces the living-doc rule above. Activate per clone with `git config core.hooksPath .githooks`.
 
 ## Run tests
 

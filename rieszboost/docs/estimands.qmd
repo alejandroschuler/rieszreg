@@ -1,0 +1,178 @@
+---
+title: "Estimands"
+---
+
+{{< include _setup.qmd >}}
+
+An **estimand** in `rieszboost` is a self-contained description of the linear functional you want to fit. It carries (a) the column names $\alpha$ is indexed by, (b) any per-row payload columns $m$ needs (e.g. pre-sampled treatments for stochastic interventions), and (c) the opaque `m(z, alpha)` callable itself. The `RieszBooster` reads this off the estimand object — there's no separate `feature_keys=` argument.
+
+This page covers the six built-in factories and how to write your own.
+
+## Built-in factories
+
+| Factory | $m(z, \alpha)$ | Notes |
+|---|---|---|
+| `ATE(treatment, covariates)` | $\alpha(1, x) - \alpha(0, x)$ | Average treatment effect |
+| `ATT(treatment, covariates)` | $a \cdot (\alpha(1, x) - \alpha(0, x))$ | ATT *partial parameter*. Full ATT divides by $P(A=1)$ — combine with a delta-method EIF downstream. |
+| `TSM(level, treatment, covariates)` | $\alpha(\text{level}, x)$ | Treatment-specific mean |
+| `AdditiveShift(delta, ...)` | $\alpha(a + \delta, x) - \alpha(a, x)$ | Continuous-treatment shift effect |
+| `LocalShift(delta, threshold, ...)` | $\mathbf{1}\{a < \text{threshold}\} \cdot (\alpha(a + \delta, x) - \alpha(a, x))$ | LASE *partial parameter*; same caveat as ATT |
+| `StochasticIntervention(samples_key, ...)` | $\frac{1}{K} \sum_k \alpha(a'_k, x)$ | IPSI via Monte Carlo over the intervention density |
+
+Same call sites in both languages — kwargs match.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+
+```{python}
+from rieszboost import (
+    ATE, ATT, TSM, AdditiveShift, LocalShift, StochasticIntervention,
+)
+ATE(treatment="a", covariates=("x",)).name
+TSM(level=1, treatment="a", covariates=("x",)).name
+LocalShift(delta=0.3, threshold=0.7).name
+```
+
+## R
+
+```{r}
+ATE(treatment = "a", covariates = "x")
+TSM(level = 1, treatment = "a", covariates = "x")
+LocalShift(delta = 0.3, threshold = 0.7)
+```
+
+:::
+
+## Stochastic intervention: pre-sample, then fit
+
+`StochasticIntervention` is the IPSI workhorse. It needs a per-row list of treatment values drawn from your intervention density. Build that column once, before fitting.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+
+```{python}
+import numpy as np, pandas as pd
+from rieszboost import RieszBooster, StochasticIntervention
+
+rng = np.random.default_rng(0)
+n = 1000
+x = rng.uniform(0, 1, n)
+a = rng.uniform(0, 1, n)
+df = pd.DataFrame({"a": a, "x": x})
+
+# Modified-treatment policy: a' ~ Normal(a + 0.1, 0.2), 20 samples per row
+df["shift_samples"] = [
+    rng.normal(a_i + 0.1, 0.2, size=20) for a_i in df["a"]
+]
+
+booster = RieszBooster(
+    estimand=StochasticIntervention(samples_key="shift_samples"),
+    n_estimators=200, learning_rate=0.05, max_depth=4,
+).fit(df)
+
+booster.predict(df).mean()
+```
+
+## R
+
+```{r}
+set.seed(0)
+n  <- 1000
+x  <- runif(n); a <- runif(n)
+df <- data.frame(a = a, x = x)
+
+# list-column with 20 samples per row from Normal(a + 0.1, 0.2)
+df$shift_samples <- lapply(df$a, function(a_i) rnorm(20, a_i + 0.1, 0.2))
+
+booster <- RieszBooster$new(
+  estimand = StochasticIntervention(samples_key = "shift_samples"),
+  n_estimators = 200L, learning_rate = 0.05, max_depth = 4L
+)
+booster$fit(df)
+mean(booster$predict(df))
+```
+
+:::
+
+The `extra_keys` field on the estimand declares which payload columns to pull through; in this case it's `("shift_samples",)`. `RieszBooster` handles the wiring.
+
+## Custom estimands
+
+If none of the built-ins fit your functional, write `m(z, alpha)` directly and wrap it in an `Estimand`. The library traces $m$ symbolically to extract the linear-form structure.
+
+The rule: $m$ must be a **finite linear combination of point evaluations of $\alpha$**, built only with `+`, `-`, scalar `*`, and calls to `alpha(...)`. Anything outside that algebra (squaring, adding constants, integrals) raises immediately.
+
+::: {.callout-note title="Python-only"}
+Custom `m()` requires the symbolic tracer, which is currently Python-only. R users have two options: (1) use a built-in factory, or (2) define your `m()` in Python and call it from R via reticulate. See [r-interface](r-interface.qmd) for the recipe.
+:::
+
+```{python}
+from rieszboost import Estimand, RieszBooster
+import numpy as np, pandas as pd
+
+# A weighted contrast: 2x the ATE at level a=2 minus the level at a=1.
+def m_weighted_contrast(z, alpha):
+    return 2.0 * (alpha(a=2, x=z["x"]) - alpha(a=0, x=z["x"])) \
+           - alpha(a=1, x=z["x"])
+
+est = Estimand(
+    feature_keys=("a", "x"),
+    m=m_weighted_contrast,
+    name="WeightedContrast",
+)
+print(est)
+```
+
+The estimand is now a first-class object you can pass to `RieszBooster`:
+
+```{python}
+rng = np.random.default_rng(0)
+df = pd.DataFrame({
+    "a": rng.choice([0, 1, 2], size=500).astype(float),
+    "x": rng.uniform(0, 1, 500),
+})
+
+booster = RieszBooster(estimand=est, n_estimators=100, max_depth=3).fit(df)
+booster.predict(df)[:5]
+```
+
+### What the tracer rejects
+
+The error messages are designed to point you at the offending operation. A few examples:
+
+```{python}
+#| error: true
+from rieszboost import Estimand, RieszBooster, trace
+
+def bad_squared(z, alpha):
+    return alpha(a=1, x=z["x"]) ** 2  # nonlinear in alpha
+
+trace(Estimand(feature_keys=("a", "x"), m=bad_squared), {"a": 0, "x": 0.5})
+```
+
+```{python}
+#| error: true
+def bad_constant(z, alpha):
+    return alpha(a=1, x=z["x"]) + 1.0  # constant offset
+
+trace(Estimand(feature_keys=("a", "x"), m=bad_constant), {"a": 0, "x": 0.5})
+```
+
+If the operation you actually want is genuinely outside the linear-form algebra (a derivative or integral of $\alpha$, say), you've left the regime the augmented-data approach can handle. The roadmap includes a slow path for general $m$ via base-learner gradient boosting; today, restate the estimand if possible (e.g. Monte-Carlo-sample the intervention density and use `StochasticIntervention`).
+
+## Feature keys, extra keys
+
+For reference, the `Estimand` dataclass has four fields:
+
+```python
+@dataclass
+class Estimand:
+    feature_keys: tuple[str, ...]   # columns alpha is indexed by
+    m: Callable[..., Any]           # the linear functional
+    extra_keys: tuple[str, ...] = ()  # per-row payload columns (e.g. shift_samples)
+    name: str = "custom"
+```
+
+`RieszBooster` reads `feature_keys + extra_keys` off the estimand at fit time to construct the row dicts passed to `m`. Stick to that contract and the booster handles everything else.

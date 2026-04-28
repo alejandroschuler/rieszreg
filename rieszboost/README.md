@@ -4,6 +4,8 @@ Gradient boosting for Riesz representers, in **Python** and **R** — directly e
 
 The default backend wraps **xgboost's custom-objective interface**, so the inner loop is the same C++ histogram-based, sparsity-aware, GPU-capable booster the world's fastest tabular learners are built on — no Python-level boosting code in the hot path. Drop in `SklearnBackend(...)` to swap in any sklearn-compatible base learner (`KernelRidge`, MLPs, etc.) when you need a smooth fitter; the xgboost path stays the default precisely because there's nothing faster for tabular Riesz regression. The R package wraps the Python core with bitwise-identical predictions. Jump to the [R quickstart](#quickstart-r) below.
 
+📖 **[User guide](https://alejandroschuler.github.io/rieszboost/)** — narrative reference with executable R + Python examples on every page. (Goes live after the first CI run on `main` + GitHub Pages enable; setup in [docs/developing.qmd](docs/developing.qmd).)
+
 ## Status
 
 v0.0.1 — feature-complete for single-stage Riesz regression. **sklearn-compatible** `RieszBooster` (composes with `GridSearchCV`, `cross_val_predict`, `clone`, `Pipeline`), six built-in estimand factories, two backends (xgboost / sklearn-compatible), pluggable Bregman-loss framework, R6 wrapper. Verified head-to-head against [Lee-Schuler's reference implementation](https://github.com/kaitlynjlee/boosting_for_rr) (see [examples/lee_schuler/COMPARISON.md](examples/lee_schuler/COMPARISON.md)).
@@ -142,6 +144,19 @@ booster = RieszBooster(
 
 `extra_keys` on the estimand declares the payload columns; `RieszBooster.fit(df)` pulls them through automatically.
 
+## Save and load
+
+A fitted booster serializes to a directory containing the model binary plus a JSON metadata sidecar:
+
+```python
+booster.save("my_alpha_hat/")
+# ...
+loaded = RieszBooster.load("my_alpha_hat/")
+np.array_equal(loaded.predict(df), booster.predict(df))  # True
+```
+
+Built-in estimands are reconstructed automatically from metadata. Custom user-defined `Estimand`s require you to pass `estimand=` to `load(...)`. Round-trip works across Python and R — save in one, load in the other.
+
 ## Backends
 
 The default `XGBoostBackend` uses xgboost's custom-objective interface (fast). Swap to `SklearnBackend` to use any sklearn-compatible base learner:
@@ -202,10 +217,9 @@ R-side and Python-side predictions are bitwise-identical on the same data.
 
 Active priorities:
 
-1. **Serialization** — `RieszBooster.save(path)` / `load(path)` so fitted models survive a session, with the metadata sidecar (loss spec, estimand identity, feature_keys, base_score) written alongside the xgboost binary. Round-trip across Python and R.
-2. **Per-estimand worked examples.** Currently `examples/lee_schuler/` covers ATE/ATT/ASE/LASE under their synthetic DGPs. We want one realistic worked example per built-in estimand — Lalonde for ATE, NHEFS for shift, a stochastic-intervention demo for `StochasticIntervention`, etc.
-3. **More Bregman losses.** Currently `SquaredLoss` and `KLLoss`. Logistic / clipped-α losses for representers known to lie in [0, M] would round out the toolkit.
-4. **Testing plan** — see [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md). Property-based tests, numerical regression baselines, sklearn `check_estimator` conformance, backend-equivalence checks, performance regression tracking.
+1. **Per-estimand worked examples.** Currently `examples/lee_schuler/` covers ATE/ATT/ASE/LASE under their synthetic DGPs. We want one realistic worked example per built-in estimand — Lalonde for ATE, NHEFS for shift, a stochastic-intervention demo for `StochasticIntervention`, etc.
+2. **More Bregman losses.** Currently `SquaredLoss` and `KLLoss`. Logistic / clipped-α losses for representers known to lie in [0, M] would round out the toolkit.
+3. **Testing plan** — see [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md). Property-based tests, numerical regression baselines, sklearn `check_estimator` conformance, backend-equivalence checks, performance regression tracking.
 
 Considered and dropped:
 

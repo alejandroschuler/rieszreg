@@ -89,6 +89,47 @@ test_that("StochasticIntervention via list-column works from R", {
 })
 
 
+test_that("save / load round-trips a RieszBooster from R", {
+  s <- simulate(400L, seed = 8L)
+  booster <- RieszBooster$new(estimand = ATE("a", "x"),
+                              n_estimators = 30L, learning_rate = 0.1,
+                              max_depth = 3L)
+  booster$fit(s$df)
+  pre <- booster$predict(s$df)
+
+  td <- tempfile()
+  booster$save(td)
+  loaded <- load_riesz_booster(td)
+  post <- loaded$predict(s$df)
+  expect_equal(pre, post, tolerance = 1e-12)
+  unlink(td, recursive = TRUE)
+})
+
+
+test_that("Python-saved RieszBooster loads in R with bitwise-identical predictions", {
+  s <- simulate(400L, seed = 9L)
+  booster <- RieszBooster$new(estimand = ATE("a", "x"),
+                              n_estimators = 30L, learning_rate = 0.1,
+                              max_depth = 3L, random_state = 0L)
+  booster$fit(s$df)
+
+  # Save from R
+  td <- tempfile()
+  booster$save(td)
+
+  # Load from Python directly via reticulate
+  py_mod <- reticulate::import("rieszboost", convert = TRUE)
+  py_loaded <- py_mod$RieszBooster$load(td)
+  py_pd <- reticulate::import("pandas", convert = TRUE)
+  py_df <- py_pd$DataFrame(list(a = s$df$a, x = s$df$x))
+  py_preds <- as.numeric(py_loaded$predict(py_df))
+
+  r_preds <- booster$predict(s$df)
+  expect_equal(r_preds, py_preds, tolerance = 1e-12)
+  unlink(td, recursive = TRUE)
+})
+
+
 test_that("R and Python predictions are bitwise-identical on the same data", {
   s <- simulate(400L, seed = 4L)
   booster <- RieszBooster$new(estimand = ATE("a", "x"),

@@ -26,6 +26,8 @@ class SklearnPredictor:
     loss: LossSpec
     best_iteration: int | None = None
 
+    kind = "sklearn"
+
     def _end(self) -> int:
         if self.best_iteration is not None:
             return self.best_iteration + 1
@@ -41,6 +43,36 @@ class SklearnPredictor:
 
     def predict_alpha(self, features: np.ndarray) -> np.ndarray:
         return np.asarray(self.loss.link_to_alpha(self.predict_eta(features)))
+
+    def save(self, dir_path):
+        """Pickle the per-round learners + steps via joblib.
+
+        Note: sklearn's recommended path is `joblib`. Loading requires the
+        same library versions that produced the file, and any external base
+        learners need to be importable on the load side.
+        """
+        from pathlib import Path
+        import joblib
+        dir_path = Path(dir_path)
+        dir_path.mkdir(parents=True, exist_ok=True)
+        joblib.dump(
+            {"learners": self.learners, "steps": self.steps},
+            dir_path / "predictor.joblib",
+        )
+
+    @classmethod
+    def load(cls, dir_path, base_score: float, loss: LossSpec,
+             best_iteration: int | None) -> "SklearnPredictor":
+        from pathlib import Path
+        import joblib
+        payload = joblib.load(Path(dir_path) / "predictor.joblib")
+        return cls(
+            learners=payload["learners"],
+            steps=payload["steps"],
+            base_score=base_score,
+            loss=loss,
+            best_iteration=best_iteration,
+        )
 
 
 def _line_search(loss: LossSpec, a: np.ndarray, b: np.ndarray, F: np.ndarray, h: np.ndarray) -> float:

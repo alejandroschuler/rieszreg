@@ -59,6 +59,21 @@ class LossSpec(Protocol):
         """Raise if (a, b) violate this loss's domain."""
         ...
 
+    def to_spec(self) -> dict:
+        """Return a JSON-serializable {"type": str, "args": dict} round-trip spec."""
+        ...
+
+
+def loss_from_spec(spec: dict) -> "LossSpec":
+    """Reconstruct a LossSpec from its `to_spec()` dict."""
+    cls_name = spec["type"]
+    args = spec.get("args", {})
+    if cls_name == "SquaredLoss":
+        return SquaredLoss(**args)
+    if cls_name == "KLLoss":
+        return KLLoss(**args)
+    raise ValueError(f"Unknown loss spec type: {cls_name!r}")
+
 
 class SquaredLoss:
     """φ(t) = t². ψ(t) = t². Identity link η = α.
@@ -88,6 +103,9 @@ class SquaredLoss:
 
     def validate_coefficients(self, b):
         return  # any signed b ok
+
+    def to_spec(self) -> dict:
+        return {"type": "SquaredLoss", "args": {}}
 
 
 class KLLoss:
@@ -148,3 +166,6 @@ class KLLoss:
                 "SquaredLoss instead, or restrict to density-ratio estimands "
                 "(TSM, IPSI, etc.)."
             )
+
+    def to_spec(self) -> dict:
+        return {"type": "KLLoss", "args": {"max_eta": self.max_eta}}

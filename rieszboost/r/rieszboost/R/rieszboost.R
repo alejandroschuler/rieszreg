@@ -171,6 +171,23 @@ SklearnBackend <- function(base_learner_factory) {
 #' estimand baked in; standard `$fit(df)`, `$predict(df)`, `$score(df)`.
 #'
 #' @export
+#' Load a RieszBooster from a directory written by `RieszBooster$save()`.
+#'
+#' For built-in estimands, fully reconstructs the estimand from the metadata.
+#' For custom estimands (Python-only), pass `estimand=` explicitly.
+#' @export
+load_riesz_booster <- function(path, estimand = NULL) {
+  args <- list(path = path)
+  if (!is.null(estimand)) args$estimand <- estimand
+  py_obj <- do.call(.module()$RieszBooster$load, args)
+  rb <- RieszBooster$new(estimand = py_obj$estimand,
+                         n_estimators = 1L)  # dummy, replaced below
+  rb$py <- py_obj
+  rb$estimand <- py_obj$estimand
+  rb
+}
+
+
 RieszBooster <- R6::R6Class(
   "RieszBooster",
   public = list(
@@ -234,6 +251,11 @@ RieszBooster <- R6::R6Class(
 
     riesz_loss = function(data) {
       reticulate::py_to_r(self$py$riesz_loss(.df_to_py(data, self$estimand)))
+    },
+
+    save = function(path) {
+      self$py$save(path)
+      invisible(self)
     },
 
     diagnose = function(data, ...) {

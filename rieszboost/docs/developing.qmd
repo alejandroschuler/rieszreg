@@ -1,0 +1,143 @@
+---
+title: "Developing rieszboost"
+---
+
+## Repo layout
+
+```
+rieszboost/
+├── python/
+│   ├── rieszboost/              # the library
+│   │   ├── __init__.py            # public API surface, lazy imports
+│   │   ├── estimator.py           # RieszBooster class (sklearn BaseEstimator)
+│   │   ├── estimand.py            # ATE, ATT, TSM, AdditiveShift,
+│   │   │                          # LocalShift, StochasticIntervention, Estimand
+│   │   ├── augmentation.py        # build_augmented + AugmentedDataset
+│   │   ├── losses.py              # LossSpec protocol, SquaredLoss, KLLoss
+│   │   ├── diagnostics.py         # diagnose() + Diagnostics dataclass
+│   │   ├── tracer.py              # LinearForm, Tracer, trace
+│   │   └── backends/              # swappable plugin architecture
+│   │       ├── base.py              # Backend, Predictor, FitResult protocols
+│   │       ├── xgboost.py           # XGBoostBackend (default)
+│   │       └── sklearn.py           # SklearnBackend (any sklearn regressor)
+│   ├── tests/                   # pytest suite
+│   └── pyproject.toml
+├── r/rieszboost/               # R6 wrapper via reticulate
+├── examples/                   # Lee-Schuler reproductions
+├── docs/                       # this user guide (Quarto website)
+├── .github/workflows/docs.yml  # CI: render + deploy on push to main
+├── .githooks/pre-commit        # enforces docs-stay-in-sync rule
+├── README.md
+└── CLAUDE.md                   # implementation-side notes
+```
+
+## Run tests
+
+```sh
+# Python (51 tests at the time of writing)
+.venv/bin/python -m pytest python/tests -v
+
+# R (parity test included)
+Rscript -e '
+  Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))
+  pkgload::load_all("r/rieszboost")
+  testthat::test_dir("r/rieszboost/tests/testthat")
+'
+```
+
+`xgboost` requires `libomp` on macOS — `brew install libomp` once.
+
+## Tracer, briefly
+
+The user writes `m(z, alpha)` opaquely with `+`, `-`, scalar `*`, and calls to `alpha(...)`. The library passes a `Tracer` in as `alpha`; each call returns a single-term `LinearForm`; the user's `m` composes these via Python operator overloading. The result is a `LinearForm` whose `.as_pairs()` returns `[(coef, point), ...]` — exactly what `build_augmented` needs to construct the augmented dataset. Anything outside the linear-form algebra (squaring, integrals, constants) raises immediately at trace time, which keeps users on the rails of the fast path. See [`python/rieszboost/tracer.py`](https://github.com/alejandroschuler/rieszboost/blob/main/python/rieszboost/tracer.py) for the full implementation (~130 lines, no external deps).
+
+## Adding a new estimand factory
+
+A factory is a function that returns an `Estimand`. Pattern from `estimand.py`:
+
+```python
+def MyEstimand(param, treatment="a", covariates=("x",)) -> Estimand:
+    cov = tuple(covariates)
+    def m(z, alpha):
+        x_kwargs = {k: z[k] for k in cov}
+        # ...build a LinearForm using +, -, scalar*, alpha(...)...
+        return alpha(**{treatment: param, **x_kwargs})
+    return Estimand(feature_keys=(treatment, *cov), m=m, name=f"MyEstimand({param})")
+```
+
+Then:
+
+1. Export from `python/rieszboost/__init__.py` (add to the imports and to `__all__`).
+2. Add an R wrapper in `r/rieszboost/R/rieszboost.R` (one-liner that forwards to the Python factory) and `@export` it.
+3. Update `docs/estimands.qmd` with a row in the built-ins table and a runnable example in both languages.
+4. Add a test under `python/tests/`.
+
+The pre-commit hook will block step (1)/(2) if you forget step (3).
+
+## Adding a new `LossSpec`
+
+Implement the seven-method `LossSpec` protocol from `losses.py`. `SquaredLoss` (35 lines) is the simplest template; `KLLoss` (45 lines) shows how to handle a non-identity link with overflow protection.
+
+1. Add the class to `python/rieszboost/losses.py`.
+2. Export from `__init__.py`.
+3. Add a one-liner R wrapper.
+4. Add a runnable example to `docs/backends-and-losses.qmd`.
+5. Test with `pytest python/tests/test_bregman.py`.
+
+## Adding a new backend
+
+Implement the `Backend` protocol in `python/rieszboost/backends/base.py` — one method, `fit_augmented(...)`, returning a `FitResult` whose `predictor` implements `predict_eta` and `predict_alpha`. `XGBoostBackend` and `SklearnBackend` are the two existing templates; the lightgbm backend is on the roadmap and will follow the xgboost template closely.
+
+The backend doesn't need to know about the estimand or the tracer — it sees a finished `AugmentedDataset` and a `LossSpec` and returns a fitted predictor.
+
+## Living-doc rule
+
+Two related rules in CLAUDE.md:
+
+1. `README.md` is the public-facing contract. If a change to the library makes any line of the README false, the change is not done until the README is fixed in the same edit.
+2. The user guide under `docs/` is the deeper reference. The same rule applies — public-API changes update the relevant `.qmd` page (in **both** the Python and R tabs where the page is bilingual) in the same commit.
+
+This is enforced by the pre-commit hook at `.githooks/pre-commit`. Activate per clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+The hook looks at staged files; if any of these are modified:
+
+- `python/rieszboost/{__init__,estimator,estimand,augmentation,losses,diagnostics,tracer}.py`
+- `python/rieszboost/backends/*.py`
+- `r/rieszboost/R/*.R`
+
+then at least one of these must also be staged:
+
+- `docs/*.qmd`
+- `docs/_quarto.yml`
+- `README.md`
+
+Otherwise the commit is rejected with a clear error pointing at the unmatched files.
+
+For genuinely doc-irrelevant changes (internal refactor that doesn't touch any signature, test additions, comment fixes), bypass with `git commit --no-verify`. That's the explicit escape hatch — there's no shame in using it when the situation calls for it.
+
+## Local docs render
+
+```sh
+quarto preview docs/        # live-reload at http://localhost:port
+quarto render docs/         # one-shot build to docs/_site/
+open docs/_site/index.html
+```
+
+Renders take ~30s with `_freeze/` cache (which IS committed to git), ~3 minutes cold. Editing a single `.qmd` only re-renders that page.
+
+## CI
+
+The workflow at [`.github/workflows/docs.yml`](https://github.com/alejandroschuler/rieszboost/blob/main/.github/workflows/docs.yml) runs on push to `main` when any of `docs/`, `python/`, `examples/`, or the workflow itself changes. It:
+
+1. Checks out the repo (which restores the `_freeze/` cache).
+2. Installs Python 3.11, then `pip install -e python/` plus `matplotlib`.
+3. Installs R + `knitr`, `rmarkdown`, `reticulate`.
+4. Sets up Quarto.
+5. Renders `docs/` (re-executing only chapters whose source changed).
+6. Publishes the rendered `_site/` to the `gh-pages` branch.
+
+The published site lives at `https://alejandroschuler.github.io/rieszboost/`.

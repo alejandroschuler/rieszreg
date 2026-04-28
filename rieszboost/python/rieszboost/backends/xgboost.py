@@ -26,6 +26,8 @@ class XGBoostPredictor:
     loss: LossSpec
     best_iteration: int | None = None
 
+    kind = "xgboost"
+
     def _iter_range(self):
         if self.best_iteration is not None:
             return (0, self.best_iteration + 1)
@@ -40,6 +42,22 @@ class XGBoostPredictor:
 
     def predict_alpha(self, features: np.ndarray) -> np.ndarray:
         return np.asarray(self.loss.link_to_alpha(self.predict_eta(features)))
+
+    def save(self, dir_path):
+        """Save booster as JSON (xgboost native format) inside dir_path."""
+        from pathlib import Path
+        dir_path = Path(dir_path)
+        dir_path.mkdir(parents=True, exist_ok=True)
+        self.booster.save_model(str(dir_path / "booster.ubj"))
+
+    @classmethod
+    def load(cls, dir_path, base_score: float, loss: LossSpec,
+             best_iteration: int | None) -> "XGBoostPredictor":
+        from pathlib import Path
+        bst = xgb.Booster()
+        bst.load_model(str(Path(dir_path) / "booster.ubj"))
+        return cls(booster=bst, base_score=base_score, loss=loss,
+                   best_iteration=best_iteration)
 
 
 def _make_objective(

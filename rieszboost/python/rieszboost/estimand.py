@@ -21,6 +21,9 @@ class Estimand:
     m: Callable[..., Any]
     extra_keys: tuple[str, ...] = ()
     name: str = "custom"
+    # If set, identifies a built-in factory + ctor args so the estimand can be
+    # reconstructed from JSON. Custom user-supplied m()s leave this None.
+    factory_spec: dict | None = None
 
     def __call__(self, z, alpha):
         return self.m(z, alpha)
@@ -34,7 +37,10 @@ def ATE(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Estimand:
         x_kwargs = {k: z[k] for k in cov}
         return alpha(**{treatment: 1, **x_kwargs}) - alpha(**{treatment: 0, **x_kwargs})
 
-    return Estimand(feature_keys=(treatment, *cov), m=m, name="ATE")
+    return Estimand(
+        feature_keys=(treatment, *cov), m=m, name="ATE",
+        factory_spec={"factory": "ATE", "args": {"treatment": treatment, "covariates": list(cov)}},
+    )
 
 
 def ATT(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Estimand:
@@ -52,7 +58,10 @@ def ATT(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Estimand:
             alpha(**{treatment: 1, **x_kwargs}) - alpha(**{treatment: 0, **x_kwargs})
         )
 
-    return Estimand(feature_keys=(treatment, *cov), m=m, name="ATT")
+    return Estimand(
+        feature_keys=(treatment, *cov), m=m, name="ATT",
+        factory_spec={"factory": "ATT", "args": {"treatment": treatment, "covariates": list(cov)}},
+    )
 
 
 def TSM(level, treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Estimand:
@@ -63,7 +72,10 @@ def TSM(level, treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Esti
         x_kwargs = {k: z[k] for k in cov}
         return alpha(**{treatment: level, **x_kwargs})
 
-    return Estimand(feature_keys=(treatment, *cov), m=m, name=f"TSM(level={level!r})")
+    return Estimand(
+        feature_keys=(treatment, *cov), m=m, name=f"TSM(level={level!r})",
+        factory_spec={"factory": "TSM", "args": {"level": level, "treatment": treatment, "covariates": list(cov)}},
+    )
 
 
 def AdditiveShift(
@@ -80,7 +92,8 @@ def AdditiveShift(
         )
 
     return Estimand(
-        feature_keys=(treatment, *cov), m=m, name=f"AdditiveShift(delta={delta})"
+        feature_keys=(treatment, *cov), m=m, name=f"AdditiveShift(delta={delta})",
+        factory_spec={"factory": "AdditiveShift", "args": {"delta": delta, "treatment": treatment, "covariates": list(cov)}},
     )
 
 
@@ -109,6 +122,7 @@ def LocalShift(
         feature_keys=(treatment, *cov),
         m=m,
         name=f"LocalShift(delta={delta}, threshold={threshold})",
+        factory_spec={"factory": "LocalShift", "args": {"delta": delta, "threshold": threshold, "treatment": treatment, "covariates": list(cov)}},
     )
 
 
@@ -144,4 +158,29 @@ def StochasticIntervention(
         m=m,
         extra_keys=(samples_key,),
         name=f"StochasticIntervention(samples_key={samples_key!r})",
+        factory_spec={"factory": "StochasticIntervention", "args": {"samples_key": samples_key, "treatment": treatment, "covariates": list(cov)}},
     )
+
+
+# Registry for round-tripping. Updated when new built-in factories are added.
+_FACTORY_REGISTRY = {
+    "ATE": ATE,
+    "ATT": ATT,
+    "TSM": TSM,
+    "AdditiveShift": AdditiveShift,
+    "LocalShift": LocalShift,
+    "StochasticIntervention": StochasticIntervention,
+}
+
+
+def estimand_from_spec(spec: dict) -> Estimand:
+    """Reconstruct an Estimand from its `factory_spec` dict. Only built-in
+    factories round-trip; custom estimands must be re-passed at load time."""
+    factory_name = spec["factory"]
+    if factory_name not in _FACTORY_REGISTRY:
+        raise ValueError(
+            f"Unknown estimand factory {factory_name!r}; only built-ins "
+            f"({sorted(_FACTORY_REGISTRY)}) are round-trippable. For custom "
+            f"estimands, pass `estimand=` explicitly to RieszBooster.load(...)."
+        )
+    return _FACTORY_REGISTRY[factory_name](**spec.get("args", {}))

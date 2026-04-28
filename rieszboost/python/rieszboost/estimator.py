@@ -241,3 +241,128 @@ class RieszBooster(BaseEstimator):
     def diagnose(self, X, **kwargs):
         from .diagnostics import diagnose
         return diagnose(booster=self, X=X, **kwargs)
+
+    # ---- serialization ----
+
+    def save(self, path) -> None:
+        """Save a fitted booster to a directory.
+
+        Writes:
+          - `booster.ubj` (XGBoostBackend) or `predictor.joblib` (SklearnBackend)
+          - `metadata.json` with the loss spec, estimand factory_spec (if
+            built-in), feature_keys, base_score, best_iteration_, etc.
+
+        Custom (non-built-in) estimands cannot be auto-reconstructed; the file
+        will save fine, but `RieszBooster.load(path)` will require the user to
+        pass `estimand=...` explicitly.
+        """
+        import json
+        from pathlib import Path
+
+        if not hasattr(self, "predictor_"):
+            raise RuntimeError("Cannot save unfitted RieszBooster. Call .fit() first.")
+
+        path = Path(path)
+        path.mkdir(parents=True, exist_ok=True)
+
+        self.predictor_.save(path)
+
+        metadata = {
+            "rieszboost_format_version": 1,
+            "predictor_kind": self.predictor_.kind,
+            "loss": self.loss_.to_spec(),
+            "estimand_factory_spec": self.estimand.factory_spec,  # None if custom
+            "feature_keys": list(self.feature_keys_),
+            "extra_keys": list(self.estimand.extra_keys),
+            "base_score": self.base_score_,
+            "best_iteration": self.best_iteration_,
+            "best_score": self.best_score_,
+            # Constructor hyperparameters (informational; not used on load).
+            "hyperparameters": {
+                "n_estimators": self.n_estimators,
+                "learning_rate": self.learning_rate,
+                "max_depth": self.max_depth,
+                "reg_lambda": self.reg_lambda,
+                "subsample": self.subsample,
+                "early_stopping_rounds": self.early_stopping_rounds,
+                "validation_fraction": self.validation_fraction,
+                "init": self.init,
+                "random_state": self.random_state,
+            },
+        }
+        with open(path / "metadata.json", "w") as f:
+            json.dump(metadata, f, indent=2)
+
+    @classmethod
+    def load(cls, path, *, estimand: "Estimand | None" = None) -> "RieszBooster":
+        """Load a booster from a directory written by `save(...)`.
+
+        For custom (non-built-in) estimands, pass `estimand=` to inject the
+        original Estimand instance. For built-ins, reconstruction is
+        automatic.
+        """
+        import json
+        from pathlib import Path
+
+        from .backends.sklearn import SklearnPredictor
+        from .backends.xgboost import XGBoostPredictor
+        from .estimand import estimand_from_spec
+        from .losses import loss_from_spec
+
+        path = Path(path)
+        with open(path / "metadata.json") as f:
+            metadata = json.load(f)
+
+        loss = loss_from_spec(metadata["loss"])
+
+        if estimand is None:
+            spec = metadata.get("estimand_factory_spec")
+            if spec is None:
+                raise ValueError(
+                    f"Saved booster at {path} has a custom (non-built-in) "
+                    "estimand. Pass `estimand=...` explicitly to "
+                    "RieszBooster.load(path, estimand=my_estimand)."
+                )
+            estimand = estimand_from_spec(spec)
+
+        kind = metadata["predictor_kind"]
+        if kind == "xgboost":
+            predictor = XGBoostPredictor.load(
+                path,
+                base_score=metadata["base_score"],
+                loss=loss,
+                best_iteration=metadata.get("best_iteration"),
+            )
+        elif kind == "sklearn":
+            predictor = SklearnPredictor.load(
+                path,
+                base_score=metadata["base_score"],
+                loss=loss,
+                best_iteration=metadata.get("best_iteration"),
+            )
+        else:
+            raise ValueError(f"Unknown predictor kind: {kind!r}")
+
+        # Reconstruct the booster shell with the original hyperparameters
+        # (so get_params reflects what fit was called with).
+        hp = metadata.get("hyperparameters", {})
+        booster = cls(
+            estimand=estimand,
+            loss=loss,
+            n_estimators=hp.get("n_estimators", 200),
+            learning_rate=hp.get("learning_rate", 0.05),
+            max_depth=hp.get("max_depth", 4),
+            reg_lambda=hp.get("reg_lambda", 1.0),
+            subsample=hp.get("subsample", 1.0),
+            early_stopping_rounds=hp.get("early_stopping_rounds"),
+            validation_fraction=hp.get("validation_fraction", 0.0),
+            init=hp.get("init"),
+            random_state=hp.get("random_state", 0),
+        )
+        booster.predictor_ = predictor
+        booster.best_iteration_ = metadata.get("best_iteration")
+        booster.best_score_ = metadata.get("best_score")
+        booster.base_score_ = metadata["base_score"]
+        booster.loss_ = loss
+        booster.feature_keys_ = tuple(metadata["feature_keys"])
+        return booster

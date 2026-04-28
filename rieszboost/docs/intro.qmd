@@ -1,0 +1,80 @@
+---
+title: "What's a Riesz representer, and why boost it?"
+---
+
+## The setup
+
+In semiparametric inference, you often want to estimate a **functional** of an unknown nuisance — something like
+
+$$
+\theta(P) \;=\; \mathbb{E}\!\left[m(Z, g_0)\right]
+$$
+
+where $g_0(z) = \mathbb{E}[Y \mid Z = z]$ is an outcome regression and $m(z, g)$ is a *linear functional* of $g$. Concrete examples:
+
+| Target | $m(z, g)$ |
+|---|---|
+| Average treatment effect | $g(1, x) - g(0, x)$ |
+| Treatment-specific mean at $a^\star$ | $g(a^\star, x)$ |
+| Additive shift effect $a \mapsto a + \delta$ | $g(a + \delta, x) - g(a, x)$ |
+| Stochastic intervention $a \sim h(\cdot \mid x)$ | $\int g(a', x)\,h(a' \mid x)\,da'$ |
+
+A naive plug-in estimator $\hat\theta = n^{-1} \sum_i m(Z_i, \hat g)$ is biased because $\hat g$ is itself estimated. Modern semiparametric estimators (one-step, TMLE, DML) correct for that bias by adding a term involving the **Riesz representer** $\alpha_0$ of $m$:
+
+$$
+\hat\theta_{\text{corrected}} \;=\; n^{-1} \sum_i \Big[\,m(Z_i, \hat g) + \alpha_0(Z_i)\,\big(Y_i - \hat g(Z_i)\big)\,\Big].
+$$
+
+## What is $\alpha_0$?
+
+The Riesz representation theorem says: because $m(z, \cdot)$ is linear in its second argument and bounded, there exists a function $\alpha_0(z)$ such that
+
+$$
+\mathbb{E}[m(Z, g)] \;=\; \mathbb{E}\!\left[\alpha_0(Z) \cdot g(Z)\right]
+\quad \text{for all } g.
+$$
+
+For ATE this is the inverse-propensity weight $\alpha_0(a, x) = a/\pi(x) - (1-a)/(1-\pi(x))$. For TSM it's the density ratio $\mathbb{1}\{a = a^\star\}/\pi(a^\star \mid x)$. In general $\alpha_0$ has a closed form involving the *generalized propensity score* — and that closed form is *exactly what we want to avoid computing*.
+
+## Why not just estimate the propensity?
+
+For ATE: estimate $\hat\pi(x)$, plug in, get $\hat\alpha(a, x) = a/\hat\pi(x) - (1-a)/(1-\hat\pi(x))$. Done.
+
+This works fine when $\hat\pi$ is well-behaved. It breaks when:
+
+1. **Positivity is borderline.** If $\hat\pi(x)$ approaches 0 or 1 anywhere in the data, $\hat\alpha$ explodes. Truncation patches the symptom but introduces its own bias and is hard to defend.
+
+2. **The estimand is non-standard.** For continuous shifts, stochastic interventions, longitudinal LMTPs, the closed-form $\alpha_0$ involves derivatives of the conditional density of $A$ given $X$ — quantities that are themselves harder to estimate than $\alpha_0$ itself. By the time you've written down the estimator, you've solved a harder problem than you needed to.
+
+3. **Misspecification compounds.** Plug-in bias in $\hat\pi$ propagates nonlinearly through the ratio $1/\hat\pi$.
+
+## Riesz regression: estimate $\alpha_0$ directly
+
+Chernozhukov et al. ([2021](https://arxiv.org/abs/2104.14737)) observed that $\alpha_0$ is the unique minimizer of the **Riesz loss**
+
+$$
+L(\alpha) \;=\; \mathbb{E}\!\left[\alpha(Z)^2 - 2\,m(Z, \alpha)\right]
+$$
+
+over all square-integrable $\alpha$. (You can verify: the Gateaux derivative at $\alpha_0$ vanishes by the Riesz identity.) So estimating $\alpha_0$ becomes a **regression problem with a custom loss** — no propensity, no density derivative, no truncation.
+
+The minimizer is well-defined whether or not the closed-form $\alpha_0$ has nice tails. When $\pi(x)$ is small at some $x$, the Riesz loss penalizes large $\alpha$ values *quadratically*; the resulting $\hat\alpha$ is shrunk toward zero in low-overlap regions, which is exactly what you want for downstream variance control.
+
+## Why boost it?
+
+The Riesz loss is a regression loss like any other. Lee & Schuler ([2025](https://arxiv.org/abs/2501.04871)) show that gradient boosting is a particularly good fit:
+
+- **Tabular-friendly.** Boosting is the workhorse for tabular semiparametric problems; same hyperparameters that work for outcome models tend to transfer.
+- **Direct gradient/Hessian access.** For *finite-point* $m$ (any $m$ that's a finite linear combination of point evaluations of $\alpha$ — which covers ATE, ATT, TSM, AdditiveShift, and Monte-Carlo'd stochastic interventions), the per-row gradient and Hessian have simple closed forms. xgboost's custom objective consumes them directly with no surrogate.
+- **Built-in regularization knobs.** `max_depth`, `learning_rate`, `early_stopping_rounds`, `reg_lambda` all do exactly what they do for ordinary regression — and the [tuning page](diagnostics-and-tuning.qmd) walks through how to set them with $\hat\alpha$-specific diagnostics in mind.
+
+## What `rieszboost` gives you
+
+A scikit-learn-style estimator that:
+
+- Boosts $\hat\alpha$ for any of the built-in estimands (`ATE`, `ATT`, `TSM`, `AdditiveShift`, `LocalShift`, `StochasticIntervention`) — or [your own](estimands.qmd) — without you ever writing down the closed-form Riesz representer.
+- Composes with `cross_val_predict`, `GridSearchCV`, `Pipeline` so cross-fitting and tuning are off-the-shelf.
+- Surfaces near-positivity and outlier-extrapolation warnings via `.diagnose(X)` so you can catch failure modes before they bias downstream estimators.
+- Has a parallel R6 wrapper in R so the same code runs in either language.
+
+Next: [install](install.qmd) and the [30-line quickstart](quickstart.qmd).

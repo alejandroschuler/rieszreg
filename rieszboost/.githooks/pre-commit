@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Block commits that touch the public API without touching the docs.
+# Bypass for genuinely doc-irrelevant changes with: git commit --no-verify
+set -euo pipefail
+
+staged=$(git diff --cached --name-only)
+
+# Files that define the public surface — change one and docs probably need updating.
+public_api_changed=$(echo "$staged" | grep -E '^(python/rieszboost/(__init__|estimator|estimand|augmentation|losses|diagnostics|tracer)\.py|python/rieszboost/backends/.*\.py|r/rieszboost/R/.*\.R)$' || true)
+
+# Doc files that count as "the docs were touched".
+docs_changed=$(echo "$staged" | grep -E '^(docs/.*\.qmd|docs/_quarto\.yml|README\.md)$' || true)
+
+if [[ -n "$public_api_changed" && -z "$docs_changed" ]]; then
+  echo "ERROR: public-API change without a docs update."
+  echo ""
+  echo "Changed:"
+  echo "$public_api_changed" | sed 's/^/  - /'
+  echo ""
+  echo "Update the relevant page under docs/ (and README.md if the"
+  echo "quickstart or install steps changed), then re-stage and re-commit."
+  echo ""
+  echo "On bilingual pages (most of them), update BOTH the {python} and {r}"
+  echo "tabs — the R wrapper is a first-class citizen."
+  echo ""
+  echo "If this change genuinely cannot affect docs (internal refactor,"
+  echo "test-only, comment fix), bypass with: git commit --no-verify"
+  exit 1
+fi

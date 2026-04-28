@@ -1,0 +1,142 @@
+"""Save/load round-trip tests for RieszBooster."""
+
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+import pytest
+
+import rieszboost
+from rieszboost import RieszBooster
+from rieszboost.backends import SklearnBackend
+from rieszboost.estimand import Estimand
+from rieszboost.losses import KLLoss
+
+
+def _logit(z):
+    return 1.0 / (1.0 + np.exp(-z))
+
+
+def _df(n=400, seed=0):
+    rng = np.random.default_rng(seed)
+    x = rng.uniform(0, 1, n)
+    pi = _logit(-0.02 * x - x**2 + 4 * np.log(x + 0.3) + 1.5)
+    a = rng.binomial(1, pi)
+    return pd.DataFrame({"a": a.astype(float), "x": x})
+
+
+def test_xgboost_squared_round_trip(tmp_path):
+    df = _df(seed=0)
+    booster = RieszBooster(
+        estimand=rieszboost.ATE(),
+        n_estimators=30, learning_rate=0.1, max_depth=3,
+    ).fit(df)
+    pre = booster.predict(df)
+    booster.save(tmp_path / "m")
+    loaded = RieszBooster.load(tmp_path / "m")
+    np.testing.assert_array_equal(pre, loaded.predict(df))
+    assert loaded.best_iteration_ == booster.best_iteration_
+    assert loaded.score(df) == pytest.approx(booster.score(df), rel=1e-9)
+
+
+def test_round_trip_preserves_best_iteration_with_early_stopping(tmp_path):
+    df = _df(n=800, seed=1)
+    booster = RieszBooster(
+        estimand=rieszboost.ATE(),
+        n_estimators=500,
+        early_stopping_rounds=10,
+        validation_fraction=0.2,
+        learning_rate=0.05, max_depth=3,
+    ).fit(df)
+    assert booster.best_iteration_ is not None
+    pre = booster.predict(df)
+    booster.save(tmp_path / "m")
+    loaded = RieszBooster.load(tmp_path / "m")
+    assert loaded.best_iteration_ == booster.best_iteration_
+    np.testing.assert_array_equal(pre, loaded.predict(df))
+
+
+def test_round_trip_per_built_in_estimand(tmp_path):
+    df = _df(seed=2)
+    cases = [
+        ("ATE", rieszboost.ATE()),
+        ("ATT", rieszboost.ATT()),
+        ("TSM", rieszboost.TSM(level=1)),
+        ("AdditiveShift", rieszboost.AdditiveShift(delta=0.1)),
+        ("LocalShift", rieszboost.LocalShift(delta=0.1, threshold=0.5)),
+    ]
+    for name, est in cases:
+        b = RieszBooster(estimand=est, n_estimators=15, learning_rate=0.1).fit(df)
+        b.save(tmp_path / name)
+        loaded = RieszBooster.load(tmp_path / name)
+        assert loaded.estimand.name == est.name, name
+        np.testing.assert_array_equal(b.predict(df), loaded.predict(df))
+
+
+def test_stochastic_round_trip_with_extra_keys(tmp_path):
+    rng = np.random.default_rng(0)
+    n = 200
+    a = rng.uniform(-1, 1, n)
+    x = rng.uniform(0, 1, n)
+    df = pd.DataFrame({"a": a, "x": x})
+    df["shift_samples"] = [rng.normal(a[i] + 0.5, 0.3, 5).tolist() for i in range(n)]
+
+    b = RieszBooster(
+        estimand=rieszboost.StochasticIntervention(),
+        n_estimators=20, learning_rate=0.05, max_depth=3,
+    ).fit(df)
+    pre = b.predict(df)
+    b.save(tmp_path / "stochastic")
+    loaded = RieszBooster.load(tmp_path / "stochastic")
+    np.testing.assert_array_equal(pre, loaded.predict(df))
+
+
+def test_round_trip_with_kl_loss(tmp_path):
+    df = _df(seed=3)
+    b = RieszBooster(
+        estimand=rieszboost.TSM(level=1),
+        loss=KLLoss(max_eta=40.0),
+        n_estimators=20, learning_rate=0.05, max_depth=3,
+    ).fit(df)
+    pre = b.predict(df)
+    b.save(tmp_path / "kl")
+    loaded = RieszBooster.load(tmp_path / "kl")
+    assert loaded.loss_.max_eta == 40.0
+    np.testing.assert_array_equal(pre, loaded.predict(df))
+
+
+def test_round_trip_with_sklearn_backend(tmp_path):
+    from sklearn.tree import DecisionTreeRegressor
+    df = _df(seed=4)
+    b = RieszBooster(
+        estimand=rieszboost.ATE(),
+        backend=SklearnBackend(lambda: DecisionTreeRegressor(max_depth=3, random_state=0)),
+        n_estimators=20, learning_rate=0.05,
+    ).fit(df)
+    pre = b.predict(df)
+    b.save(tmp_path / "sk")
+    loaded = RieszBooster.load(tmp_path / "sk")
+    np.testing.assert_array_equal(pre, loaded.predict(df))
+
+
+def test_custom_estimand_requires_explicit_estimand_on_load(tmp_path):
+    df = _df(seed=5)
+    def m_custom(z, alpha):
+        return alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"])
+    custom = Estimand(feature_keys=("a", "x"), m=m_custom, name="my_custom")
+    b = RieszBooster(estimand=custom, n_estimators=10).fit(df)
+    b.save(tmp_path / "custom")
+
+    # No estimand passed → raise
+    with pytest.raises(ValueError, match="custom"):
+        RieszBooster.load(tmp_path / "custom")
+
+    # With estimand passed → succeeds
+    loaded = RieszBooster.load(tmp_path / "custom", estimand=custom)
+    np.testing.assert_array_equal(b.predict(df), loaded.predict(df))
+
+
+def test_save_unfitted_raises(tmp_path):
+    b = RieszBooster(estimand=rieszboost.ATE())
+    with pytest.raises(RuntimeError, match="unfitted"):
+        b.save(tmp_path / "bad")
