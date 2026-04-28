@@ -47,7 +47,8 @@ Full LMTP support requires multi-stage orchestration (one Riesz fit per time-sta
 
 ## Known sharp edges
 
-- Boosting can extrapolate aggressively in low-overlap regions of α̂. Use shallow trees (`max_depth=3`), ridge (`reg_lambda≥10`), and early stopping; nested-CV early stopping does NOT always trigger when the inner-validation slice happens to miss the outliers — `diagnose` will warn when max |α̂| dwarfs the 99th percentile.
+- Boosting can extrapolate aggressively in low-overlap regions of α̂. Use shallow trees (`max_depth=3`), early stopping, and look at `diagnose(...)` warnings — it flags when max |α̂| dwarfs the 99th percentile (a sign of a single outlier extrapolating).
+- `_make_objective` floors the Hessian at `hessian_floor=2.0` (matching the natural Hessian of original a=1 rows). Earlier we used `eps=1e-6`, which made counterfactual leaves degenerate in xgboost's leaf-weight Newton step (`-G/(H+λ)` with H≈0) and required `reg_lambda=100` to stabilize. The new floor mimics Friedman MART's row-uniform weighting; standard xgboost-style hyperparameters now work without sledgehammer regularization.
 
 ## What's next (per `~/.claude/plans/i-d-like-to-write-crystalline-raven.md`)
 

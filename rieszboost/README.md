@@ -61,6 +61,10 @@ alpha_hat = booster.predict(rows)
 print(rieszboost.diagnose(booster=booster, rows=valid_rows, m=rieszboost.ATE()).summary())
 ```
 
+## Examples
+
+[`examples/lee_schuler/`](examples/) reproduces Section 4 of Lee & Schuler (2025): ATE, ATT, ASE, and LASE under their two simulation DGPs, with EEE estimators and coverage. See [examples/README.md](examples/README.md).
+
 ## Cross-fitting for downstream inference
 
 When you'll plug α̂ into a TMLE / one-step / DML estimator, use cross-fitting so the predictions you use are out-of-fold:

@@ -80,10 +80,18 @@ def build_augmented(
     )
 
 
-def _make_objective(a: np.ndarray, b: np.ndarray, eps: float = 1e-6):
-    """xgboost custom objective. Gradient = 2a*F + b; Hessian = 2a (with eps
-    floor so leaves with only b-rows get a finite second-order step)."""
-    hess = 2.0 * a + eps
+def _make_objective(a: np.ndarray, b: np.ndarray, hessian_floor: float = 2.0):
+    """xgboost custom objective. Gradient = 2a*F + b; Hessian = max(2a, floor).
+
+    The floor is critical: counterfactual rows have true Hessian 0 (only the
+    b·F linear term in the loss). xgboost's second-order leaf weight is
+    ``-G/(H+reg_lambda)``; if H ≈ 0 for a leaf full of counterfactuals, the
+    weight becomes ``-G/reg_lambda`` and blows up unless reg_lambda is huge.
+    Flooring counterfactual hessians at ~1 keeps every row contributing
+    meaningfully to H, mimicking the uniform weighting that Friedman MART
+    (Lee-Schuler's Algorithm 2) uses by construction.
+    """
+    hess = np.maximum(2.0 * a, hessian_floor)
 
     def obj(preds: np.ndarray, dtrain) -> tuple[np.ndarray, np.ndarray]:
         del dtrain
@@ -118,6 +126,7 @@ def fit(
     base_score: float = 0.0,
     seed: int = 0,
     init: str | float = 0.0,
+    hessian_floor: float = 2.0,
     verbose_eval: bool | int = False,
 ) -> "RieszBooster":
     """Fit a Riesz representer to the user's m via the fast augmented-data path.
@@ -160,7 +169,7 @@ def fit(
         params,
         dtrain,
         num_boost_round=num_boost_round,
-        obj=_make_objective(aug.a, aug.b),
+        obj=_make_objective(aug.a, aug.b, hessian_floor=hessian_floor),
         evals=evals,
         custom_metric=custom_metric,
         early_stopping_rounds=early_stopping_rounds,
