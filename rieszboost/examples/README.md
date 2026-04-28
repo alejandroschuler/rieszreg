@@ -1,8 +1,28 @@
 # Examples
 
-End-to-end scripts demonstrating `rieszboost` on the simulation studies of [Lee & Schuler (2025), arXiv:2501.04871](https://arxiv.org/abs/2501.04871).
+End-to-end scripts demonstrating `rieszboost`. Two flavors:
 
-## What's here
+- **Per-estimand worked examples** at the top level — one focused script per built-in factory, with the EEE / one-step plug-in estimator built around it. Read these to learn how to use a particular estimand.
+- **`lee_schuler/`** — multi-estimand simulation studies that reproduce Section 4 of the paper.
+
+## Per-estimand examples
+
+| Built-in factory | Worked example | Highlights |
+|---|---|---|
+| `rieszboost.ATE()` | [`lee_schuler/binary_dgp.py`](lee_schuler/binary_dgp.py) | EEE plug-in for ATE on binary DGP |
+| `rieszboost.ATT()` | [`lee_schuler/binary_dgp.py`](lee_schuler/binary_dgp.py) | Partial-parameter representer + delta-method EIF |
+| `rieszboost.TSM(level=…)` | [`tsm.py`](tsm.py) | E[Y(a*)] estimator with closed-form check |
+| `rieszboost.AdditiveShift(delta=…)` | [`lee_schuler/continuous_dgp.py`](lee_schuler/continuous_dgp.py) | ASE on continuous-treatment DGP |
+| `rieszboost.LocalShift(delta, threshold)` | [`lee_schuler/continuous_dgp.py`](lee_schuler/continuous_dgp.py) | LASE partial-parameter + delta-method |
+| `rieszboost.StochasticIntervention(samples_key=…)` | [`stochastic_intervention.py`](stochastic_intervention.py) | IPSI-style: Monte Carlo over an intervention density |
+
+Run any of them with `.venv/bin/python examples/<script>.py --n_reps 50` (defaults are smaller for short wall time).
+
+> **CLAUDE.md rule**: every built-in estimand factory must have a worked example here. When you add a new factory, add a runnable script demonstrating it on a realistic DGP and update this table in the same commit.
+
+## Lee-Schuler reproduction (`lee_schuler/`)
+
+Reproduces the simulation studies of [Lee & Schuler (2025), arXiv:2501.04871](https://arxiv.org/abs/2501.04871).
 
 ```
 lee_schuler/
@@ -11,8 +31,6 @@ lee_schuler/
   _compare_with_reference.py   # Head-to-head against Lee-Schuler's reference code
   COMPARISON.md            # Math walkthrough + numbers from the cross-check
 ```
-
-Run any of them with `.venv/bin/python examples/lee_schuler/<script>.py --n_reps 50` (paper uses `--n_reps 500`; defaults are smaller for short wall time).
 
 ## Estimands and Riesz functionals
 

@@ -12,12 +12,12 @@ This page covers the six built-in factories and how to write your own.
 
 | Factory | $m(z, \alpha)$ | Notes |
 |---|---|---|
-| `ATE(treatment, covariates)` | $\alpha(1, x) - \alpha(0, x)$ | Average treatment effect |
-| `ATT(treatment, covariates)` | $a \cdot (\alpha(1, x) - \alpha(0, x))$ | ATT *partial parameter*. Full ATT divides by $P(A=1)$ — combine with a delta-method EIF downstream. |
-| `TSM(level, treatment, covariates)` | $\alpha(\text{level}, x)$ | Treatment-specific mean |
-| `AdditiveShift(delta, ...)` | $\alpha(a + \delta, x) - \alpha(a, x)$ | Continuous-treatment shift effect |
-| `LocalShift(delta, threshold, ...)` | $\mathbf{1}\{a < \text{threshold}\} \cdot (\alpha(a + \delta, x) - \alpha(a, x))$ | LASE *partial parameter*; same caveat as ATT |
-| `StochasticIntervention(samples_key, ...)` | $\frac{1}{K} \sum_k \alpha(a'_k, x)$ | IPSI via Monte Carlo over the intervention density |
+| `ATE(treatment, covariates)` | $\alpha(1, x) - \alpha(0, x)$ | Average treatment effect — see [`examples/lee_schuler/binary_dgp.py`](https://github.com/alejandroschuler/rieszboost/blob/main/examples/lee_schuler/binary_dgp.py) |
+| `ATT(treatment, covariates)` | $a \cdot (\alpha(1, x) - \alpha(0, x))$ | ATT *partial parameter*. Full ATT divides by $P(A=1)$ — combine with a delta-method EIF downstream. See `examples/lee_schuler/binary_dgp.py`. |
+| `TSM(level, treatment, covariates)` | $\alpha(\text{level}, x)$ | Treatment-specific mean — see [`examples/tsm.py`](https://github.com/alejandroschuler/rieszboost/blob/main/examples/tsm.py) |
+| `AdditiveShift(delta, ...)` | $\alpha(a + \delta, x) - \alpha(a, x)$ | Continuous-treatment shift effect — see [`examples/lee_schuler/continuous_dgp.py`](https://github.com/alejandroschuler/rieszboost/blob/main/examples/lee_schuler/continuous_dgp.py) |
+| `LocalShift(delta, threshold, ...)` | $\mathbf{1}\{a < \text{threshold}\} \cdot (\alpha(a + \delta, x) - \alpha(a, x))$ | LASE *partial parameter*; same caveat as ATT. See `examples/lee_schuler/continuous_dgp.py`. |
+| `StochasticIntervention(samples_key, ...)` | $\frac{1}{K} \sum_k \alpha(a'_k, x)$ | IPSI via Monte Carlo over the intervention density — see [`examples/stochastic_intervention.py`](https://github.com/alejandroschuler/rieszboost/blob/main/examples/stochastic_intervention.py) |
 
 Same call sites in both languages — kwargs match.
 
@@ -169,10 +169,12 @@ For reference, the `Estimand` dataclass has four fields:
 ```python
 @dataclass
 class Estimand:
-    feature_keys: tuple[str, ...]   # columns alpha is indexed by
-    m: Callable[..., Any]           # the linear functional
-    extra_keys: tuple[str, ...] = ()  # per-row payload columns (e.g. shift_samples)
+    feature_keys: tuple[str, ...]      # columns alpha is indexed by
+    m: Callable[..., Any]              # the linear functional
+    extra_keys: tuple[str, ...] = ()   # per-row payload columns (e.g. shift_samples)
     name: str = "custom"
+    factory_spec: dict | None = None   # set by built-in factories so the estimand
+                                       # round-trips through save / load
 ```
 
 `RieszBooster` reads `feature_keys + extra_keys` off the estimand at fit time to construct the row dicts passed to `m`. Stick to that contract and the booster handles everything else.
