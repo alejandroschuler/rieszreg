@@ -1,6 +1,8 @@
 # rieszboost
 
-Gradient boosting for Riesz representers — directly estimate the Riesz representer α₀ of a linear functional θ(P) = E[m(Z, g₀)] without ever deriving or inverting a propensity-style ratio. Implements [Lee & Schuler, *RieszBoost* (arXiv:2501.04871)](https://arxiv.org/abs/2501.04871).
+Gradient boosting for Riesz representers, in **Python** and **R** — directly estimate the Riesz representer α₀ of a linear functional θ(P) = E[m(Z, g₀)] without ever deriving or inverting a propensity-style ratio. Implements [Lee & Schuler, *RieszBoost* (arXiv:2501.04871)](https://arxiv.org/abs/2501.04871).
+
+The Python package (xgboost-backed fast path + sklearn-compatible slow path) is the source of truth; the R package wraps it via `reticulate` with bitwise-identical predictions. Jump to the [R quickstart](#quickstart-r) below.
 
 ## Status
 
@@ -27,7 +29,7 @@ On macOS, `xgboost` requires `libomp`:
 brew install libomp
 ```
 
-## Quickstart — ATE
+## Quickstart (Python) — ATE
 
 ```python
 import numpy as np
@@ -161,7 +163,7 @@ See `CLAUDE.md` and `~/.claude/plans/i-d-like-to-write-crystalline-raven.md` for
 - [Hines & Miles (2510.16127)](https://arxiv.org/abs/2510.16127) and [Kato (2601.07752)](https://arxiv.org/abs/2601.07752) — Bregman-divergence generalization.
 - [van der Laan et al. (2501.11868)](https://arxiv.org/abs/2501.11868) — auto-DML for smooth functionals beyond linear.
 
-## R interface
+## Quickstart (R)
 
 Same library, callable from R via reticulate. Install Python rieszboost into a venv first, then point R at it:
 
