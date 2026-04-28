@@ -4,7 +4,9 @@ Gradient boosting for Riesz representers — directly estimate the Riesz represe
 
 ## Status
 
-v0.0.1 — Python fast path (xgboost) is functional. R wrapper, slow general path, Bregman extension, and longitudinal estimands are planned.
+v0.0.1 — feature-complete for single-stage Riesz regression. Python fast (xgboost) and slow (sklearn-compatible) paths, R wrapper via reticulate, six built-in estimand factories, cross-fitting, early stopping, diagnostics, and a pluggable Bregman-loss framework all ship. Verified head-to-head against [Lee-Schuler's reference implementation](https://github.com/kaitlynjlee/boosting_for_rr) (see [examples/lee_schuler/COMPARISON.md](examples/lee_schuler/COMPARISON.md)).
+
+Multi-stage longitudinal LMTP is intentionally out of scope — that belongs in a downstream wrapper that calls the single-stage `rieszboost.fit(...)` once per time-stage.
 
 ## Why
 
@@ -139,10 +141,17 @@ Full LMTP-style longitudinal interventions with time-varying confounding require
 
 ## On the roadmap
 
-- lightgbm engine adapter.
-- More examples (Lalonde, NHEFS, two-stage longitudinal via repeated single-stage fits).
+Not yet shipped, sized roughly small → large:
 
-See `CLAUDE.md` and `~/.claude/plans/i-d-like-to-write-crystalline-raven.md` for the full plan.
+- **CV hyperparameter tuning helper.** Currently users wrap `fit(...)` in their own `GridSearchCV`-style loop; a `tune_riesz()` that handles the inner-fold CV with held-out Riesz loss as the criterion would be a small ergonomic win.
+- **Serialization** — `RieszBooster.save(path)` / `load(path)` so fitted models survive a session, with the metadata sidecar (loss spec, feature_keys, base_score) written alongside the xgboost binary.
+- **More example datasets.** Lalonde (ATE under selection), NHEFS (continuous shift), a two-stage longitudinal example demonstrating how to compose `rieszboost.fit(...)` calls across time-stages. The current `examples/` covers Lee-Schuler's synthetic DGPs only.
+- **R-side custom `m()`.** The `LinearForm` tracer is Python-only — R users currently use the built-in factories or write Python via reticulate. Porting the tracer to R is non-trivial; alternative is a JSON-spec syntax (`m: list(coef=c(1,-1), points=...)`) that round-trips through Python.
+- **lightgbm engine adapter.** Same data-augmentation trick should work via lightgbm's custom objective. Modest speed/memory tradeoffs vs xgboost; deprioritized.
+- **Bregman: more built-in losses.** Currently `SquaredLoss` and `KLLoss`. Logistic / clipped-α losses (e.g., for representers known to lie in [0, M]) would round out the toolkit.
+- **Packaging.** PyPI release for the Python package, CRAN submission for the R wrapper. Pinned-dependency lockfile, CI, etc.
+
+See `CLAUDE.md` and `~/.claude/plans/i-d-like-to-write-crystalline-raven.md` for design notes and the original plan.
 
 ## Related work
 

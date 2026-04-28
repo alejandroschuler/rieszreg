@@ -6,6 +6,8 @@ General-purpose gradient-boosting library for Riesz representers, implementing L
 
 `README.md` is a living document — update it in the same edit whenever a change touches the public API surface (new estimand factory, new function exported from `rieszboost.__init__`, new engine), the supported feature list, the install/run instructions, or the quickstart example. If a change makes any line in the README false or outdated, the change is not done until the README is fixed. The README is the user-facing contract; CLAUDE.md is the implementation-side notes.
 
+The README's `## Status` and `## Roadmap` sections must stay current too — when a roadmap item ships, move it to "What works today" (or remove if mentioned elsewhere) **in the same commit**. When scope shifts (an item is dropped, deferred, or replaced by something new), update the roadmap with the rationale. Don't let either section drift behind reality. Same applies to any analogous status table in `examples/README.md`.
+
 ## Layout
 
 - `python/` — primary implementation. Library is `rieszboost/`; tests in `tests/`. Build/dependency config in `pyproject.toml`.
