@@ -217,9 +217,10 @@ R-side and Python-side predictions are bitwise-identical on the same data.
 
 Active priorities:
 
-1. **Per-estimand worked examples.** Currently `examples/lee_schuler/` covers ATE/ATT/ASE/LASE under their synthetic DGPs. We want one realistic worked example per built-in estimand — Lalonde for ATE, NHEFS for shift, a stochastic-intervention demo for `StochasticIntervention`, etc.
-2. **More Bregman losses.** Currently `SquaredLoss` and `KLLoss`. Logistic / clipped-α losses for representers known to lie in [0, M] would round out the toolkit.
-3. **Testing plan** — see [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md). Property-based tests, numerical regression baselines, sklearn `check_estimator` conformance, backend-equivalence checks, performance regression tracking.
+1. **More Bregman losses.** Currently `SquaredLoss` and `KLLoss`. Logistic / clipped-α losses for representers known to lie in [0, M] would round out the toolkit.
+2. **Testing plan** — see [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md). Property-based tests, numerical regression baselines, sklearn `check_estimator` conformance, backend-equivalence checks, performance regression tracking.
+
+Real-data examples (Lalonde for ATE under selection, NHEFS for shift, etc.) would also be welcome additions on top of the synthetic-DGP demos in `examples/`.
 
 Considered and dropped:
 
