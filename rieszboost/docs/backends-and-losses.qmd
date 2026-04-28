@@ -101,11 +101,18 @@ cat(sprintf("corr = %.3f, RMSE = %.3f\n",
 `SklearnBackend` doesn't import xgboost. If your environment is xgboost-hostile (alpine container, Python build with no OpenMP) you can ship `rieszboost` with `SklearnBackend` as the default by passing `backend=SklearnBackend(...)` to every `RieszBooster` and never installing xgboost. The library itself only lazy-imports xgboost.
 :::
 
-## Losses: `SquaredLoss` and `KLLoss`
+## Losses
 
-The default `SquaredLoss` is the standard Lee-Schuler / Chernozhukov objective: $\phi(t) = t^2$, identity link $\eta = \alpha$. Per-row loss $a \cdot \alpha^2 + b \cdot \alpha$. This is the right choice for almost every estimand.
+| Loss | Potential $\phi$ | Link $\eta \to \alpha$ | Domain | When to reach for it |
+|---|---|---|---|---|
+| `SquaredLoss` | $t^2$ | identity | $\mathbb{R}$ | Default. Right choice for almost every estimand. |
+| `KLLoss` | $t \log t$ | exp | $(0, \infty)$ | Density-ratio targets (TSM, IPSI). Guarantees $\hat\alpha > 0$. Requires all $m$-coefficients $\geq 0$. |
+| `BernoulliLoss` | $t \log t + (1-t)\log(1-t)$ | sigmoid | $(0, 1)$ | $\alpha_0$ known to lie in $(0, 1)$ by problem structure (rare for representers; saturates at the bounds otherwise). Same coefficient-sign restriction as `KLLoss`. |
+| `BoundedSquaredLoss(lo, hi)` | $t^2$ + sigmoid-scaled link | $\mathrm{lo} + (\mathrm{hi}-\mathrm{lo}) \cdot \sigma$ | $(\mathrm{lo}, \mathrm{hi})$ | Squared-loss fits with hard prior bounds (e.g. trimmed-propensity ratios). Pick bounds tightly around $\alpha_0$ — generous bounds saturate the link and slow boosting. |
 
-`KLLoss` ($\phi(t) = t \log t$, exp link $\alpha = e^\eta$) is for **density-ratio targets** — TSM, IPSI, anything where $\alpha_0$ is a non-negative density ratio. The exponential link guarantees $\hat\alpha > 0$ regardless of leaf updates, which can stabilize density-ratio fits where the squared loss would let $\hat\alpha$ go negative through extrapolation.
+`SquaredLoss` is the standard Lee-Schuler / Chernozhukov objective: $\phi(t) = t^2$, identity link $\eta = \alpha$. Per-row loss $a \cdot \alpha^2 + b \cdot \alpha$.
+
+`KLLoss` ($\phi(t) = t \log t$, exp link) targets density ratios. The exponential link guarantees $\hat\alpha > 0$ regardless of leaf updates.
 
 ::: {.panel-tabset group="lang"}
 
@@ -152,6 +159,47 @@ cat(sprintf("mean alpha_hat on treated rows = %.3f\n",
 ::: {.callout-warning title="When NOT to use KLLoss"}
 On the augmented dataset, pure-counterfactual rows (a=0, b<0) have no minimum in η under KL — leaf weights at low-overlap points can extrapolate. The squared loss is structurally more stable; reach for KL only when its positivity guarantee is genuinely needed.
 :::
+
+### `BoundedSquaredLoss` for hard prior bounds
+
+If you know $\alpha_0 \in [\text{lo}, \text{hi}]$ (e.g. you've trimmed propensities to $[\varepsilon, 1-\varepsilon]$ so $1/\pi \in [1, 1/\varepsilon]$), `BoundedSquaredLoss(lo, hi)` keeps predictions in that box via a sigmoid-scaled link. The per-row loss in $\alpha$-space is unchanged from `SquaredLoss`; the link reparameterizes $\eta$ so $\hat\alpha$ saturates at the bounds rather than extrapolating past them.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+
+```{python}
+from rieszboost import BoundedSquaredLoss
+booster = RieszBooster(
+    estimand=TSM(level=1),
+    loss=BoundedSquaredLoss(lo=0.0, hi=12.0),
+    n_estimators=200, learning_rate=0.05, max_depth=3,
+).fit(df)
+alpha_hat = booster.predict(df)
+print(f"alpha_hat in ({alpha_hat.min():.3f}, {alpha_hat.max():.3f})  (bounded by construction)")
+```
+
+## R
+
+```{r}
+booster <- RieszBooster$new(
+  estimand = TSM(level = 1),
+  loss = BoundedSquaredLoss(lo = 0.0, hi = 12.0),
+  n_estimators = 200L, learning_rate = 0.05, max_depth = 3L
+)
+booster$fit(df)
+alpha_hat <- booster$predict(df)
+cat(sprintf("alpha_hat in (%.3f, %.3f)  (bounded by construction)\n",
+            min(alpha_hat), max(alpha_hat)))
+```
+
+:::
+
+::: {.callout-tip title="Pick bounds tightly"}
+Generous bounds make the sigmoid link saturate over most of $\eta$, so boosting steps barely move predictions. Set `lo` and `hi` to your actual prior on $\alpha_0$, not safe-but-loose extremes.
+:::
+
+`BernoulliLoss` is the same idea with $\text{lo}=0$, $\text{hi}=1$ and the natural Bernoulli Bregman potential — only useful when $\alpha_0$ is genuinely a probability.
 
 ## Custom losses
 

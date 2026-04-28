@@ -20,7 +20,7 @@ from .estimand import (
     StochasticIntervention,
     TSM,
 )
-from .losses import KLLoss, LossSpec, SquaredLoss
+from .losses import BernoulliLoss, BoundedSquaredLoss, KLLoss, LossSpec, SquaredLoss
 from .tracer import LinearForm, Tracer, trace
 
 __all__ = [
@@ -28,6 +28,8 @@ __all__ = [
     "ATT",
     "AdditiveShift",
     "AugmentedDataset",
+    "BernoulliLoss",
+    "BoundedSquaredLoss",
     "Diagnostics",
     "Estimand",
     "KLLoss",

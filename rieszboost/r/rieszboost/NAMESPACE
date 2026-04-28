@@ -1,6 +1,8 @@
 export(ATE)
 export(ATT)
 export(AdditiveShift)
+export(BernoulliLoss)
+export(BoundedSquaredLoss)
 export(KLLoss)
 export(LocalShift)
 export(RieszBooster)

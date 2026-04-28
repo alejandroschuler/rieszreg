@@ -141,6 +141,23 @@ KLLoss <- function(max_eta = 50.0) {
   .module()$KLLoss(max_eta = max_eta)
 }
 
+#' Bernoulli-Bregman loss (phi = t log t + (1-t) log(1-t), sigmoid link).
+#' Forces predictions into (0, 1) — only useful when alpha_0 is known to lie
+#' there by problem structure.
+#' @export
+BernoulliLoss <- function(max_abs_eta = 30.0) {
+  .module()$BernoulliLoss(max_abs_eta = max_abs_eta)
+}
+
+#' Squared Riesz loss with predictions clipped into `(lo, hi)` via a
+#' sigmoid-scaled link. Useful for representers with hard prior bounds
+#' (e.g. trimmed propensity ratios). Pick bounds tightly around alpha_0;
+#' very generous bounds saturate the link and slow boosting.
+#' @export
+BoundedSquaredLoss <- function(lo, hi, max_abs_eta = 30.0) {
+  .module()$BoundedSquaredLoss(lo = lo, hi = hi, max_abs_eta = max_abs_eta)
+}
+
 
 # ---- Backends ----
 

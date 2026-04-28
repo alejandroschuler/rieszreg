@@ -176,14 +176,16 @@ booster = RieszBooster(
 
 ## Bregman losses
 
-Default `SquaredLoss` is the standard Lee-Schuler / Chernozhukov objective. `KLLoss` (φ = t log t with exp link) targets density-ratio representers (TSM, IPSI):
+Four built-in losses cover the common cases:
 
-```python
-from rieszboost import KLLoss
-booster = RieszBooster(estimand=rieszboost.TSM(level=1), loss=KLLoss(), ...)
-```
+| Loss | Domain | Use when |
+|---|---|---|
+| `SquaredLoss` | ℝ | Default — standard Lee-Schuler / Chernozhukov objective. |
+| `KLLoss` | (0, ∞) | Density-ratio representers (TSM, IPSI). Forces α̂ > 0. |
+| `BernoulliLoss` | (0, 1) | α₀ known to be a probability by problem structure. |
+| `BoundedSquaredLoss(lo, hi)` | (lo, hi) | Squared loss with hard prior bounds (e.g. trimmed propensities). |
 
-Plug in your own by implementing the `LossSpec` protocol. Follows Hines & Miles ([2510.16127](https://arxiv.org/abs/2510.16127)) and Kato ([2601.07752](https://arxiv.org/abs/2601.07752)).
+Plug in your own by implementing the `LossSpec` protocol. The framework follows Hines & Miles ([2510.16127](https://arxiv.org/abs/2510.16127)) and Kato ([2601.07752](https://arxiv.org/abs/2601.07752)).
 
 ## Examples
 
@@ -217,8 +219,7 @@ R-side and Python-side predictions are bitwise-identical on the same data.
 
 Active priorities:
 
-1. **More Bregman losses.** Currently `SquaredLoss` and `KLLoss`. Logistic / clipped-α losses for representers known to lie in [0, M] would round out the toolkit.
-2. **Testing plan** — see [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md). Property-based tests, numerical regression baselines, sklearn `check_estimator` conformance, backend-equivalence checks, performance regression tracking.
+1. **Testing plan** — see [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md). Property-based tests, numerical regression baselines, sklearn `check_estimator` conformance, backend-equivalence checks, performance regression tracking.
 
 Real-data examples (Lalonde for ATE under selection, NHEFS for shift, etc.) would also be welcome additions on top of the synthetic-DGP demos in `examples/`.
 
