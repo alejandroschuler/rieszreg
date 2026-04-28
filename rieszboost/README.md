@@ -146,16 +146,29 @@ booster = RieszBooster(
 
 ## Save and load
 
-A fitted booster serializes to a directory containing the model binary plus a JSON metadata sidecar:
+Two paths, depending on what you need.
+
+**sklearn idiom** — the standard way to persist any `BaseEstimator`:
 
 ```python
-booster.save("my_alpha_hat/")
-# ...
-loaded = RieszBooster.load("my_alpha_hat/")
+import joblib
+joblib.dump(booster, "alpha.pkl")
+loaded = joblib.load("alpha.pkl")
 np.array_equal(loaded.predict(df), booster.predict(df))  # True
 ```
 
-Built-in estimands are reconstructed automatically from metadata. Custom user-defined `Estimand`s require you to pass `estimand=` to `load(...)`. Round-trip works across Python and R — save in one, load in the other.
+This single-file pickle works with all six built-in estimands, all four losses, and all the sklearn machinery (`clone`, `GridSearchCV`, `cross_val_predict`) post-load.
+
+**Portable directory format** — a folder with the xgboost model in its native binary plus a JSON metadata sidecar. Use this when you need to introspect the metadata, share the model with non-Python tooling, or load it in R:
+
+```python
+booster.save("my_alpha_hat/")
+loaded = RieszBooster.load("my_alpha_hat/")
+```
+
+R-side `RieszBooster$save(path)` and `load_riesz_booster(path)` use the same directory format, so a model saved in one language loads bitwise-identically in the other.
+
+Both formats handle built-in estimands automatically; custom user-defined `Estimand`s with non-importable `m()` callables need `cloudpickle` for the joblib path or `estimand=...` re-passed to `RieszBooster.load(...)` for the directory path.
 
 ## Backends
 

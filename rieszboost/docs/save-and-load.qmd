@@ -4,9 +4,63 @@ title: "Save and load"
 
 {{< include _setup.qmd >}}
 
-A fitted `RieszBooster` serializes to a directory containing the model binary and a JSON metadata sidecar (loss spec, estimand identity, feature schema, base score, best iteration). Built-in estimands are reconstructed automatically on load. Custom estimands must be re-passed.
+A fitted `RieszBooster` can be persisted two ways:
 
-## Round-trip
+- **`joblib.dump` / `joblib.load`** — the sklearn idiom. Single-file pickle. Works with `clone`, `GridSearchCV`, `cross_val_predict` after loading.
+- **`booster.save(path)` / `RieszBooster.load(path)`** — a directory with the xgboost model in its native UBJSON plus a `metadata.json` sidecar. Cross-language: R's `RieszBooster$save` and `load_riesz_booster` use the same format.
+
+Both paths round-trip every built-in estimand and loss automatically.
+
+## sklearn idiom: `joblib.dump`
+
+::: {.panel-tabset group="lang"}
+
+## Python
+
+```{python}
+import joblib, tempfile, pathlib
+import numpy as np, pandas as pd
+from rieszboost import RieszBooster, ATE
+
+rng = np.random.default_rng(0)
+n = 800
+x = rng.uniform(0, 1, n)
+pi = 1 / (1 + np.exp(-(-0.02 * x - x**2 + 4 * np.log(x + 0.3) + 1.5)))
+a = rng.binomial(1, pi)
+df = pd.DataFrame({"a": a.astype(float), "x": x})
+
+booster = RieszBooster(
+    estimand=ATE(),
+    n_estimators=200, learning_rate=0.05, max_depth=4,
+).fit(df)
+preds_before = booster.predict(df)
+
+with tempfile.TemporaryDirectory() as td:
+    p = pathlib.Path(td) / "booster.pkl"
+    joblib.dump(booster, p)
+    loaded = joblib.load(p)
+    print("predictions match :", np.array_equal(preds_before, loaded.predict(df)))
+
+    # Loaded booster still composes with sklearn:
+    from sklearn.base import clone
+    cloned = clone(loaded)
+    print("clone OK          :", cloned.estimand.name)
+```
+
+## R
+
+For R-side workflows, use the directory format below. To pickle from R via reticulate:
+
+```r
+joblib <- reticulate::import("joblib")
+joblib$dump(booster$py, "booster.pkl")
+loaded_py <- joblib$load("booster.pkl")
+# Wrap loaded_py back into an R6 RieszBooster if needed.
+```
+
+:::
+
+## Portable directory format
 
 ::: {.panel-tabset group="lang"}
 

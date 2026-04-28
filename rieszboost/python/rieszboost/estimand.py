@@ -22,11 +22,38 @@ class Estimand:
     extra_keys: tuple[str, ...] = ()
     name: str = "custom"
     # If set, identifies a built-in factory + ctor args so the estimand can be
-    # reconstructed from JSON. Custom user-supplied m()s leave this None.
+    # reconstructed from JSON or pickle. Custom user-supplied m()s leave this
+    # None and rely on the user's m being picklable on its own.
     factory_spec: dict | None = None
 
     def __call__(self, z, alpha):
         return self.m(z, alpha)
+
+    def __reduce__(self):
+        """Round-trip via the factory_spec for built-in estimands.
+
+        Stock pickle / joblib can't serialize the closure `m` returned by a
+        factory function, so we redirect to `estimand_from_spec(...)` on
+        unpickle. Custom estimands without a factory_spec fall back to the
+        default dataclass reduce — that requires the user's `m` to be
+        importable / picklable.
+        """
+        if self.factory_spec is not None:
+            return (estimand_from_spec, (self.factory_spec,))
+        return (
+            _rebuild_custom_estimand,
+            (self.feature_keys, self.m, self.extra_keys, self.name),
+        )
+
+
+def _rebuild_custom_estimand(feature_keys, m, extra_keys, name):
+    return Estimand(
+        feature_keys=feature_keys,
+        m=m,
+        extra_keys=extra_keys,
+        name=name,
+        factory_spec=None,
+    )
 
 
 def ATE(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Estimand:
