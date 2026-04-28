@@ -95,7 +95,8 @@ def _make_objective(
     counterfactuals, the weight becomes ``-G/reg_lambda`` and blows up unless
     reg_lambda is huge. Flooring at 2.0 (the natural Hessian of original a=1
     rows) keeps every row contributing meaningfully to H, mimicking the
-    uniform weighting that Friedman MART uses by construction.
+    uniform weighting that first-order gradient boosting (Friedman 2001) uses
+    by construction.
     """
 
     def obj(preds: np.ndarray, dtrain) -> tuple[np.ndarray, np.ndarray]:

@@ -32,7 +32,7 @@ General-purpose gradient-boosting library for Riesz representers, implementing L
 
 - `LinearForm` tracer + linearity enforcement via algebra.
 - `build_augmented` + `fit` + `RieszBooster.predict` on the xgboost fast path.
-- `general_fit` slow path: Friedman MART on augmented dataset with arbitrary sklearn-compatible base learners (line-searched step size each round).
+- `general_fit` slow path: first-order gradient boosting (Friedman 2001) on the augmented dataset with arbitrary sklearn-compatible base learners (line-searched step size each round).
 - ATE / ATT / TSM / AdditiveShift estimand factories.
 - `init={0, float, 'm1'}` initialization; m1 traces m on a constant alpha=1.
 - Early stopping on held-out Riesz loss in both engines; `best_iteration` + predict-with-best-iteration baked in.
@@ -49,7 +49,7 @@ Full LMTP support requires multi-stage orchestration (one Riesz fit per time-sta
 ## Known sharp edges
 
 - Boosting can extrapolate aggressively in low-overlap regions of α̂. Use shallow trees (`max_depth=3`), early stopping, and look at `diagnose(...)` warnings — it flags when max |α̂| dwarfs the 99th percentile (a sign of a single outlier extrapolating).
-- `_make_objective` floors the Hessian at `hessian_floor=2.0` (matching the natural Hessian of original a=1 rows). Earlier we used `eps=1e-6`, which made counterfactual leaves degenerate in xgboost's leaf-weight Newton step (`-G/(H+λ)` with H≈0) and required `reg_lambda=100` to stabilize. The new floor mimics Friedman MART's row-uniform weighting; standard xgboost-style hyperparameters now work without sledgehammer regularization.
+- `_make_objective` floors the Hessian at `hessian_floor=2.0` (matching the natural Hessian of original a=1 rows). Earlier we used `eps=1e-6`, which made counterfactual leaves degenerate in xgboost's leaf-weight Newton step (`-G/(H+λ)` with H≈0) and required `reg_lambda=100` to stabilize. The new floor mimics the row-uniform weighting that first-order gradient boosting (Friedman 2001) uses by construction; standard xgboost-style hyperparameters now work without sledgehammer regularization.
 
 ## What's next (per `~/.claude/plans/i-d-like-to-write-crystalline-raven.md`)
 

@@ -77,7 +77,7 @@ def general_fit(
     learning_rate: float = 0.1,
     init: str | float = 0.0,
 ) -> GeneralRieszBooster:
-    """Friedman MART on the augmented dataset with `base_learner()` as the
+    """First-order gradient boosting (Friedman 2001) on the augmented dataset with `base_learner()` as the
     weak-learner factory (returns a fresh sklearn-compatible estimator)."""
     aug = build_augmented(rows, m, feature_keys)
 
