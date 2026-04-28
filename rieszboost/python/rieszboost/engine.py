@@ -20,6 +20,7 @@ from typing import Any, Callable, Sequence
 import numpy as np
 import xgboost as xgb
 
+from .losses import LossSpec, SquaredLoss
 from .tracer import trace
 
 
@@ -80,34 +81,45 @@ def build_augmented(
     )
 
 
-def _make_objective(a: np.ndarray, b: np.ndarray, hessian_floor: float = 2.0):
-    """xgboost custom objective. Gradient = 2a*F + b; Hessian = max(2a, floor).
+def _make_objective(
+    a: np.ndarray,
+    b: np.ndarray,
+    loss_spec: LossSpec,
+    hessian_floor: float = 2.0,
+):
+    """xgboost custom objective. Delegates to `loss_spec.gradient` / `.hessian`.
 
-    The floor is critical: counterfactual rows have true Hessian 0 (only the
-    b·F linear term in the loss). xgboost's second-order leaf weight is
-    ``-G/(H+reg_lambda)``; if H ≈ 0 for a leaf full of counterfactuals, the
-    weight becomes ``-G/reg_lambda`` and blows up unless reg_lambda is huge.
-    Flooring counterfactual hessians at ~1 keeps every row contributing
-    meaningfully to H, mimicking the uniform weighting that Friedman MART
-    (Lee-Schuler's Algorithm 2) uses by construction.
+    For SquaredLoss the floor is critical: counterfactual rows have true
+    Hessian 0 (only the b·F linear term in the loss). xgboost's second-order
+    leaf weight is ``-G/(H+reg_lambda)``; if H ≈ 0 for a leaf full of
+    counterfactuals, the weight becomes ``-G/reg_lambda`` and blows up unless
+    reg_lambda is huge. Flooring at 2.0 (the natural Hessian of original a=1
+    rows) keeps every row contributing meaningfully to H, mimicking the
+    uniform weighting that Friedman MART uses by construction.
     """
-    hess = np.maximum(2.0 * a, hessian_floor)
 
     def obj(preds: np.ndarray, dtrain) -> tuple[np.ndarray, np.ndarray]:
         del dtrain
-        grad = 2.0 * a * preds + b
+        grad = loss_spec.gradient(a, b, preds)
+        hess = loss_spec.hessian(a, b, preds, hessian_floor)
         return grad, hess
 
     return obj
 
 
-def _make_riesz_metric(a_val: np.ndarray, b_val: np.ndarray, n_val_rows: int):
-    """xgboost custom_metric returning the per-row validation Riesz loss
-    (1/n) Σ_i [α(z_i)² - 2 m(z_i, α)] = (1/n) Σ_j [a_j F_j² + b_j F_j]."""
+def _make_riesz_metric(
+    a_val: np.ndarray,
+    b_val: np.ndarray,
+    n_val_rows: int,
+    loss_spec: LossSpec,
+):
+    """xgboost custom_metric returning the per-row validation Riesz loss.
+    xgboost predicts η; we apply link_to_alpha and evaluate the loss in α-space."""
     def metric(predt: np.ndarray, dval) -> tuple[str, float]:
         del dval
-        loss = float(np.sum(a_val * predt**2 + b_val * predt) / n_val_rows)
-        return "riesz_loss", loss
+        alpha = loss_spec.link_to_alpha(predt)
+        per_row = loss_spec.loss_row(a_val, b_val, alpha)
+        return "riesz_loss", float(np.sum(per_row) / n_val_rows)
     return metric
 
 
@@ -116,6 +128,7 @@ def fit(
     m: Callable,
     feature_keys: Sequence[str],
     *,
+    loss_spec: LossSpec | None = None,
     valid_rows: Sequence[dict[str, Any]] | None = None,
     num_boost_round: int = 100,
     early_stopping_rounds: int | None = None,
@@ -123,26 +136,36 @@ def fit(
     max_depth: int = 5,
     reg_lambda: float = 1.0,
     subsample: float = 1.0,
-    base_score: float = 0.0,
+    base_score: float | None = None,
     seed: int = 0,
-    init: str | float = 0.0,
+    init: str | float | None = None,
     hessian_floor: float = 2.0,
     verbose_eval: bool | int = False,
 ) -> "RieszBooster":
     """Fit a Riesz representer to the user's m via the fast augmented-data path.
 
-    If `valid_rows` is given, a per-row validation Riesz loss is computed each
-    round; pair with `early_stopping_rounds` to halt when it stops improving.
+    `loss_spec` defaults to `SquaredLoss()`; pass `KLLoss()` for density-ratio
+    targets where α₀ is positive (TSM, IPSI). If `valid_rows` is given, a
+    per-row validation Riesz loss is computed each round; pair with
+    `early_stopping_rounds` to halt when it stops improving.
     """
-    aug = build_augmented(rows, m, feature_keys)
+    if loss_spec is None:
+        loss_spec = SquaredLoss()
 
+    aug = build_augmented(rows, m, feature_keys)
+    loss_spec.validate_coefficients(aug.b)
+
+    if init is None:
+        init = loss_spec.default_init_alpha()
     if init == "m1":
         per_row = [sum(c for c, _ in trace(m, z)) for z in rows]
-        base_score = float(np.mean(per_row))
+        init_alpha = float(np.mean(per_row))
     elif isinstance(init, (int, float)):
-        base_score = float(init)
+        init_alpha = float(init)
     else:
-        raise ValueError(f"init must be 0, a float, or 'm1'; got {init!r}")
+        raise ValueError(f"init must be a float or 'm1'; got {init!r}")
+    # base_score lives in η space (xgboost adds it to additive tree predictions).
+    base_score = float(loss_spec.alpha_to_eta(init_alpha))
 
     dtrain = xgb.DMatrix(aug.features)
     params = {
@@ -159,9 +182,12 @@ def fit(
     custom_metric = None
     if valid_rows is not None:
         aug_val = build_augmented(valid_rows, m, feature_keys)
+        loss_spec.validate_coefficients(aug_val.b)
         dvalid = xgb.DMatrix(aug_val.features)
         evals = [(dvalid, "valid")]
-        custom_metric = _make_riesz_metric(aug_val.a, aug_val.b, len(valid_rows))
+        custom_metric = _make_riesz_metric(
+            aug_val.a, aug_val.b, len(valid_rows), loss_spec
+        )
     elif early_stopping_rounds is not None:
         raise ValueError("early_stopping_rounds requires valid_rows to be provided")
 
@@ -169,7 +195,7 @@ def fit(
         params,
         dtrain,
         num_boost_round=num_boost_round,
-        obj=_make_objective(aug.a, aug.b, hessian_floor=hessian_floor),
+        obj=_make_objective(aug.a, aug.b, loss_spec, hessian_floor=hessian_floor),
         evals=evals,
         custom_metric=custom_metric,
         early_stopping_rounds=early_stopping_rounds,
@@ -183,6 +209,7 @@ def fit(
         base_score=base_score,
         best_iteration=best_iteration,
         best_score=float(best_score) if best_score is not None else None,
+        loss_spec=loss_spec,
     )
 
 
@@ -193,13 +220,20 @@ class RieszBooster:
     base_score: float
     best_iteration: int | None = None
     best_score: float | None = None
+    loss_spec: LossSpec | None = None
 
-    def _predict_dmatrix(self, dmatrix) -> np.ndarray:
+    def _predict_eta(self, dmatrix) -> np.ndarray:
+        """Raw additive xgboost output (η)."""
         if self.best_iteration is not None:
             return self.booster.predict(
                 dmatrix, iteration_range=(0, self.best_iteration + 1)
             )
         return self.booster.predict(dmatrix)
+
+    def _predict_dmatrix(self, dmatrix) -> np.ndarray:
+        eta = self._predict_eta(dmatrix)
+        ls = self.loss_spec if self.loss_spec is not None else SquaredLoss()
+        return np.asarray(ls.link_to_alpha(eta))
 
     def predict(self, rows: Sequence[dict[str, Any]]) -> np.ndarray:
         X = np.asarray(
@@ -215,7 +249,9 @@ class RieszBooster:
         rows: Sequence[dict[str, Any]],
         m: Callable,
     ) -> float:
-        """Empirical Riesz loss (1/n) Σ [α(z)² - 2 m(z, α)] on rows."""
+        """Per-row empirical Riesz loss on rows, using this booster's loss_spec
+        (defaults to SquaredLoss if missing)."""
         aug = build_augmented(rows, m, self.feature_keys)
         F = self.predict_array(aug.features)
-        return float(np.sum(aug.a * F**2 + aug.b * F) / len(rows))
+        ls = self.loss_spec if self.loss_spec is not None else SquaredLoss()
+        return float(np.sum(ls.loss_row(aug.a, aug.b, F)) / len(rows))

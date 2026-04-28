@@ -38,8 +38,9 @@ General-purpose gradient-boosting library for Riesz representers, implementing L
 - Early stopping on held-out Riesz loss in both engines; `best_iteration` + predict-with-best-iteration baked in.
 - K-fold cross-fitting (`crossfit.crossfit`) with optional inner-split early stopping.
 - Diagnostics (`diagnostics.diagnose`) — RMS, |α| quantiles, extreme-row count, near-positivity and outlier-extrapolation warnings, held-out Riesz loss.
-- 31 Python tests + 13 R tests passing, including end-to-end ATE/ATT Riesz recovery on the Lee-Schuler binary-treatment DGP (ATE RMSE 0.64 at n=4000, ATT RMSE 0.33 — both better than Lee-Schuler's reported numbers at n=500) and a R↔Python prediction-parity check.
+- 36 Python tests + 13 R tests passing.
 - R wrapper via reticulate — same surface as Python.
+- Bregman-Riesz framework: `LossSpec` protocol with `link_to_alpha` / `alpha_to_eta` so xgboost boosts in η-space and predictions live in α-space. Concrete: `SquaredLoss` (identity link), `KLLoss` (exp link, requires non-negative m-coefficients). Note: KL on the Lee-Schuler-style augmented dataset is structurally less stable than squared because pure-counterfactual rows (a=0, b<0) have no minimum in η, so leaf weights at low-overlap points can extrapolate. Document this when promoting KL.
 
 ## Longitudinal / LMTP
 

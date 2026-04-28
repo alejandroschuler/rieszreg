@@ -1,6 +1,8 @@
 from .estimands import ATE, ATT, TSM, AdditiveShift
 from .tracer import LinearForm, Tracer, trace
 
+from .losses import KLLoss, LossSpec, SquaredLoss
+
 __all__ = [
     "ATE",
     "ATT",
@@ -8,8 +10,11 @@ __all__ = [
     "CrossFitResult",
     "Diagnostics",
     "GeneralRieszBooster",
+    "KLLoss",
     "LinearForm",
+    "LossSpec",
     "RieszBooster",
+    "SquaredLoss",
     "TSM",
     "Tracer",
     "build_augmented",

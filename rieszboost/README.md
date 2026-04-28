@@ -114,11 +114,12 @@ More planned: stochastic-shift / IPSI variants. Full LMTP-style longitudinal int
 ## What works today
 
 - Opaque `m(z, alpha)` API with linearity enforced by construction.
-- Fast path: data augmentation + xgboost custom objective (gradient `2aF + b`, Hessian `2a`).
+- Fast path: data augmentation + xgboost custom objective.
 - Slow general path: Friedman MART on the augmented dataset with any sklearn-compatible base learner — `rieszboost.general_fit(..., base_learner=lambda: KernelRidge(...))`.
+- **Bregman-Riesz losses** via `loss_spec=`: `SquaredLoss()` (default — the standard Lee-Schuler / Chernozhukov objective) and `KLLoss()` (φ = t log t with exp link, for density-ratio targets like TSM / IPSI). Plug in your own by implementing the `LossSpec` protocol. Follows Hines & Miles ([2510.16127](https://arxiv.org/abs/2510.16127)) and Kato ([2601.07752](https://arxiv.org/abs/2601.07752)).
 - ATE / ATT / TSM / AdditiveShift estimand factories.
 - R wrapper via reticulate — bitwise-identical predictions across languages.
-- `init={0, float, "m1"}` initialization.
+- `init={float, "m1"}` initialization (in α space; loss spec handles the link transform).
 - Early stopping on held-out Riesz loss (`valid_rows=` + `early_stopping_rounds=`).
 - K-fold cross-fitting (`rieszboost.crossfit(...)`) with optional inner-split early stopping.
 - Diagnostics (`rieszboost.diagnose(...)`): RMS, extremes, |α| quantiles, near-positivity warnings, held-out Riesz loss.
@@ -127,8 +128,7 @@ More planned: stochastic-shift / IPSI variants. Full LMTP-style longitudinal int
 
 - lightgbm engine adapter.
 - Stochastic-intervention / IPSI estimands (slow path with integral evaluation).
-- Examples gallery (Lalonde, NHEFS shift, two-stage longitudinal).
-- Bregman extension (Hines & Miles / Kato 2026).
+- More examples (Lalonde, NHEFS, two-stage longitudinal via repeated single-stage fits).
 
 See `CLAUDE.md` and `~/.claude/plans/i-d-like-to-write-crystalline-raven.md` for the full plan.
 
