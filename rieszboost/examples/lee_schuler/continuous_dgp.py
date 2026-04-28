@@ -78,18 +78,13 @@ def predict_mu(mu_hat, a, x):
     return mu_hat.predict(xgb.DMatrix(np.column_stack([a, x])))
 
 
-def m_ase(z, alpha):
-    a = z["a"]
-    x = z["x"]
-    return alpha(a=a + SHIFT, x=x) - alpha(a=a, x=x)
-
-
-def m_lase_partial(z, alpha):
-    """Partial LASE m: 1(A < t) * (alpha(A+delta, X) - alpha(A, X))."""
-    a = z["a"]
-    x = z["x"]
-    indicator = 1.0 if a < THRESHOLD else 0.0
-    return indicator * (alpha(a=a + SHIFT, x=x) - alpha(a=a, x=x))
+# m_ase comes from rieszboost.AdditiveShift; m_lase_partial from
+# rieszboost.LocalShift (LASE itself isn't a Riesz functional — the partial-
+# parameter form here gets a delta-method correction in eee_lase).
+m_ase = rieszboost.AdditiveShift(delta=SHIFT, treatment="a", covariates=("x",))
+m_lase_partial = rieszboost.LocalShift(
+    delta=SHIFT, threshold=THRESHOLD, treatment="a", covariates=("x",)
+)
 
 
 _RIESZ_PARAMS = dict(

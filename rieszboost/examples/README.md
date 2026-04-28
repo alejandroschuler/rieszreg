@@ -1,50 +1,58 @@
 # Examples
 
-End-to-end scripts demonstrating `rieszboost` and reproducing published results.
+End-to-end scripts demonstrating `rieszboost` on the simulation studies of [Lee & Schuler (2025), arXiv:2501.04871](https://arxiv.org/abs/2501.04871).
 
-## Lee & Schuler (arXiv:2501.04871)
+## What's here
 
-Two scripts reproduce Section 4 of the paper. Each script simulates one of the paper's data-generating processes, fits an outcome regression `μ̂` and a Riesz representer `α̂`, and reports both the Riesz-RMSE and the final-parameter EEE estimate with coverage.
-
-```sh
-# Section 4.1: binary treatment, ATE + ATT
-.venv/bin/python examples/lee_schuler/binary_dgp.py --n_reps 50
-
-# Section 4.2: continuous treatment, ASE + LASE
-.venv/bin/python examples/lee_schuler/continuous_dgp.py --n_reps 50
+```
+lee_schuler/
+  binary_dgp.py            # Section 4.1: ATE + ATT, binary treatment
+  continuous_dgp.py        # Section 4.2: ASE + LASE, continuous treatment
+  _compare_with_reference.py   # Head-to-head against Lee-Schuler's reference code
+  COMPARISON.md            # Math walkthrough + numbers from the cross-check
 ```
 
-Defaults: `n=1000` per rep (500 train / 500 estimation), `n_reps=50`. Pass `--n_reps 500` to match the paper's full study (~30–60 min wall time).
+Run any of them with `.venv/bin/python examples/lee_schuler/<script>.py --n_reps 50` (paper uses `--n_reps 500`; defaults are smaller for short wall time).
 
-### What gets reproduced
+## Estimands and Riesz functionals
 
-The paper reports:
+Two of the four estimands in Lee-Schuler are not themselves Riesz functionals — they involve the marginal `P(A=...)`, which isn't a regression nuisance. The standard pipeline (Hubbard 2011 for ATT; Susmann 2024 for LASE) fits the Riesz representer of a *partial parameter* and applies a delta-method correction downstream.
 
-- **Table 1** — Riesz-representer estimation RMSE/MAE for ATE/ATT under the binary DGP.
-- **Tables 2 & 3** — final EEE estimates of ATE / ATT (mean, average SE, RMSE, empirical SD, 95% coverage).
-- **Table 4** — Riesz-representer RMSE/MAE for ASE/LASE under the continuous DGP.
-- **Tables 5 & 6** — final EEE estimates of ASE / LASE.
+| Parameter | Riesz functional? | Riesz representer fit | Delta-method downstream |
+|---|---|---|---|
+| **ATE** = E[μ(1,X) − μ(0,X)] | yes — `m(O,μ) = μ(1,X) − μ(0,X)` | `α₀ = A/π − (1−A)/(1−π)` | none |
+| **ATT** = E[μ(1,X) − μ(0,X) \| A=1] | **no** — equals `θ_partial / P(A=1)` | partial: `m(O,μ) = A·(μ(1,X) − μ(0,X))`. `α_partial = A − (1−A)π/(1−π)` | `ψ_ATT = ψ_partial / p̂` with EIF correction |
+| **ASE** = E[μ(A+δ,X) − μ(A,X)] | yes — `m(O,μ) = μ(A+δ,X) − μ(A,X)` | `α₀ = p(A−δ\|X)/p(A\|X) − 1` | none |
+| **LASE** = E[μ(A+δ,X) − μ(A,X) \| A < t] | **no** — equals `θ_partial / P(A<t)` | partial: `m(O,μ) = 1(A<t)·(μ(A+δ,X) − μ(A,X))`. `α_partial = 1(A<t+δ)·p(A−δ\|X)/p(A\|X) − 1(A<t)` | `ψ_LASE = ψ_partial / p̂_t` with EIF correction |
 
-Both scripts print the paper's reported values alongside ours for direct comparison.
+`rieszboost`'s built-in `ATT()` and `LocalShift(delta, threshold)` factories return the *partial-parameter* m for ATT and LASE respectively. The example scripts then build the EIF and EEE estimator inline.
 
-### Notes on hyperparameters
+## Reproducing the paper
 
-Lee-Schuler tune over a grid (`learning_rate ∈ {0.001, 0.01, 0.1, 0.25}`, `max_depth ∈ {3, 5, 7}`, `M ∈ {10, 30, …, 200}`) via cross-validation. The example scripts use a single fixed setting (`learning_rate=0.01, max_depth=3, reg_lambda=1`) plus early stopping on a held-out 20% of the training set. Final-parameter estimates are typically within a fraction of an SE of the paper; α RMSE is somewhat higher without grid tuning. Plug a CV loop around the `fit(...)` call to close the remaining gap.
+The scripts use a single fixed hyperparameter setting plus held-out early stopping; the paper CV-tunes over a grid (`learning_rate ∈ {0.001, 0.01, 0.1, 0.25}`, `max_depth ∈ {3, 5, 7}`, `n_estimators ∈ {10..200}`). Without CV, our final-parameter EEE estimates land within roughly 1 SE of the paper for ATE/ATT/ASE; α-RMSE numbers are somewhat worse (factor of 1–2). Wrap a CV loop around `rieszboost.fit(...)` to close the remaining gap.
 
-### Departures from the paper
+| | Paper α-RMSE | Ours α-RMSE | Paper final-param RMSE | Ours final-param RMSE |
+|---|---|---|---|---|
+| ATE  | 0.92 | ~1.15 | 0.187 (94% cov) | ~0.20 (90% cov) |
+| ATT  | 0.44 | ~0.77 | 0.177 (95% cov) | ~0.19 (98% cov) |
+| ASE  | 0.37 | ~0.46 | 2.80 (93% cov) | ~3.85 (90% cov) |
+| LASE | 0.25 | ~0.37 | 1.86 (95% cov) | ~4.4 (32% cov) |
 
-- The ATT example uses Lee-Schuler's "partial-parameter" formulation `m(O, μ) = A(μ(1, X) − μ(0, X))` with the EEE delta-method correction for `1/P(A=1)`. Built-in `rieszboost.ATT(p_treated)` uses the equivalent direct formulation `m(O, μ) = (A/p_treated)(μ(1, X) − μ(0, X))`; either works.
-- Same for LASE, which uses the partial-parameter form `m(O, μ) = 1(A < t)(μ(A+δ, X) − μ(A, X))` followed by the delta-method correction for `1/P(A < t)`.
+LASE is the worst case — its representer has step discontinuities at `a = t` and `a = t + δ`, and tree boosting smooths them into ramps. CV-tuned hyperparameters help substantially; `max_depth ≥ 5` plus more boosting rounds is roughly the right move.
 
-### Cross-check vs the Lee-Schuler reference implementation
+## Cross-check vs the reference implementation
 
-A standalone comparison script verifies that our `gradient_only=True` engine reproduces Lee-Schuler's reference implementation ([`kaitlynjlee/boosting_for_rr`](https://github.com/kaitlynjlee/boosting_for_rr)). See [COMPARISON.md](lee_schuler/COMPARISON.md) for the full writeup, including the math walkthrough behind the `learning_rate/2` rescaling and a bug we caught in the reference's no-early-stopping path. Headline:
+`_compare_with_reference.py` runs both `rieszboost` and Kaitlyn Lee's reference fitter ([`kaitlynjlee/boosting_for_rr`](https://github.com/kaitlynjlee/boosting_for_rr)) on identical data and reports per-row α̂ disagreement. With `gradient_only=True` and `learning_rate=lr_ref/2`, our engine reproduces theirs to:
 
-| | Pearson(ref, ours) | RMSE(ref vs ours) | RMSE vs truth |
+| | Pearson(ref, ours) | RMSE(ref vs ours) | RMSE vs truth (either) |
 |---|---|---|---|
 | ATE | 0.998 | 0.13 | ~1.0 |
 | ATT | 0.986 | 0.19 | ~0.75 |
 
-### Caveat — LASE
+Disagreement is an order of magnitude smaller than disagreement of either implementation with the truth, so what's left is split-finding differences between sklearn `DecisionTreeRegressor` (exhaustive scan) and xgboost (histogram). The augmentation, gradient, and loss are mathematically equivalent. See [COMPARISON.md](lee_schuler/COMPARISON.md) for the math walkthrough behind the `lr_ref/2` rescaling and a separate bug we caught in the reference code.
 
-LASE's true Riesz representer has step discontinuities at `A = 0` and `A = 1` (the indicator boundaries). Trees smooth these into ramps, biasing α̂ near the boundaries and hence the EEE estimate. Lee-Schuler's CV-tuned configuration handles this better than our fixed hyperparameters; with a CV wrapper (or much larger n), our LASE coverage approaches theirs.
+```sh
+git clone https://github.com/kaitlynjlee/boosting_for_rr /tmp/lee_ref
+PYTHONPATH=/tmp/lee_ref .venv/bin/python examples/lee_schuler/_compare_with_reference.py \
+    --n 500 --n_seeds 10 --lr 0.1 --n_estimators 100 --max_depth 3
+```

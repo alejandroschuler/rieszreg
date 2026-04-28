@@ -62,13 +62,6 @@ def predict_mu(mu_hat: xgb.Booster, a: np.ndarray, x: np.ndarray) -> np.ndarray:
     return mu_hat.predict(xgb.DMatrix(np.column_stack([a, x])))
 
 
-def m_att_partial(z, alpha):
-    """Lee-Schuler ATT 'partial parameter': m(O, mu) = A * (mu(1,X) - mu(0,X))."""
-    a = z["a"]
-    x = z["x"]
-    return a * (alpha(a=1, x=x) - alpha(a=0, x=x))
-
-
 # Lee-Schuler tune hyperparameters via CV; we use moderate fixed defaults.
 # With the engine's hessian_floor=2.0 (Friedman-style row weighting), standard
 # xgboost-style defaults work — no sledgehammer reg_lambda needed.
@@ -93,9 +86,12 @@ def fit_alpha_ate(rows_train, rows_valid):
 
 
 def fit_alpha_att(rows_train, rows_valid):
+    """Fits the Riesz representer of the ATT *partial parameter*
+    `theta_partial = E[A*(mu(1,X) - mu(0,X))]`. The full ATT is
+    `theta_partial / P(A=1)` and is handled by `eee_att` via delta method."""
     return rieszboost.fit(
         rows_train,
-        m_att_partial,
+        rieszboost.ATT(treatment="a", covariates=("x",)),
         feature_keys=("a", "x"),
         valid_rows=rows_valid,
         **_RIESZ_PARAMS,

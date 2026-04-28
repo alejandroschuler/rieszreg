@@ -1,4 +1,4 @@
-from .estimands import ATE, ATT, TSM, AdditiveShift, StochasticIntervention
+from .estimands import ATE, ATT, LocalShift, TSM, AdditiveShift, StochasticIntervention
 from .tracer import LinearForm, Tracer, trace
 
 from .losses import KLLoss, LossSpec, SquaredLoss
@@ -12,6 +12,7 @@ __all__ = [
     "GeneralRieszBooster",
     "KLLoss",
     "LinearForm",
+    "LocalShift",
     "LossSpec",
     "RieszBooster",
     "SquaredLoss",

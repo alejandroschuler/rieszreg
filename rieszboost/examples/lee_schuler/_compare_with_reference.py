@@ -33,11 +33,7 @@ from rrboost.dgps import ATE as ate_dgp
 import rieszboost
 
 
-def m_att_partial(z, alpha):
-    """Lee-Schuler partial-ATT m: m(O, mu) = A * (mu(1, X) - mu(0, X))."""
-    a = z["a"]
-    x = z["x"]
-    return a * (alpha(a=1, x=x) - alpha(a=0, x=x))
+# ATT partial-parameter m is now in rieszboost.ATT()
 
 
 def compare_ate(seed: int, n: int, lr_ref: float, n_estimators: int, max_depth: int):
@@ -113,7 +109,7 @@ def compare_att(seed, n, lr_ref, n_estimators, max_depth):
 
     rows = [{"a": float(a_i), "x": float(X[i, 0])} for i, a_i in enumerate(A)]
     booster = rieszboost.fit(
-        rows, m_att_partial,
+        rows, rieszboost.ATT(),
         feature_keys=("a", "x"),
         gradient_only=True,
         learning_rate=lr_ref / 2.0,

@@ -75,13 +75,18 @@ ATE <- function(treatment = "a", covariates = "x") {
 }
 
 
-#' Average treatment effect on the treated.
-#' @param p_treated Marginal P(A=1); typically `mean(data$a)`.
+#' Riesz representer of the ATT *partial parameter* `E[A (mu(1,X) - mu(0,X))]`.
+#'
+#' `m(z, alpha) = a * (alpha(1, x) - alpha(0, x))`. The full ATT
+#' `theta_ATT = E[mu(1,X) - mu(0,X) | A=1] = theta_partial / P(A=1)` is **not**
+#' a Riesz functional (it depends on the marginal P(A=1)). The standard
+#' pipeline is: fit `alpha_partial` via this factory, estimate
+#' `p = mean(A)`, then build the ATT EIF (Hubbard 2011) via delta method:
+#' `phi(O) = (1/p) [A (mu(1,X) - mu(0,X) - psi_ATT) + alpha_partial (Y - mu(O))]`.
 #' @inheritParams ATE
 #' @export
-ATT <- function(p_treated, treatment = "a", covariates = "x") {
+ATT <- function(treatment = "a", covariates = "x") {
   .module()$ATT(
-    p_treated = p_treated,
     treatment = treatment,
     covariates = as.list(covariates)
   )
@@ -104,6 +109,27 @@ TSM <- function(level, treatment = "a", covariates = "x") {
 AdditiveShift <- function(delta, treatment = "a", covariates = "x") {
   .module()$AdditiveShift(
     delta = delta,
+    treatment = treatment,
+    covariates = as.list(covariates)
+  )
+}
+
+
+#' Riesz representer of the local-additive-shift *partial parameter*
+#' `E[1(A < threshold) * (mu(A+delta, X) - mu(A, X))]`.
+#'
+#' `m(z, alpha) = 1(a < threshold) * (alpha(a+delta, x) - alpha(a, x))`.
+#' Like ATT, the full LASE divides by `P(A < threshold)` and is **not**
+#' a Riesz functional. Use this factory to fit `alpha_partial`; for
+#' inference on LASE, build the delta-method EIF downstream.
+#' @param delta Shift magnitude.
+#' @param threshold Cutoff value; only rows with `a < threshold` get shifted.
+#' @inheritParams ATE
+#' @export
+LocalShift <- function(delta, threshold, treatment = "a", covariates = "x") {
+  .module()$LocalShift(
+    delta = delta,
+    threshold = threshold,
     treatment = treatment,
     covariates = as.list(covariates)
   )

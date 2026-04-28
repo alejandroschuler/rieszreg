@@ -1,6 +1,7 @@
 export(ATE)
 export(ATT)
 export(AdditiveShift)
+export(LocalShift)
 export(StochasticIntervention)
 export(TSM)
 export(crossfit)

@@ -32,13 +32,12 @@ test_that("ATE fit produces reasonable Riesz representer", {
 })
 
 
-test_that("ATT factory traces and fits", {
+test_that("ATT (partial-parameter) factory traces and fits", {
   s <- simulate(2000L, seed = 1L)
-  p_treated <- mean(s$df$a)
   n_tr <- 1600L
   fit <- fit_riesz(
     data = s$df[1:n_tr, ],
-    m = ATT(p_treated = p_treated, treatment = "a", covariates = "x"),
+    m = ATT(treatment = "a", covariates = "x"),
     feature_keys = c("a", "x"),
     valid_data = s$df[(n_tr + 1):2000, ],
     num_boost_round = 1000L,
@@ -48,8 +47,8 @@ test_that("ATT factory traces and fits", {
     reg_lambda = 10
   )
   alpha_hat <- predict(fit, s$df)
-  alpha_true <- s$df$a / p_treated -
-    (1 - s$df$a) * s$pi / ((1 - s$pi) * p_treated)
+  # Partial-parameter representer: A - (1-A) pi(X) / (1 - pi(X))
+  alpha_true <- s$df$a - (1 - s$df$a) * s$pi / (1 - s$pi)
   expect_true(cor(alpha_hat, alpha_true) > 0.85)
 })
 

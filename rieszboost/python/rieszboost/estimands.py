@@ -44,6 +44,41 @@ def AdditiveShift(
     return m
 
 
+def LocalShift(
+    delta: float,
+    threshold: float,
+    treatment: str = "a",
+    covariates: Sequence[str] = ("x",),
+) -> Callable:
+    """Riesz representer of the local-additive-shift **partial parameter**
+    `θ_partial = E[1(A < threshold) · (μ(A+δ, X) − μ(A, X))]`.
+
+    `m(z, α) = 1(a < threshold) · (α(a+δ, x) − α(a, x))`.
+
+    Like ATT, the *full* local-shift effect (LASE)
+    `E[μ(A+δ,X) − μ(A,X) | A < threshold] = θ_partial / P(A < threshold)`
+    is **not** a Riesz functional (it depends on the marginal P(A < threshold)).
+    Use this factory to fit α̂_partial; for inference on LASE, build the
+    delta-method EIF (Susmann 2024 / Lee-Schuler appendix):
+
+        φ(O) = (1/p_t) [1(A<t)(μ(A+δ,X) − μ(A,X) − ψ_LASE) + α̂_partial(Y − μ(O))]
+
+    with p̂_t = mean(A < threshold).
+    """
+    cov = tuple(covariates)
+
+    def m(z, alpha):
+        a = z[treatment]
+        if a >= threshold:
+            return 0
+        x_kwargs = {k: z[k] for k in cov}
+        return alpha(**{treatment: a + delta, **x_kwargs}) - alpha(
+            **{treatment: a, **x_kwargs}
+        )
+
+    return m
+
+
 def StochasticIntervention(
     samples_key: str = "shift_samples",
     treatment: str = "a",
@@ -85,23 +120,30 @@ def StochasticIntervention(
     return m
 
 
-def ATT(
-    p_treated: float, treatment: str = "a", covariates: Sequence[str] = ("x",)
-) -> Callable:
-    """Average treatment effect on the treated.
-
-    m(z, alpha) = (a / p_treated) * (alpha(1, x) - alpha(0, x)).
+def ATT(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Callable:
+    """Riesz representer of the **partial parameter** for ATT,
+    θ_partial = E[A·(μ(1,X) − μ(0,X))]; m(z, α) = a · (α(1, x) − α(0, x)).
     For control rows (a=0) the contribution is zero — those rows contribute
-    only the alpha^2 term in the loss. `p_treated` is the marginal P(A=1)
-    (estimate as `np.mean(a)` outside).
+    only the α² term in the loss.
+
+    The full ATT, θ_ATT = θ_partial / P(A=1), is **not** itself a Riesz
+    functional (it depends on the marginal P(A=1), not on μ). The standard
+    pipeline (Hubbard 2011) is:
+
+        1. Fit α̂_partial via this factory.
+        2. Estimate p̂ = mean(A).
+        3. Use the delta-method EIF
+              φ(O) = (1/p̂)·[A·(μ̂(1,X) − μ̂(0,X) − ψ̂_ATT) + α̂_partial·(Y − μ̂)]
+           and solve for ψ̂_ATT = (1/p̂)·mean(A(μ̂(1)−μ̂(0)) + α̂_partial(Y−μ̂)).
+
+    See examples/lee_schuler/binary_dgp.py for a worked example.
     """
     cov = tuple(covariates)
 
     def m(z, alpha):
         a = z[treatment]
         x_kwargs = {k: z[k] for k in cov}
-        weight = a / p_treated
-        return weight * (
+        return a * (
             alpha(**{treatment: 1, **x_kwargs}) - alpha(**{treatment: 0, **x_kwargs})
         )
 

@@ -104,10 +104,11 @@ def m_att(z, alpha):
 
 | Factory | m(z, α) | Notes |
 |---|---|---|
-| `rieszboost.ATE(treatment, covariates)` | α(1, x) − α(0, x) | Binary treatment ATE |
-| `rieszboost.ATT(p_treated, treatment, covariates)` | (a/P(A=1))·(α(1, x) − α(0, x)) | Average treatment on the treated |
+| `rieszboost.ATE(treatment, covariates)` | α(1, x) − α(0, x) | Average treatment effect |
+| `rieszboost.ATT(treatment, covariates)` | a · (α(1, x) − α(0, x)) | ATT *partial parameter* `E[A·(μ(1,X)−μ(0,X))]`. The full ATT divides by P(A=1) and is **not** itself a Riesz functional — combine α̂_partial with a delta-method EIF (Hubbard 2011) downstream. |
 | `rieszboost.TSM(level, treatment, covariates)` | α(level, x) | Treatment-specific mean |
 | `rieszboost.AdditiveShift(delta, treatment, covariates)` | α(a + δ, x) − α(a, x) | Continuous-treatment shift effect |
+| `rieszboost.LocalShift(delta, threshold, ...)` | 1(a < threshold) · (α(a + δ, x) − α(a, x)) | LASE *partial parameter*. Like ATT, the full LASE divides by P(A < threshold) and needs a delta-method EIF. |
 | `rieszboost.StochasticIntervention(samples_key, ...)` | (1/K) Σₖ α(a'ₖ, x) | Stochastic interventions / IPSI via Monte Carlo over the intervention density |
 
 For stochastic interventions, pre-sample treatment values from g(·\|a, x) per row and attach them under `samples_key`:
@@ -129,7 +130,7 @@ Full LMTP-style longitudinal interventions with time-varying confounding require
 - Fast path: data augmentation + xgboost custom objective. Pass `gradient_only=True` to disable the second-order Newton step and use first-order gradient boosting (Friedman 2001 / Lee-Schuler Algorithm 2 exactly).
 - Slow general path: first-order gradient boosting (Friedman 2001) on the augmented dataset with any sklearn-compatible base learner — `rieszboost.general_fit(..., base_learner=lambda: KernelRidge(...))`.
 - **Bregman-Riesz losses** via `loss_spec=`: `SquaredLoss()` (default — the standard Lee-Schuler / Chernozhukov objective) and `KLLoss()` (φ = t log t with exp link, for density-ratio targets like TSM / IPSI). Plug in your own by implementing the `LossSpec` protocol. Follows Hines & Miles ([2510.16127](https://arxiv.org/abs/2510.16127)) and Kato ([2601.07752](https://arxiv.org/abs/2601.07752)).
-- ATE / ATT / TSM / AdditiveShift / StochasticIntervention estimand factories.
+- ATE / ATT / TSM / AdditiveShift / LocalShift / StochasticIntervention estimand factories. ATT and LocalShift fit *partial-parameter* representers; the full ATT and LASE require a downstream delta-method correction (see `examples/lee_schuler/binary_dgp.py` and `continuous_dgp.py`).
 - R wrapper via reticulate — bitwise-identical predictions across languages.
 - `init={float, "m1"}` initialization (in α space; loss spec handles the link transform).
 - Early stopping on held-out Riesz loss (`valid_rows=` + `early_stopping_rounds=`).
