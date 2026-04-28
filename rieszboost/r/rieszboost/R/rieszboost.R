@@ -115,7 +115,11 @@ AdditiveShift <- function(delta, treatment = "a", covariates = "x") {
 #' @param valid_data Optional held-out data frame for early stopping.
 #' @param num_boost_round,early_stopping_rounds,learning_rate,max_depth,reg_lambda,subsample,seed
 #'   Hyperparameters forwarded to the Python `fit`.
-#' @param init Initial value for alpha; one of `0`, `"m1"`, or a numeric scalar.
+#' @param init Initial value for alpha (in alpha space); one of `"m1"` or a
+#'   numeric scalar. NULL takes the loss spec's default (0 for squared, 1 for KL).
+#' @param gradient_only If TRUE, disable xgboost's second-order Newton step
+#'   and use first-order gradient boosting (Friedman 2001) — Lee-Schuler's
+#'   Algorithm 2 exactly. Default FALSE keeps the floored second-order step.
 #' @return A `RieszBooster` object; call [predict()] on it.
 #' @export
 fit_riesz <- function(data, m, feature_keys,
@@ -127,7 +131,8 @@ fit_riesz <- function(data, m, feature_keys,
                       reg_lambda = 1.0,
                       subsample = 1.0,
                       seed = 0L,
-                      init = 0.0) {
+                      init = NULL,
+                      gradient_only = FALSE) {
   rows <- .rows_from_df(data, feature_keys)
   args <- list(
     rows = rows,
@@ -139,8 +144,11 @@ fit_riesz <- function(data, m, feature_keys,
     reg_lambda = reg_lambda,
     subsample = subsample,
     seed = as.integer(seed),
-    init = init
+    gradient_only = as.logical(gradient_only)
   )
+  if (!is.null(init)) {
+    args$init <- init
+  }
   if (!is.null(valid_data)) {
     args$valid_rows <- .rows_from_df(valid_data, feature_keys)
   }

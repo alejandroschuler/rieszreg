@@ -114,7 +114,7 @@ More planned: stochastic-shift / IPSI variants. Full LMTP-style longitudinal int
 ## What works today
 
 - Opaque `m(z, alpha)` API with linearity enforced by construction.
-- Fast path: data augmentation + xgboost custom objective.
+- Fast path: data augmentation + xgboost custom objective. Pass `gradient_only=True` to disable the second-order Newton step and use first-order gradient boosting (Friedman 2001 / Lee-Schuler Algorithm 2 exactly).
 - Slow general path: first-order gradient boosting (Friedman 2001) on the augmented dataset with any sklearn-compatible base learner — `rieszboost.general_fit(..., base_learner=lambda: KernelRidge(...))`.
 - **Bregman-Riesz losses** via `loss_spec=`: `SquaredLoss()` (default — the standard Lee-Schuler / Chernozhukov objective) and `KLLoss()` (φ = t log t with exp link, for density-ratio targets like TSM / IPSI). Plug in your own by implementing the `LossSpec` protocol. Follows Hines & Miles ([2510.16127](https://arxiv.org/abs/2510.16127)) and Kato ([2601.07752](https://arxiv.org/abs/2601.07752)).
 - ATE / ATT / TSM / AdditiveShift estimand factories.

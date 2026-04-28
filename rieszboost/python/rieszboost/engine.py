@@ -86,23 +86,31 @@ def _make_objective(
     b: np.ndarray,
     loss_spec: LossSpec,
     hessian_floor: float = 2.0,
+    gradient_only: bool = False,
 ):
     """xgboost custom objective. Delegates to `loss_spec.gradient` / `.hessian`.
 
-    For SquaredLoss the floor is critical: counterfactual rows have true
-    Hessian 0 (only the b·F linear term in the loss). xgboost's second-order
-    leaf weight is ``-G/(H+reg_lambda)``; if H ≈ 0 for a leaf full of
-    counterfactuals, the weight becomes ``-G/reg_lambda`` and blows up unless
-    reg_lambda is huge. Flooring at 2.0 (the natural Hessian of original a=1
-    rows) keeps every row contributing meaningfully to H, mimicking the
-    uniform weighting that first-order gradient boosting (Friedman 2001) uses
-    by construction.
+    With `gradient_only=True`, returns a constant Hessian of 1.0 per row,
+    which makes xgboost's per-leaf optimization reduce to fitting a tree on
+    negative gradients with the leaf value set to mean(-grad) — i.e., the
+    first-order Friedman 2001 algorithm Lee & Schuler use directly.
+
+    With `gradient_only=False` (default), uses second-order info from the
+    LossSpec. For SquaredLoss the floor is critical: counterfactual rows have
+    true Hessian 0 (only the b·F linear term in the loss). xgboost's
+    second-order leaf weight is ``-G/(H+reg_lambda)``; if H ≈ 0 for a leaf
+    full of counterfactuals, the weight becomes ``-G/reg_lambda`` and blows
+    up unless reg_lambda is huge. Flooring at 2.0 (the natural Hessian of
+    original a=1 rows) keeps every row contributing meaningfully to H.
     """
 
     def obj(preds: np.ndarray, dtrain) -> tuple[np.ndarray, np.ndarray]:
         del dtrain
         grad = loss_spec.gradient(a, b, preds)
-        hess = loss_spec.hessian(a, b, preds, hessian_floor)
+        if gradient_only:
+            hess = np.ones_like(grad)
+        else:
+            hess = loss_spec.hessian(a, b, preds, hessian_floor)
         return grad, hess
 
     return obj
@@ -141,6 +149,7 @@ def fit(
     seed: int = 0,
     init: str | float | None = None,
     hessian_floor: float = 2.0,
+    gradient_only: bool = False,
     verbose_eval: bool | int = False,
 ) -> "RieszBooster":
     """Fit a Riesz representer to the user's m via the fast augmented-data path.
@@ -149,6 +158,11 @@ def fit(
     targets where α₀ is positive (TSM, IPSI). If `valid_rows` is given, a
     per-row validation Riesz loss is computed each round; pair with
     `early_stopping_rounds` to halt when it stops improving.
+
+    `gradient_only=True` disables the second-order Newton step inside
+    xgboost (sets every Hessian to 1) so each tree is fit on negative
+    gradients with leaf values = mean(-grad). This matches Lee-Schuler's
+    Algorithm 2 / Friedman 2001 exactly.
     """
     if loss_spec is None:
         loss_spec = SquaredLoss()
@@ -196,7 +210,11 @@ def fit(
         params,
         dtrain,
         num_boost_round=num_boost_round,
-        obj=_make_objective(aug.a, aug.b, loss_spec, hessian_floor=hessian_floor),
+        obj=_make_objective(
+            aug.a, aug.b, loss_spec,
+            hessian_floor=hessian_floor,
+            gradient_only=gradient_only,
+        ),
         evals=evals,
         custom_metric=custom_metric,
         early_stopping_rounds=early_stopping_rounds,

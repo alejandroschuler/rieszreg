@@ -50,6 +50,7 @@ Full LMTP support requires multi-stage orchestration (one Riesz fit per time-sta
 
 - Boosting can extrapolate aggressively in low-overlap regions of α̂. Use shallow trees (`max_depth=3`), early stopping, and look at `diagnose(...)` warnings — it flags when max |α̂| dwarfs the 99th percentile (a sign of a single outlier extrapolating).
 - `_make_objective` floors the Hessian at `hessian_floor=2.0` (matching the natural Hessian of original a=1 rows). Earlier we used `eps=1e-6`, which made counterfactual leaves degenerate in xgboost's leaf-weight Newton step (`-G/(H+λ)` with H≈0) and required `reg_lambda=100` to stabilize. The new floor mimics the row-uniform weighting that first-order gradient boosting (Friedman 2001) uses by construction; standard xgboost-style hyperparameters now work without sledgehammer regularization.
+- `gradient_only=True` on `fit(...)` short-circuits the LossSpec hessian and sends `hess=ones_like(grad)` to xgboost — exactly first-order gradient boosting (Lee-Schuler Algorithm 2). Empirically on the binary-DGP example it's *worse* than the floored second-order path at matched hyperparameters (ATE α-RMSE ~2.0 vs ~1.2; ATT ~1.0 vs ~0.8). Even though the second-order Hessian is artificial (it's just our floor), the leaf-weight balancing seems to help relative to first-order.
 
 ## What's next (per `~/.claude/plans/i-d-like-to-write-crystalline-raven.md`)
 

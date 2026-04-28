@@ -92,6 +92,19 @@ test_that("diagnose_alpha works with both alpha_hat and booster paths", {
 })
 
 
+test_that("gradient_only=TRUE works end-to-end", {
+  s <- simulate(800L, seed = 5L)
+  fit <- fit_riesz(
+    data = s$df, m = ATE("a", "x"), feature_keys = c("a", "x"),
+    num_boost_round = 200L, learning_rate = 0.05,
+    max_depth = 4L, gradient_only = TRUE, seed = 0L
+  )
+  alpha_hat <- predict(fit, s$df)
+  expect_length(alpha_hat, 800L)
+  expect_true(cor(alpha_hat, s$alpha_true) > 0.5)
+})
+
+
 test_that("R and Python produce identical predictions on the same data", {
   s <- simulate(400L, seed = 4L)
   fit <- fit_riesz(

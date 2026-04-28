@@ -148,3 +148,25 @@ def test_early_stopping_requires_valid_rows():
             num_boost_round=10,
             early_stopping_rounds=5,
         )
+
+
+def test_gradient_only_recovers_inverse_propensity():
+    """Friedman-style gradient boosting (no Hessian) should also work for ATE."""
+    n = 4000
+    x, a, pi = _simulate(n, seed=42)
+    rows = _to_rows(x, a)
+
+    booster = fit(
+        rows,
+        ATE(),
+        feature_keys=("a", "x"),
+        gradient_only=True,
+        num_boost_round=300,
+        learning_rate=0.05,
+        max_depth=4,
+        seed=0,
+    )
+    alpha_hat = booster.predict(rows)
+    alpha_true = a / pi - (1 - a) / (1 - pi)
+    rmse = float(np.sqrt(np.mean((alpha_hat - alpha_true) ** 2)))
+    assert rmse < 1.5, f"gradient_only RMSE {rmse:.3f} too high"
