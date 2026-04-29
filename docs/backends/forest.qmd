@@ -49,13 +49,47 @@ The trade-off is that the augmented training rows aren't iid — there are block
 | | `ForestRieszRegressor` | `AugForestRieszRegressor` |
 |---|---|---|
 | Estimand support | ATE/ATT/TSM via auto sieve; others need user-supplied sieve | Every built-in + custom user `Estimand`, no sieve |
+| Loss support | `SquaredLoss` only | All four built-in losses (`SquaredLoss`, `KLLoss`, `BernoulliLoss`, `BoundedSquaredLoss`) |
 | `predict_interval` | yes (single-basis fits, `honest=True`) | not in v1 |
 | Per-fit speed | baseline | ≈1.0× at n≤2000, ≈1.15× at n=5000 |
 | RMSE on shared estimands (ATE, TSM) | baseline | within ~5% |
 | Splits on | covariates only when sieve handles treatment | full (T, X) feature space |
 | Backend Protocol | `MomentBackend.fit_rows` | `Backend.fit_augmented` |
 
-Default to `ForestRieszRegressor` for ATE/ATT/TSM when you want CIs. Reach for `AugForestRieszRegressor` for shift-style estimands, custom moments, or when you want one estimator that just works on everything. See [`test_aug_vs_moment.py`](https://github.com/rieszreg/forestriesz/blob/main/python/tests/test_aug_vs_moment.py) for the benchmark behind the speed and RMSE numbers.
+Default to `ForestRieszRegressor` for ATE/ATT/TSM when you want CIs. Reach for `AugForestRieszRegressor` for shift-style estimands, custom moments, non-quadratic Bregman losses, or when you want one estimator that just works on everything. See [`test_aug_vs_moment.py`](https://github.com/rieszreg/forestriesz/blob/main/python/tests/test_aug_vs_moment.py) for the benchmark behind the speed and RMSE numbers.
+
+## Bregman losses on the augmentation-style backend
+
+`AugForestRieszRegressor` accepts every loss `rieszreg` ships. The fit still uses the squared MSE criterion to grow the trees (splits that maximize variance reduction in $-\Sigma b / (2 \Sigma a)$ also separate the monotonically-related Bregman optima well in practice), then a post-hoc Newton iteration on each leaf's augmented rows replaces the stored θ with the Bregman-optimal value. For locally constant fits the Newton has the closed form $\alpha^* = -B/(2A)$ followed by the loss's link; for sieves it's a small p×p Newton.
+
+```{python}
+import numpy as np, pandas as pd
+from forestriesz import AugForestRieszRegressor, TSM
+from rieszreg import KLLoss
+
+rng = np.random.default_rng(0)
+n = 1500
+x = rng.uniform(0, 1, n)
+pi = 1 / (1 + np.exp(-(0.5 * x - 0.3)))
+a = rng.binomial(1, pi).astype(float)
+df_tsm = pd.DataFrame({"a": a, "x": x})
+
+# KLLoss enforces α̂ > 0 via the exp link — the right choice for density-
+# ratio targets like TSM and IPSI. Requires non-negative m-coefficients.
+est = AugForestRieszRegressor(
+    estimand=TSM(level=1, treatment="a", covariates=("x",)),
+    loss=KLLoss(),
+    n_estimators=200,
+    min_samples_leaf=10,
+    random_state=0,
+)
+est.fit(df_tsm)
+alpha_hat = est.predict(df_tsm)
+print(f"all positive: {bool((alpha_hat > 0).all())}")
+print(f"min/max: {alpha_hat.min():.3f} / {alpha_hat.max():.3f}")
+```
+
+`KLLoss` and `BernoulliLoss` reject ATE / ATT / shift-style data at fit time (they require non-negative m-coefficients, which difference-of-evaluations estimands violate). `BoundedSquaredLoss(lo, hi)` accepts any signed coefficients and clips α̂ into the interval.
 
 ## Quickstart — ATE
 
