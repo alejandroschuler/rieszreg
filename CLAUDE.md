@@ -8,6 +8,16 @@ A family of packages for Riesz regression. Top-level coordinator for:
 
 Implementation packages depend on `rieszreg` and provide concrete backends. `RIESZREG_DESIGN.md` is the authoritative design + learner-package contract.
 
+## GitHub home
+
+All packages in this family live under the [`rieszreg` GitHub org](https://github.com/rieszreg). When creating a new learner package (or any new repo in the family — examples, downstream wrappers, paper artifacts), create it directly in `rieszreg/`, not under a personal account:
+
+```sh
+gh repo create rieszreg/<new-pkg> --public --source=. --remote=origin --description "..."
+```
+
+The unified docs CI, the per-package `test.yml` files (which check out `rieszreg` as a sibling via `repository: rieszreg/rieszreg`), and the cross-references in `README.md` / `docs/*.qmd` all assume the org-level path.
+
 ## Dependency graph
 
 ```
