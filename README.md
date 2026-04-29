@@ -84,6 +84,24 @@ est.fit(df)
 - **krrr** v0.0.1 — sklearn-compatible `KernelRieszRegressor`; four solvers (direct, Nyström-CG, RFF, optional Falkon); 36 Python tests + 1 R parity test passing.
 - **forestriesz** v0.0.1 — sklearn-compatible `ForestRieszRegressor` on EconML's `BaseGRF`; locally constant + locally linear sieve fits; honest-split `predict_interval`; 34 Python tests + 1 R parity test passing.
 
+## Related work
+
+A few existing tools cover overlapping ground.
+
+[**genriesz**](https://github.com/MasaKat0/genriesz) (Kato, 2026) is a single Python package implementing the Bregman-unified Riesz regression framework from [arXiv:2601.07752](https://arxiv.org/abs/2601.07752). It exposes `LinearFunctional` and `BregmanGenerator` abstractions, analogous to this project's `Estimand` and `LossSpec`. It ships several basis-function classes (polynomial, random Fourier features, Nyström, KNN catchments, random-forest leaves, PyTorch embeddings) inside the package itself. Third parties cannot publish their own learners against a stable protocol. It is Python only.
+
+[**EconML**](https://github.com/py-why/EconML) (Microsoft) provides `RieszNet`, `ForestRiesz`, and an `automatic_debiased_ml` module. The `forestriesz` package in this repo wraps EconML's `BaseGRF`. EconML is monolithic, with no third-party backend protocol, and Python only.
+
+[**DoubleML**](https://docs.doubleml.org/) (Bach, Chernozhukov, Kurz, Spindler) is a mature DML library with parallel Python and R implementations. It expects the user to supply outcome and propensity nuisances using sklearn-compatible learners. Riesz regression is not the focal abstraction.
+
+[**tlverse**](https://tlverse.org/) (van der Laan group) is an R-only family of packages (`sl3`, `tmle3`, `lmtp`, `hal9001`, …) organized around TMLE and SuperLearner. The meta-package + sibling-backends shape is the closest organizational match to this project.
+
+What's distinctive here:
+
+- The `Backend` / `MomentBackend` split, exposed as a stable Protocol, lets a third-party learner package depend on `rieszreg` and ship as its own PyPI/CRAN release. New learners do not require a PR upstream.
+- The split itself reflects two structurally different fitting strategies: augmentation-style (kernel ridge, gradient boosting via `fit_augmented`) vs. moment-style (forests, neural nets via `fit_rows`).
+- Cross-language Python + R coverage at the family level via R6 wrappers per package, not just bindings to a Python core.
+
 ## Tests
 
 ```sh
