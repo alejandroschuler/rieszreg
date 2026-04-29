@@ -153,10 +153,14 @@ class ForestRieszBackend:
     ) -> FitResult:
         if not isinstance(loss, SquaredLoss):
             raise NotImplementedError(
-                f"ForestRieszBackend currently supports SquaredLoss only "
-                f"(got {type(loss).__name__}). Other Bregman losses require "
-                "a per-leaf Newton iteration on the augmented loss; planned "
-                "for a future release."
+                f"ForestRieszBackend (moment-style) currently supports "
+                f"SquaredLoss only (got {type(loss).__name__}). For non-"
+                "quadratic Bregman losses, use AugForestRieszRegressor "
+                "instead — it ships a per-leaf Newton iteration on the "
+                "augmented loss that handles KLLoss, BernoulliLoss, and "
+                "BoundedSquaredLoss. The moment-style equivalent needs "
+                "different per-leaf gradients than the loss API exposes; "
+                "planned for v3."
             )
         # Forests are non-iterative; orchestrator-level boosting knobs are ignored.
         del n_estimators, learning_rate, early_stopping_rounds, hyperparams

@@ -213,6 +213,7 @@ diagnose_forest(fr, df).summary()
 | | `ForestRieszRegressor` (moment-style) | `AugForestRieszRegressor` (aug-style) |
 |---|---|---|
 | Estimand support | ATE/ATT/TSM via auto sieve; others need user-supplied sieve | Every built-in estimand + custom user `Estimand`, no sieve needed |
+| Loss support | `SquaredLoss` only | `SquaredLoss`, `KLLoss`, `BernoulliLoss`, `BoundedSquaredLoss` |
 | `predict_interval` | yes (single-basis fits, honest splits) | not in v1 (augmented training rows are correlated within blocks) |
 | Per-fit speed | baseline | ≈1.0× at n≤2000, ≈1.15× at n=5000 (see `test_aug_vs_moment.py`) |
 | RMSE on shared estimands | baseline | within ~5% |
@@ -221,18 +222,36 @@ diagnose_forest(fr, df).summary()
 
 Default to `ForestRieszRegressor` for ATE/ATT/TSM when you want CIs. Reach for `AugForestRieszRegressor` when (a) you have a custom estimand, (b) you're working with shift-style estimands, or (c) you want one estimator that just works on everything.
 
+## Bregman losses
+
+`AugForestRieszRegressor` supports all four built-in losses: `SquaredLoss` (default), `KLLoss` (density-ratio targets, enforces α̂ > 0 via the exp link), `BernoulliLoss` (α̂ ∈ (0, 1)), and `BoundedSquaredLoss(lo, hi)` (α̂ ∈ (lo, hi)). Tree structure is chosen by the squared MSE criterion; per-leaf θ is then replaced by the Bregman-optimal value via a Newton iteration on each leaf's augmented rows. For locally constant fits this Newton has a closed form (`α* = -B/(2A)` then apply the link); for sieves it's a small p×p Newton.
+
+```python
+from forestriesz import AugForestRieszRegressor, TSM
+from rieszreg import KLLoss
+
+# Density-ratio fit on TSM. KLLoss requires non-negative m-coefficients
+# (TSM, IPSI, and similar density-ratio estimands satisfy this).
+est = AugForestRieszRegressor(estimand=TSM(level=1), loss=KLLoss())
+est.fit(df)
+alpha_hat = est.predict(df)   # all strictly positive by construction
+```
+
+`ForestRieszRegressor` (moment-style) is still squared-only — extending it to Bregman losses needs a different per-leaf gradient than the loss API exposes; planned for v3.
+
 ## Known sharp edges
 
-- **Bregman losses other than `SquaredLoss` raise.** Both backends. Closed-form leaf solve only exists for the quadratic case. Use `rieszboost` or `krrr` for KL / Bernoulli / BoundedSquared. v2 will add per-leaf Newton iteration.
 - **`predict_interval` is moment-style + single-basis only.** For multi-basis sieves (e.g. ATE's `[1{T=0}, 1{T=1}]`), CIs need a delta-method on θ' φ(x). For `AugForestRieszRegressor`, CIs need cluster-robust variance with `origin_index` as the cluster id (correlated augmented rows). Both planned for v2.
+- **`ForestRieszRegressor` is squared-only.** Use `AugForestRieszRegressor` for the other Bregman losses.
 - **Honest splits + inference require `n_estimators % subforest_size == 0`** (EconML constraint). Default `subforest_size=4`, so `n_estimators=100, 200, 500, ...` are safe values.
 - **`riesz_feature_fns` callables don't auto-save.** Save persists the forest; load needs the callables repassed for custom sieves. Built-in estimands round-trip fine via `riesz_feature_fns="auto"` (the default).
 - **R wrapper exposes `ForestRieszRegressor` only.** `AugForestRieszRegressor` would also work from R but isn't wrapped in v1; call from Python via reticulate if needed.
 - **Constant basis with `ForestRieszRegressor` is degenerate for built-in estimands.** Forcing `riesz_feature_fns=None` raises a row-constant check error. The default `"auto"` does the right thing. `AugForestRieszRegressor` doesn't have this issue.
+- **`KLLoss` and `BernoulliLoss` require non-negative m-coefficients** (density-ratio-style estimands like TSM and IPSI). They reject ATE / ATT / shift-style data at fit time with a clear error.
 
 ## On the roadmap
 
-- v2: non-quadratic Bregman losses (per-leaf Newton iteration on the augmented loss).
+- v3: Bregman losses for the moment-style `ForestRieszRegressor`.
 - v2: delta-method `predict_interval` for multi-basis sieves.
 - v2: cluster-robust `predict_interval` for `AugForestRieszRegressor`.
 - R wrapper for `AugForestRieszRegressor`.

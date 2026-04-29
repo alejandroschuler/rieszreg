@@ -103,13 +103,14 @@ class AugForestRieszBackend:
         random_state: int,
         hyperparams: dict[str, Any],
     ) -> FitResult:
-        if not isinstance(loss, SquaredLoss):
-            raise NotImplementedError(
-                f"AugForestRieszBackend currently supports SquaredLoss only "
-                f"(got {type(loss).__name__}). Other Bregman losses require "
-                "a per-leaf Newton iteration; planned for a future release."
-            )
         del n_estimators, learning_rate, early_stopping_rounds, hyperparams
+
+        # All four built-in losses are supported. For non-squared Bregman
+        # losses we still fit the tree structure under the squared MSE
+        # criterion (splits that maximize variance reduction in -B/(2A) also
+        # separate the monotonically-related Bregman optima well), then
+        # post-hoc replace each leaf value with the Bregman per-leaf optimum.
+        loss.validate_coefficients(aug_train.b)
 
         seed = random_state if random_state is not None else self.random_state
 
@@ -161,11 +162,32 @@ class AugForestRieszBackend:
         )
         forest.fit(aug_train.features, T_pack, y_pack)
 
+        # 7. Bregman post-processing. For squared loss the EconML leaf solve
+        # already gives the right θ. For other losses walk every (tree, leaf)
+        # and replace the stored θ with the Bregman per-leaf optimum from a
+        # Newton iteration on the leaf's rows. The Newton uses the original
+        # (un-base-score-shifted) b because it evaluates gradients at
+        # η = θ · φ + base_score directly.
+        leaf_eta_table = None
+        if not isinstance(loss, SquaredLoss):
+            from ._leaf_solver import compute_leaf_eta_table
+
+            leaf_eta_table = compute_leaf_eta_table(
+                forest=forest,
+                X_aug=aug_train.features,
+                a_aug=a,
+                b_aug=aug_train.b,            # original b, not the squared-fold-in
+                phi_aug=phi,
+                loss=loss,
+                base_score=base_score,
+            )
+
         predictor = AugForestPredictor(
             forest=forest,
             loss=loss,
             base_score=base_score,
             riesz_feature_fns=self.riesz_feature_fns,
+            leaf_eta_table=leaf_eta_table,
         )
 
         val_score = None
