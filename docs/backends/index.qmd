@@ -47,7 +47,7 @@ The convenience classes are thin subclasses that bake in the backend and surface
 
 ## Adding a backend
 
-Implement the `Backend` Protocol from [`rieszreg.backends.base`](https://github.com/alejandroschuler/RieszReg/blob/main/rieszreg/python/rieszreg/backends/base.py): one method, `fit_augmented(...)`, returning a `FitResult` whose `predictor` implements `predict_eta` and `predict_alpha`. Register the predictor's loader for round-trip via:
+Implement the `Backend` Protocol from [`rieszreg.backends.base`](https://github.com/rieszreg/rieszreg/blob/main/rieszreg/python/rieszreg/backends/base.py): one method, `fit_augmented(...)`, returning a `FitResult` whose `predictor` implements `predict_eta` and `predict_alpha`. Register the predictor's loader for round-trip via:
 
 ```python
 from rieszreg.backends import register_predictor_loader

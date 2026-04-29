@@ -149,7 +149,7 @@ For non-quadratic losses today, use the [boosting backend](boosting.qmd).
 
 ## Reference parity
 
-`krrr` exercises a [TSM1 numerical-parity test](https://github.com/alejandroschuler/RieszReg/blob/main/krrr/python/tests/test_reference_parity.py) against the [`dml-tmle`](https://github.com/alejandroschuler/dml-tmle) R reference at tolerance 1e-8.
+`krrr` exercises a [TSM1 numerical-parity test](https://github.com/rieszreg/rieszreg/blob/main/krrr/python/tests/test_reference_parity.py) against the [`dml-tmle`](https://github.com/alejandroschuler/dml-tmle) R reference at tolerance 1e-8.
 
 ## Sharp edges
 

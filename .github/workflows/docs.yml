@@ -23,7 +23,7 @@ jobs:
       - name: Checkout rieszboost (sibling repo)
         uses: actions/checkout@v4
         with:
-          repository: alejandroschuler/rieszboost
+          repository: rieszreg/rieszboost
           path: rieszboost
           # Optional: pin to a tag/sha if you want reproducible doc builds.
         continue-on-error: true
@@ -31,7 +31,7 @@ jobs:
       - name: Checkout krrr (sibling repo)
         uses: actions/checkout@v4
         with:
-          repository: alejandroschuler/krrr
+          repository: rieszreg/krrr
           path: krrr
         continue-on-error: true
 

@@ -142,5 +142,5 @@ Every Riesz estimator exposes the standard `BaseEstimator` interface:
 
 ## See also
 
-- [`rieszboost/examples/lee_schuler/binary_dgp.py`](https://github.com/alejandroschuler/RieszReg/blob/main/rieszboost/examples/lee_schuler/binary_dgp.py) builds an EEE estimator using `cross_val_predict` to produce out-of-fold $\hat\alpha$.
+- [`rieszboost/examples/lee_schuler/binary_dgp.py`](https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/lee_schuler/binary_dgp.py) builds an EEE estimator using `cross_val_predict` to produce out-of-fold $\hat\alpha$.
 - [Boosting backend](backends/boosting.qmd) and [kernel backend](backends/kernel.qmd) cover backend-specific tuning grids.

@@ -155,6 +155,6 @@ class LossSpec(Protocol):
         """Raise if (a, b) violate this loss's domain."""
 ```
 
-[`SquaredLoss`](https://github.com/alejandroschuler/RieszReg/blob/main/rieszreg/python/rieszreg/losses/squared.py) and [`KLLoss`](https://github.com/alejandroschuler/RieszReg/blob/main/rieszreg/python/rieszreg/losses/kl.py) are short reference implementations.
+[`SquaredLoss`](https://github.com/rieszreg/rieszreg/blob/main/rieszreg/python/rieszreg/losses/squared.py) and [`KLLoss`](https://github.com/rieszreg/rieszreg/blob/main/rieszreg/python/rieszreg/losses/kl.py) are short reference implementations.
 
 The Bregman extension follows Hines & Miles ([2510.16127](https://arxiv.org/abs/2510.16127)) and Kato ([2601.07752](https://arxiv.org/abs/2601.07752)).

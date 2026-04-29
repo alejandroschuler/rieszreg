@@ -99,7 +99,7 @@ register_predictor_loader("my-kind", MyPredictor.load)
 
 The backend sees an `AugmentedDataset` and a `LossSpec`. It does not need to know about the estimand or the tracer. `XGBoostBackend`, `SklearnBackend`, and `KernelRidgeBackend` are reference implementations.
 
-A new implementation package (e.g. `rieszforest`, `rieszneural`) follows the [contract in RIESZREG_DESIGN.md, Part B](https://github.com/alejandroschuler/RieszReg/blob/main/RIESZREG_DESIGN.md): depend on `rieszreg`, implement the `Backend` Protocol, satisfy the sklearn-conformance subset, contribute docs pages here.
+A new implementation package (e.g. `rieszforest`, `rieszneural`) follows the [contract in RIESZREG_DESIGN.md, Part B](https://github.com/rieszreg/rieszreg/blob/main/RIESZREG_DESIGN.md): depend on `rieszreg`, implement the `Backend` Protocol, satisfy the sklearn-conformance subset, contribute docs pages here.
 
 ## Living-doc rule
 

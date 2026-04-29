@@ -13,7 +13,7 @@ website:
   navbar:
     right:
       - icon: github
-        href: https://github.com/alejandroschuler/RieszReg
+        href: https://github.com/rieszreg/rieszreg
         aria-label: GitHub
   sidebar:
     style: floating

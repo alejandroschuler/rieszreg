@@ -124,4 +124,4 @@ cat(sprintf("corr = %.3f, RMSE = %.3f\n",
 
 ## Reference parity
 
-`rieszboost` cross-checks against [Lee's reference implementation](https://github.com/kaitlynjlee/boosting_for_rr). With `gradient_only=True`, `learning_rate = lr_ref / 2`, and `reg_lambda=0`, predictions match to Pearson 0.998 / 0.986 on the binary-DGP example. See [`rieszboost/examples/lee_schuler/COMPARISON.md`](https://github.com/alejandroschuler/RieszReg/blob/main/rieszboost/examples/lee_schuler/COMPARISON.md) for the full report.
+`rieszboost` cross-checks against [Lee's reference implementation](https://github.com/kaitlynjlee/boosting_for_rr). With `gradient_only=True`, `learning_rate = lr_ref / 2`, and `reg_lambda=0`, predictions match to Pearson 0.998 / 0.986 on the binary-DGP example. See [`rieszboost/examples/lee_schuler/COMPARISON.md`](https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/lee_schuler/COMPARISON.md) for the full report.

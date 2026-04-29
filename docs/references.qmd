@@ -32,7 +32,7 @@ title: "References"
 
 ## Software
 
-- **Lee's reference implementation.** [github.com/kaitlynjlee/boosting_for_rr](https://github.com/kaitlynjlee/boosting_for_rr) — `rieszboost` cross-checks against this. See [`rieszboost/examples/lee_schuler/COMPARISON.md`](https://github.com/alejandroschuler/RieszReg/blob/main/rieszboost/examples/lee_schuler/COMPARISON.md) for the parity report.
+- **Lee's reference implementation.** [github.com/kaitlynjlee/boosting_for_rr](https://github.com/kaitlynjlee/boosting_for_rr) — `rieszboost` cross-checks against this. See [`rieszboost/examples/lee_schuler/COMPARISON.md`](https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/lee_schuler/COMPARISON.md) for the parity report.
 - **dml-tmle.** [github.com/alejandroschuler/dml-tmle](https://github.com/alejandroschuler/dml-tmle) — R reference implementation for TSM1 kernel ridge; `krrr` parity-tests against it at 1e-8.
 
-The full set of papers (with arXiv source archives) lives at [`reference/`](https://github.com/alejandroschuler/RieszReg/tree/main/reference) at the top level of the repo.
+The full set of papers (with arXiv source archives) lives at [`reference/`](https://github.com/rieszreg/rieszreg/tree/main/reference) at the top level of the repo.

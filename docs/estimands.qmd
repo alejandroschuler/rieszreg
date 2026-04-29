@@ -12,12 +12,12 @@ This page covers the six built-in factories and how to write your own. The facto
 
 | Factory | $m(z, \alpha)$ | Notes |
 |---|---|---|
-| `ATE(treatment, covariates)` | $\alpha(1, x) - \alpha(0, x)$ | Average treatment effect — see [`rieszboost/examples/lee_schuler/binary_dgp.py`](https://github.com/alejandroschuler/RieszReg/blob/main/rieszboost/examples/lee_schuler/binary_dgp.py) |
+| `ATE(treatment, covariates)` | $\alpha(1, x) - \alpha(0, x)$ | Average treatment effect — see [`rieszboost/examples/lee_schuler/binary_dgp.py`](https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/lee_schuler/binary_dgp.py) |
 | `ATT(treatment, covariates)` | $a \cdot (\alpha(1, x) - \alpha(0, x))$ | ATT *partial parameter*. Full ATT divides by $P(A=1)$ — combine with a delta-method EIF downstream. |
-| `TSM(level, treatment, covariates)` | $\alpha(\text{level}, x)$ | Treatment-specific mean — see [`rieszboost/examples/tsm.py`](https://github.com/alejandroschuler/RieszReg/blob/main/rieszboost/examples/tsm.py) |
-| `AdditiveShift(delta, ...)` | $\alpha(a + \delta, x) - \alpha(a, x)$ | Continuous-treatment shift effect — see [`rieszboost/examples/lee_schuler/continuous_dgp.py`](https://github.com/alejandroschuler/RieszReg/blob/main/rieszboost/examples/lee_schuler/continuous_dgp.py) |
+| `TSM(level, treatment, covariates)` | $\alpha(\text{level}, x)$ | Treatment-specific mean — see [`rieszboost/examples/tsm.py`](https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/tsm.py) |
+| `AdditiveShift(delta, ...)` | $\alpha(a + \delta, x) - \alpha(a, x)$ | Continuous-treatment shift effect — see [`rieszboost/examples/lee_schuler/continuous_dgp.py`](https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/lee_schuler/continuous_dgp.py) |
 | `LocalShift(delta, threshold, ...)` | $\mathbf{1}\{a < \text{threshold}\} \cdot (\alpha(a + \delta, x) - \alpha(a, x))$ | LASE *partial parameter*; same caveat as ATT. |
-| `StochasticIntervention(samples_key, ...)` | $\frac{1}{K} \sum_k \alpha(a'_k, x)$ | IPSI via Monte Carlo over the intervention density — see [`rieszboost/examples/stochastic_intervention.py`](https://github.com/alejandroschuler/RieszReg/blob/main/rieszboost/examples/stochastic_intervention.py) |
+| `StochasticIntervention(samples_key, ...)` | $\frac{1}{K} \sum_k \alpha(a'_k, x)$ | IPSI via Monte Carlo over the intervention density — see [`rieszboost/examples/stochastic_intervention.py`](https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/stochastic_intervention.py) |
 
 The R and Python factories take the same arguments.
 
