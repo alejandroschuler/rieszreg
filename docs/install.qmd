@@ -8,17 +8,19 @@ title: "Install"
 
 ## Python
 
-The three packages live in sibling GitHub repos: [rieszreg](https://github.com/rieszreg/rieszreg) (meta-package + this user guide), [rieszboost](https://github.com/rieszreg/rieszboost), [krrr](https://github.com/rieszreg/krrr). Clone them into a parent directory:
+The four packages live in sibling GitHub repos: [rieszreg](https://github.com/rieszreg/rieszreg) (meta-package + this user guide), [rieszboost](https://github.com/rieszreg/rieszboost), [krrr](https://github.com/rieszreg/krrr), [forestriesz](https://github.com/rieszreg/forestriesz). Clone them into a parent directory:
 
 ```sh
 mkdir RieszReg && cd RieszReg
 git clone https://github.com/rieszreg/rieszreg.git
 git clone https://github.com/rieszreg/rieszboost.git
 git clone https://github.com/rieszreg/krrr.git
+git clone https://github.com/rieszreg/forestriesz.git
 python3 -m venv .venv
 .venv/bin/pip install -e rieszreg/python
-.venv/bin/pip install -e rieszboost/python   # gradient boosting backend
-.venv/bin/pip install -e krrr/python         # kernel ridge backend
+.venv/bin/pip install -e rieszboost/python      # gradient boosting backend
+.venv/bin/pip install -e krrr/python            # kernel ridge backend
+.venv/bin/pip install -e forestriesz/python     # random-forest backend
 ```
 
 `rieszboost`'s `XGBoostBackend` requires OpenMP. On macOS:
@@ -27,7 +29,7 @@ python3 -m venv .venv
 brew install libomp
 ```
 
-Linux distributions (and GitHub Actions ubuntu-latest) ship `libgomp1`; no extra step is needed. `krrr` has no system prerequisites; an optional GPU backend uses [`falkon`](https://falkonml.github.io/falkon/) (`pip install -e 'krrr/python[falkon]'`).
+Linux distributions (and GitHub Actions ubuntu-latest) ship `libgomp1`; no extra step is needed. `krrr` has no system prerequisites; an optional GPU backend uses [`falkon`](https://falkonml.github.io/falkon/) (`pip install -e 'krrr/python[falkon]'`). `forestriesz` depends on `econml`, which ships prebuilt wheels for macOS arm64+x86_64 and ubuntu — no compiler required.
 
 ### Verify
 
@@ -65,6 +67,7 @@ First-time setup:
    ```r
    pkgload::load_all("rieszboost/r/rieszboost")
    pkgload::load_all("krrr/r/krrr")
+   pkgload::load_all("forestriesz/r/forestriesz")
    ```
 3. Point reticulate at the Python venv:
    ```r
@@ -82,10 +85,16 @@ The R API exposes every built-in estimand, every loss, and the full estimator in
 ```{.bash}
 .venv/bin/python -m pytest rieszboost/python/tests -v
 .venv/bin/python -m pytest krrr/python/tests -v
+.venv/bin/python -m pytest forestriesz/python/tests -v
 
 Rscript -e '
   Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))
+  pkgload::load_all("rieszreg/r/rieszreg")
   pkgload::load_all("rieszboost/r/rieszboost")
   testthat::test_dir("rieszboost/r/rieszboost/tests/testthat")
+  pkgload::load_all("krrr/r/krrr")
+  testthat::test_dir("krrr/r/krrr/tests/testthat")
+  pkgload::load_all("forestriesz/r/forestriesz")
+  testthat::test_dir("forestriesz/r/forestriesz/tests/testthat")
 '
 ```

@@ -94,8 +94,13 @@ class ForestRieszBackend:
     ----------
     riesz_feature_fns
         Basis ``φ_1, …, φ_p`` for the locally linear sieve (each callable
-        takes a feature matrix ``(n, n_features)`` and returns ``(n,)``). When
-        ``None``, a constant basis is used (locally constant α per leaf).
+        takes a feature matrix ``(n, n_features)`` and returns ``(n,)``). The
+        default ``"auto"`` resolves to ``default_riesz_features(estimand)``
+        for built-in estimands (treatment indicators for ATE/ATT/TSM); custom
+        estimands fall back to a constant basis. Pass an explicit list to
+        override; pass ``None`` to force the constant basis (rarely useful —
+        all built-in estimands give a row-constant moment in that case and
+        the degeneracy check will raise).
     split_feature_indices
         Which feature columns the forest splits on. When ``None``, a default
         is chosen from the estimand and sieve (covariates only when a
@@ -111,7 +116,7 @@ class ForestRieszBackend:
         Ridge added to the per-leaf Jacobian for numerical stability.
     """
 
-    riesz_feature_fns: list[Callable] | None = None
+    riesz_feature_fns: list[Callable] | str | None = "auto"
     split_feature_indices: Sequence[int] | None = None
     n_estimators: int = 100
     max_depth: int | None = None
@@ -162,8 +167,15 @@ class ForestRieszBackend:
         # 1. Materialize feature matrix.
         features = _materialize_features(rows_train, feature_keys)
 
-        # 2. Resolve sieve. None => locally constant (single basis function = 1).
-        phi_fns = self.riesz_feature_fns or [lambda f: np.ones(len(f))]
+        # 2. Resolve sieve. "auto" => default_riesz_features(estimand) when one
+        # exists; otherwise constant. None => force constant.
+        from .feature_fns import default_riesz_features
+
+        if self.riesz_feature_fns == "auto":
+            sieve = default_riesz_features(estimand)
+        else:
+            sieve = self.riesz_feature_fns
+        phi_fns = sieve if sieve else [lambda f: np.ones(len(f))]
         p = len(phi_fns)
 
         # 3. Per-row basis values φ(W_i).
@@ -176,11 +188,37 @@ class ForestRieszBackend:
         if base_score != 0.0:
             A = A - base_score * phi_W
 
-        # 6. Pack T = [vec(φφ') | φ] per row, y = A. The Jacobian J = φφ' is
-        # symmetric so flattening order is immaterial; we use row-major.
-        JJ = np.einsum("ij,ik->ijk", phi_W, phi_W).reshape(len(rows_train), p * p)
-        T_pack = np.column_stack([JJ, phi_W])
-        y_pack = A
+        # 6. Pack T = [vec(J) | A] per row, with J = φφ' (symmetric, so flat
+        # order is immaterial). y is a dummy scalar zero column — EconML's
+        # LinearMomentGRFCriterion requires scalar y.
+        n_train = len(rows_train)
+        JJ = np.einsum("ij,ik->ijk", phi_W, phi_W).reshape(n_train, p * p)
+        T_pack = np.ascontiguousarray(np.column_stack([JJ, A]))
+        y_pack = np.zeros((n_train, 1), dtype=float)
+
+        # 6b. Detect degeneracy. For all built-in estimands the trace returns
+        # a fixed set of (coef, point) pairs that don't depend on W, so under
+        # a constant basis both A and J = φφ' are identical across rows and
+        # the forest cannot learn anything from splits. The natural fix is the
+        # sieve.
+        if A.size > 0 and base_score == 0.0:
+            j_row_constant = bool(np.allclose(JJ - JJ[0:1], 0.0, atol=1e-12))
+            a_row_constant = bool(np.allclose(A - A[0:1], 0.0, atol=1e-12))
+            if j_row_constant and a_row_constant:
+                sieve_hint = (
+                    "riesz_feature_fns='auto' (the default)"
+                    if default_riesz_features(estimand) is not None
+                    else "a custom riesz_feature_fns list capturing the "
+                    "treatment / intervention structure of your estimand"
+                )
+                raise ValueError(
+                    f"Per-row moment A and Jacobian J are both row-constant "
+                    f"under the current basis for estimand {estimand.name!r}. "
+                    "The forest cannot learn α from row-constant moment data. "
+                    "This typically means the locally constant basis is being "
+                    "used with a built-in estimand whose moment doesn't depend "
+                    f"on W. Pass {sieve_hint} to use the locally linear sieve."
+                )
 
         # 7. Choose split features.
         split_idx = self.split_feature_indices
@@ -191,6 +229,7 @@ class ForestRieszBackend:
 
         # 8. Fit forest.
         forest = _RieszGRF(
+            n_outputs_riesz=p,
             n_estimators=self.n_estimators,
             criterion="mse",
             max_depth=self.max_depth,
@@ -217,7 +256,8 @@ class ForestRieszBackend:
             forest=forest,
             loss=loss,
             base_score=base_score,
-            riesz_feature_fns=self.riesz_feature_fns,
+            # Always store the resolved sieve, never the "auto" sentinel.
+            riesz_feature_fns=sieve if sieve else None,
             feature_keys=tuple(feature_keys),
             split_feature_indices=split_idx,
         )

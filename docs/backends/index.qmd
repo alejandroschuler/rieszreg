@@ -2,20 +2,21 @@
 title: "Backends"
 ---
 
-A backend consumes the augmented dataset (per-row quadratic and linear coefficients $a_k$, $b_k$ produced by `rieszreg.build_augmented`) and a `LossSpec`, and returns a fitted `Predictor`. Two implementation packages ship today; both satisfy `rieszreg.backends.base.Backend` and slot into `RieszEstimator` interchangeably.
+A backend fits the Riesz representer for a given estimand and loss. Three implementation packages ship today; each slots into `RieszEstimator` through one of two Protocols. `rieszboost` and `krrr` consume the augmented `(a, b)` dataset (`Backend.fit_augmented`). `forestriesz` ships *both*: a moment-style `ForestRieszRegressor` that consumes original rows + per-row moments (`MomentBackend.fit_rows`), and an augmentation-style `AugForestRieszRegressor` that consumes the augmented dataset directly (`Backend.fit_augmented`).
 
 ## Pick a backend
 
-| | [Boosting (`rieszboost`)](boosting.qmd) | [Kernel ridge (`krrr`)](kernel.qmd) |
-|---|---|---|
-| **Method** | Gradient boosting (xgboost or sklearn) | Closed-form solve of $(\mathrm{diag}(a) K + n\lambda I)\gamma = -b/2$ |
-| **Algorithm** | Lee & Schuler ([2501.04871](https://arxiv.org/abs/2501.04871)) | Singh ([2102.11076](https://arxiv.org/abs/2102.11076)) |
-| **Best for** | Tabular data, $n \gtrsim 1{,}000$, mixed feature types | Smooth $\alpha_0$, small/medium $n$, low-dimensional $X$ |
-| **Iterative?** | Yes (rounds + early stopping) | No (closed-form per λ) |
-| **Hyperparameters** | `n_estimators`, `learning_rate`, `max_depth`, `reg_lambda`, `subsample` | `kernel`, `lambda_grid`, `solver` |
-| **Loss support** | `SquaredLoss`, `KLLoss`, `BernoulliLoss`, `BoundedSquaredLoss` | `SquaredLoss` only (today) |
-| **Scaling** | Linear in $n$ via xgboost | $O(n^3)$ direct; Nyström + RFF + Falkon for larger $n$ |
-| **Convenience class** | `rieszboost.RieszBooster` | `krrr.KernelRieszRegressor` |
+| | [Boosting (`rieszboost`)](boosting.qmd) | [Kernel ridge (`krrr`)](kernel.qmd) | [Forest (`forestriesz`)](forest.qmd) |
+|---|---|---|---|
+| **Method** | Gradient boosting (xgboost or sklearn) | Closed-form solve of $(\mathrm{diag}(a) K + n\lambda I)\gamma = -b/2$ | GRF-based per-leaf moment solve |
+| **Algorithm** | Lee & Schuler ([2501.04871](https://arxiv.org/abs/2501.04871)) | Singh ([2102.11076](https://arxiv.org/abs/2102.11076)) | Chernozhukov, Newey, Quintas-Martínez, Syrgkanis ([ICML 2022](https://proceedings.mlr.press/v162/chernozhukov22a/chernozhukov22a.pdf)) |
+| **Best for** | Tabular data, $n \gtrsim 1{,}000$, mixed feature types | Smooth $\alpha_0$, small/medium $n$, low-dimensional $X$ | Many covariates, asymptotic CIs on $\alpha(x)$ |
+| **Iterative?** | Yes (rounds + early stopping) | No (closed-form per λ) | No (single forest fit) |
+| **Hyperparameters** | `n_estimators`, `learning_rate`, `max_depth`, `reg_lambda`, `subsample` | `kernel`, `lambda_grid`, `solver` | `n_estimators`, `max_depth`, `min_samples_leaf`, `honest`, `riesz_feature_fns` |
+| **Loss support** | `SquaredLoss`, `KLLoss`, `BernoulliLoss`, `BoundedSquaredLoss` | `SquaredLoss` only (today) | `SquaredLoss` only (today) |
+| **Scaling** | Linear in $n$ via xgboost | $O(n^3)$ direct; Nyström + RFF + Falkon for larger $n$ | $O(n \log n)$ per tree |
+| **Confidence intervals** | No | No | Yes (`predict_interval` on single-basis fits) |
+| **Convenience class** | `rieszboost.RieszBooster` | `krrr.KernelRieszRegressor` | `forestriesz.ForestRieszRegressor` (moment-style) and `forestriesz.AugForestRieszRegressor` (augmentation-style, fully estimand-agnostic) |
 
 ## Compose explicitly
 
@@ -25,6 +26,7 @@ Both convenience classes are subclasses of `rieszreg.RieszEstimator` with the ba
 from rieszreg import RieszEstimator, ATE, SquaredLoss
 from rieszboost.backends import XGBoostBackend, SklearnBackend
 from krrr import KernelRidgeBackend, Gaussian
+from forestriesz import ForestRieszBackend
 
 # Default: xgboost
 est = RieszEstimator(estimand=ATE(), backend=XGBoostBackend())
@@ -41,17 +43,28 @@ est = RieszEstimator(
     estimand=ATE(),
     backend=KernelRidgeBackend(kernel=Gaussian(length_scale="median")),
 )
+
+# Random forest (moment-style backend; fit_rows path)
+est = RieszEstimator(
+    estimand=ATE(),
+    backend=ForestRieszBackend(n_estimators=500),
+)
 ```
 
-The convenience classes are thin subclasses that bake in the backend and surface backend-specific hyperparameters as constructor args, so that they fit cleanly into `GridSearchCV`. See the [boosting](boosting.qmd) and [kernel](kernel.qmd) pages for each.
+The convenience classes are thin subclasses that bake in the backend and surface backend-specific hyperparameters as constructor args, so that they fit cleanly into `GridSearchCV`. See the [boosting](boosting.qmd), [kernel](kernel.qmd), and [forest](forest.qmd) pages for each.
 
 ## Adding a backend
 
-Implement the `Backend` Protocol from [`rieszreg.backends.base`](https://github.com/rieszreg/rieszreg/blob/main/rieszreg/python/rieszreg/backends/base.py): one method, `fit_augmented(...)`, returning a `FitResult` whose `predictor` implements `predict_eta` and `predict_alpha`. Register the predictor's loader for round-trip via:
+Implement *one* of two Protocols from [`rieszreg.backends.base`](https://github.com/rieszreg/rieszreg/blob/main/rieszreg/python/rieszreg/backends/base.py):
+
+- `Backend.fit_augmented(aug_train, aug_valid, loss, …)` — for augmentation-style learners (kernel ridge, gradient boosting). Implementations: `KernelRidgeBackend`, `XGBoostBackend`, `SklearnBackend`.
+- `MomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, …)` — for moment-style learners (random forests, neural nets). Compute per-row moments via `rieszreg.trace(estimand, row)`. Implementation: `ForestRieszBackend`.
+
+Either way, return a `FitResult` whose `predictor` implements `predict_eta` and `predict_alpha`. Register the predictor's loader for round-trip via:
 
 ```python
 from rieszreg.backends import register_predictor_loader
 register_predictor_loader("my-kind", MyPredictor.load)
 ```
 
-`XGBoostBackend`, `SklearnBackend`, and `KernelRidgeBackend` are reference implementations. See [Developing](../developing.qmd) for the full contract.
+See [Developing](../developing.qmd) for the full contract.

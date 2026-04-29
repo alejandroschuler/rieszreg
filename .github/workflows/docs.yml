@@ -35,6 +35,13 @@ jobs:
           path: krrr
         continue-on-error: true
 
+      - name: Checkout forestriesz (sibling repo)
+        uses: actions/checkout@v4
+        with:
+          repository: rieszreg/forestriesz
+          path: forestriesz
+        continue-on-error: true
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -46,6 +53,7 @@ jobs:
           pip install -e rieszreg/python
           if [ -d rieszboost/python ]; then pip install -e rieszboost/python; fi
           if [ -d krrr/python ]; then pip install -e krrr/python; fi
+          if [ -d forestriesz/python ]; then pip install -e forestriesz/python; fi
           pip install matplotlib pandas
 
       - uses: r-lib/actions/setup-r@v2

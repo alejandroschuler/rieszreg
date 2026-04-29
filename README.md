@@ -15,6 +15,9 @@ RieszReg/
 ├── krrr/             # kernel ridge backend (Singh 2021)
 │   ├── python/       # KernelRidgeBackend, kernels, solvers, KernelRieszRegressor
 │   └── r/krrr/       # R6 wrapper subclassing rieszreg::RieszEstimatorR6
+├── forestriesz/      # random-forest backend (Chernozhukov et al. ICML 2022)
+│   ├── python/       # ForestRieszBackend, ForestRieszRegressor, default_riesz_features
+│   └── r/forestriesz/ # R6 wrapper subclassing rieszreg::RieszEstimatorR6
 ├── docs/             # unified Quarto user guide (sklearn-style sectioning)
 ├── reference/        # arXiv paper index, shared across packages
 ├── .githooks/        # canonical pre-commit hook (living-doc rule + tone lint)
@@ -26,10 +29,11 @@ The user guide is a single Quarto site at [`docs/`](docs/) — sklearn-style, no
 
 ## Install
 
-The three packages live in sibling GitHub repos:
+The four packages live in sibling GitHub repos:
 [rieszreg](https://github.com/rieszreg/rieszreg) (this repo, the meta-package + unified docs),
 [rieszboost](https://github.com/rieszreg/rieszboost),
-[krrr](https://github.com/rieszreg/krrr).
+[krrr](https://github.com/rieszreg/krrr),
+[forestriesz](https://github.com/rieszreg/forestriesz).
 Clone them as siblings into a parent directory; the docs builds and CI assume
 that layout.
 
@@ -38,10 +42,12 @@ mkdir RieszReg && cd RieszReg
 git clone https://github.com/rieszreg/rieszreg.git
 git clone https://github.com/rieszreg/rieszboost.git
 git clone https://github.com/rieszreg/krrr.git
+git clone https://github.com/rieszreg/forestriesz.git
 python3 -m venv .venv
 .venv/bin/pip install -e rieszreg/python
-.venv/bin/pip install -e rieszboost/python   # gradient-boosting backend
-.venv/bin/pip install -e krrr/python         # kernel-ridge backend
+.venv/bin/pip install -e rieszboost/python      # gradient-boosting backend
+.venv/bin/pip install -e krrr/python            # kernel-ridge backend
+.venv/bin/pip install -e forestriesz/python     # random-forest backend
 ```
 
 `rieszboost`'s `XGBoostBackend` requires OpenMP; on macOS, `brew install libomp` once.
@@ -73,9 +79,10 @@ est.fit(df)
 
 ## Status
 
-- **rieszreg** v0.0.1 — feature-complete: estimand machinery, four Bregman losses, augmentation engine, Backend Protocol, RieszEstimator orchestrator, base R6 class, testing utilities.
-- **rieszboost** v0.0.1 — sklearn-compatible `RieszBooster` with `XGBoostBackend` (default) and `SklearnBackend`; 109 Python tests + 11 R parity tests passing.
-- **krrr** v0.0.1 — sklearn-compatible `KernelRieszRegressor`; four solvers (direct, Nyström-CG, RFF, optional Falkon); 31 Python tests + 1 R parity test passing.
+- **rieszreg** v0.0.1 — feature-complete: estimand machinery, four Bregman losses, augmentation engine, both `Backend` (augmentation-style) and `MomentBackend` (moment-style) Protocols with orchestrator dispatch, RieszEstimator, base R6 class, testing utilities. 68 Python tests passing.
+- **rieszboost** v0.0.1 — sklearn-compatible `RieszBooster` with `XGBoostBackend` (default) and `SklearnBackend`; 110 Python tests + 11 R parity tests passing.
+- **krrr** v0.0.1 — sklearn-compatible `KernelRieszRegressor`; four solvers (direct, Nyström-CG, RFF, optional Falkon); 36 Python tests + 1 R parity test passing.
+- **forestriesz** v0.0.1 — sklearn-compatible `ForestRieszRegressor` on EconML's `BaseGRF`; locally constant + locally linear sieve fits; honest-split `predict_interval`; 34 Python tests + 1 R parity test passing.
 
 ## Tests
 
@@ -83,6 +90,7 @@ est.fit(df)
 .venv/bin/python -m pytest rieszreg/python/tests -q
 .venv/bin/python -m pytest rieszboost/python/tests -q
 .venv/bin/python -m pytest krrr/python/tests -q
+.venv/bin/python -m pytest forestriesz/python/tests -q
 
 Rscript -e '
   RETICULATE_PYTHON <- file.path(getwd(), ".venv/bin/python")
@@ -92,12 +100,14 @@ Rscript -e '
   testthat::test_dir("rieszboost/r/rieszboost/tests/testthat")
   pkgload::load_all("krrr/r/krrr")
   testthat::test_dir("krrr/r/krrr/tests/testthat")
+  pkgload::load_all("forestriesz/r/forestriesz")
+  testthat::test_dir("forestriesz/r/forestriesz/tests/testthat")
 '
 ```
 
 ## Contributing a new learner package
 
-`rieszreg/DESIGN.md` (Part B) is the contract: depend on `rieszreg`, implement the `Backend` Protocol, satisfy the sklearn-conformance subset, contribute docs pages to `docs/`, follow the doc-tone and living-doc rules. The pre-commit hook at `.githooks/pre-commit` enforces the doc-tone and API-changes-update-docs rules.
+`RIESZREG_DESIGN.md` (Part B) is the contract: depend on `rieszreg`, implement either the `Backend` Protocol (augmentation-style — for kernel ridge, gradient boosting) or the `MomentBackend` Protocol (moment-style — for random forests, neural nets), satisfy the sklearn-conformance subset, contribute docs pages to `docs/`, follow the doc-tone and living-doc rules. The pre-commit hook at `.githooks/pre-commit` enforces the doc-tone and API-changes-update-docs rules.
 
 ## References
 

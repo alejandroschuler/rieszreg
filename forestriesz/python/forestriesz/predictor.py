@@ -38,10 +38,13 @@ class ForestPredictor:
     kind: ClassVar[str] = "forestriesz"
 
     def _phi(self, features: np.ndarray) -> np.ndarray:
-        if self.riesz_feature_fns is None:
+        sieve = self.riesz_feature_fns
+        if sieve is None or (isinstance(sieve, str) and sieve == "auto"):
+            # "auto" should have been resolved by the backend before save; if
+            # we land here it means a constant basis was actually used.
             return _const_phi(features).reshape(-1, 1)
         return np.column_stack(
-            [np.asarray(fn(features), dtype=float) for fn in self.riesz_feature_fns]
+            [np.asarray(fn(features), dtype=float) for fn in sieve]
         )
 
     def _x_split(self, features: np.ndarray) -> np.ndarray:
@@ -65,18 +68,29 @@ class ForestPredictor:
                 "predict_interval requires honest=True and inference=True at "
                 "fit time. Re-fit ForestRieszRegressor with both flags enabled."
             )
-        if self.riesz_feature_fns is not None:
+        sieve = self.riesz_feature_fns
+        p = 1 if sieve is None else len(sieve)
+        if p > 1:
             raise NotImplementedError(
-                "predict_interval is supported for locally constant only in v1. "
-                "The sieve case requires a delta-method on θ' φ(x) that is "
-                "planned for v2. Re-fit without riesz_feature_fns to use "
-                "intervals."
+                "predict_interval supports single-basis sieves (p=1) only in "
+                "v1. The general case requires a delta-method on θ' φ(x); "
+                "planned for v2. For ATE with the [1{T=0}, 1{T=1}] sieve, "
+                "fit two separate single-basis ForestRieszRegressors (one per "
+                "treatment arm) if you need intervals."
             )
-        lb, ub = self.forest.predict_interval(self._x_split(features), alpha=alpha)
-        return (
-            np.asarray(lb).flatten() + self.base_score,
-            np.asarray(ub).flatten() + self.base_score,
+        lb_theta, ub_theta = self.forest.predict_interval(
+            self._x_split(features), alpha=alpha
         )
+        lb_theta = np.asarray(lb_theta).flatten()
+        ub_theta = np.asarray(ub_theta).flatten()
+        phi = self._phi(features).flatten()    # (n,)
+        # α = θ · φ, so when φ ≥ 0 the bounds scale directly; when φ < 0 they
+        # swap. Build per-row min/max so we never assume a sign.
+        a = lb_theta * phi
+        b = ub_theta * phi
+        lb = np.minimum(a, b) + self.base_score
+        ub = np.maximum(a, b) + self.base_score
+        return lb, ub
 
     # ---- serialization ----
 

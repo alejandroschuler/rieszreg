@@ -8,9 +8,10 @@
 
 A family of packages for Riesz regression. Top-level coordinator for:
 
-- [`rieszreg/`](rieszreg/) — meta-package: shared abstractions (`Estimand`, `LossSpec`, `RieszEstimator`, augmentation, diagnostics, `Backend` Protocol, testing utilities, R6 base class).
-- [`rieszboost/`](rieszboost/) — gradient-boosting backend (Lee & Schuler 2025).
-- [`krrr/`](krrr/) — kernel-ridge backend (Singh 2021).
+- [`rieszreg/`](rieszreg/) — meta-package: shared abstractions (`Estimand`, `LossSpec`, `RieszEstimator`, augmentation, diagnostics, `Backend` and `MomentBackend` Protocols, testing utilities, R6 base class).
+- [`rieszboost/`](rieszboost/) — gradient-boosting backend (Lee & Schuler 2025; uses `Backend.fit_augmented`).
+- [`krrr/`](krrr/) — kernel-ridge backend (Singh 2021; uses `Backend.fit_augmented`).
+- [`forestriesz/`](forestriesz/) — random-forest backend (Chernozhukov, Newey, Quintas-Martínez, Syrgkanis ICML 2022; uses `MomentBackend.fit_rows`).
 
 Implementation packages depend on `rieszreg` and provide concrete backends. The design doc lives inside the meta-package itself ([`rieszreg/DESIGN.md`](rieszreg/DESIGN.md)) so every collaborator who clones rieszreg gets it.
 
@@ -29,8 +30,9 @@ The unified docs CI, the per-package `test.yml` files (which check out `rieszreg
 ```
 rieszreg (no deps on impl packages)
    ↑
-   ├── rieszboost      (XGBoostBackend, SklearnBackend, RieszBooster)
-   ├── krrr            (KernelRidgeBackend, kernels, solvers, KernelRieszRegressor)
+   ├── rieszboost      (XGBoostBackend, SklearnBackend, RieszBooster)        [fit_augmented]
+   ├── krrr            (KernelRidgeBackend, kernels, solvers, KernelRieszRegressor)  [fit_augmented]
+   ├── forestriesz     (ForestRieszBackend, ForestRieszRegressor)            [fit_rows]
    └── <future-pkg>    (its backend(s) + thin convenience class)
 ```
 
@@ -41,7 +43,7 @@ rieszreg (no deps on impl packages)
 | `Estimand` factories (ATE, ATT, …), `LinearForm`, `Tracer` | `rieszreg/python/rieszreg/estimands/` |
 | `LossSpec` Protocol + 4 built-in losses | `rieszreg/python/rieszreg/losses/` |
 | Augmentation engine | `rieszreg/python/rieszreg/augmentation.py` |
-| `Backend` Protocol + predictor-loader registry | `rieszreg/python/rieszreg/backends/base.py` |
+| `Backend` and `MomentBackend` Protocols + predictor-loader registry | `rieszreg/python/rieszreg/backends/base.py` |
 | `Diagnostics` base class + `diagnose()` | `rieszreg/python/rieszreg/diagnostics.py` |
 | `RieszEstimator` (sklearn orchestrator) | `rieszreg/python/rieszreg/estimator.py` |
 | Canonical DGPs, sklearn-conformance, parity helpers | `rieszreg/python/rieszreg/testing/` |
@@ -64,7 +66,12 @@ Goes in `rieszreg`, not the implementation packages.
 
 ## Adding a new backend
 
-Implement the `Backend` Protocol from `rieszreg/python/rieszreg/backends/base.py` in your package's `python/<pkg>/backends/`. Register the predictor loader on import:
+Pick the entry point that matches your learner's natural loss decomposition:
+
+- **Augmentation-style** (kernel ridge, gradient boosting): implement `Backend.fit_augmented` from `rieszreg/python/rieszreg/backends/base.py`. The orchestrator pre-computes the augmented `(a, b)` dataset for you. References: `KernelRidgeBackend` (krrr), `XGBoostBackend` (rieszboost).
+- **Moment-style** (random forests, neural nets): implement `MomentBackend.fit_rows` from the same file. You receive raw rows + the estimand and call `rieszreg.trace(estimand, row)` per row to compute moments. Reference: `ForestRieszBackend` (forestriesz).
+
+Register the predictor loader on import:
 
 ```python
 from rieszreg.backends import register_predictor_loader
@@ -79,6 +86,7 @@ Provide a convenience class subclassing `rieszreg.RieszEstimator`. Subclass `rie
 .venv/bin/python -m pytest rieszreg/python/tests -q
 .venv/bin/python -m pytest rieszboost/python/tests -q
 .venv/bin/python -m pytest krrr/python/tests -q
+.venv/bin/python -m pytest forestriesz/python/tests -q
 
 Rscript -e '
   Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))
@@ -87,6 +95,8 @@ Rscript -e '
   testthat::test_dir("rieszboost/r/rieszboost/tests/testthat")
   pkgload::load_all("krrr/r/krrr")
   testthat::test_dir("krrr/r/krrr/tests/testthat")
+  pkgload::load_all("forestriesz/r/forestriesz")
+  testthat::test_dir("forestriesz/r/forestriesz/tests/testthat")
 '
 ```
 
@@ -103,8 +113,9 @@ Before writing any procedural code with loops, splits, grids, or folds, ask *"is
 
 ## Status
 
-- rieszreg: 64 Python tests passing (unit tests for tracer, losses, estimands, augmentation, diagnostics, orchestrator with stub backend, testing utilities).
-- rieszboost: 109 Python tests + 11 R parity tests passing.
-- krrr: 31 Python tests + 1 R parity test passing.
-- Unified Quarto docs site renders all 15 pages.
+- rieszreg: 68 Python tests passing (unit tests for tracer, losses, estimands, augmentation, diagnostics, orchestrator with stub backends — both `Backend` and `MomentBackend` dispatch paths covered, testing utilities).
+- rieszboost: 110 Python tests + 11 R parity tests passing.
+- krrr: 36 Python tests + 1 R parity test passing.
+- forestriesz: 34 Python tests + 1 R parity test passing.
+- Unified Quarto docs site renders all 16 pages (forest backend page added).
 - Pre-commit hook + CI workflow templates wired but not yet activated by `git config core.hooksPath` in any clone.

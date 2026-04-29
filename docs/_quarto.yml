@@ -39,6 +39,7 @@ website:
           - backends/index.qmd
           - backends/boosting.qmd
           - backends/kernel.qmd
+          - backends/forest.qmd
       - developing.qmd
       - references.qmd
 
