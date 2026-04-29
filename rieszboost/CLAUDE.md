@@ -1,8 +1,13 @@
 # rieszboost
 
+> **Read the family design doc first.** It lives in the rieszreg meta-package
+> at `rieszreg/DESIGN.md` (clone [rieszreg/rieszreg](https://github.com/rieszreg/rieszreg) as a sibling, then it's at
+> [`../rieszreg/DESIGN.md`](../rieszreg/DESIGN.md)). Part B is the contract this package implements —
+> anything in this CLAUDE.md is rieszboost-specific notes layered on top.
+
 Gradient-boosting backend for the [RieszReg meta-package](../README.md), implementing Lee & Schuler ([arXiv:2501.04871](https://arxiv.org/abs/2501.04871)).
 
-This package now depends on `rieszreg` for the shared abstractions (`Estimand`, `LossSpec`, `AugmentedDataset`, `build_augmented`, `Diagnostics`, `Backend` Protocol, `RieszEstimator` orchestrator). See [`../RIESZREG_DESIGN.md`](../RIESZREG_DESIGN.md) for the meta-package design and the contract every implementation package follows. `rieszboost` contributes:
+This package depends on `rieszreg` for the shared abstractions (`Estimand`, `LossSpec`, `AugmentedDataset`, `build_augmented`, `Diagnostics`, `Backend` Protocol, `RieszEstimator` orchestrator). `rieszboost` contributes:
 
 - `XGBoostBackend` (default) and `SklearnBackend` — concrete `Backend` Protocol implementations.
 - `RieszBooster` — convenience subclass of `rieszreg.RieszEstimator` with `XGBoostBackend` defaulted and boosting hyperparameters (`max_depth`, `reg_lambda`, `subsample`) on the constructor.
