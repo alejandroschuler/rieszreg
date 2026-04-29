@@ -1,25 +1,27 @@
 # krrr
 
-Kernel ridge Riesz regression, in **Python** and **R** — a sister to [rieszboost](https://github.com/alejandroschuler/rieszboost). Same scope (Riesz representers for linear functionals; `θ(P) = E[m(Z, g₀)]`), same user-facing API, but the fitter is kernel ridge regression instead of gradient boosting.
+Kernel ridge Riesz regression, in **Python** and **R**. Sister package to [rieszboost](https://github.com/alejandroschuler/rieszboost) in the [RieszReg family](https://github.com/alejandroschuler/rieszreg): same scope (Riesz representers for linear functionals; `θ(P) = E[m(Z, g₀)]`), same user-facing API, but the fitter is kernel ridge regression instead of gradient boosting.
 
-Implements [Singh, *Kernel Ridge Riesz Representers* (arXiv:2102.11076)](https://arxiv.org/abs/2102.11076) for the full set of estimands the rieszboost framework supports — not just TSM1 — by piping the rieszboost augmentation engine into a kernel solve. Includes scalable solvers (Nyström-preconditioned conjugate gradient; random Fourier features; optional Falkon for GPU / very large n).
+Implements [Singh, *Kernel Ridge Riesz Representers* (arXiv:2102.11076)](https://arxiv.org/abs/2102.11076) for the full set of estimands the rieszreg framework supports — not just TSM1 — by piping rieszreg's augmentation engine into a kernel solve. Includes scalable solvers (Nyström-preconditioned conjugate gradient; random Fourier features; optional Falkon for GPU / very large n).
 
 ## Status
 
-v0.0.1 — feature-complete for single-stage Riesz regression. **sklearn-compatible** `KernelRieszRegressor` (composes with `GridSearchCV`, `cross_val_predict`, `clone`, `Pipeline`), six built-in estimand factories (re-exported from rieszboost), eight kernels with algebra (`+`, `*`, `Tensor`), four solvers, R6 wrapper. Numerical parity with the [dml-tmle](https://github.com/alejandroschuler/dml-tmle) R reference at 1e-8.
+v0.0.1 — feature-complete for single-stage Riesz regression. **sklearn-compatible** `KernelRieszRegressor` (composes with `GridSearchCV`, `cross_val_predict`, `clone`, `Pipeline`), six built-in estimand factories (re-exported from rieszreg), eight kernels with algebra (`+`, `*`, `Tensor`), four solvers, R6 wrapper. Numerical parity with the [dml-tmle](https://github.com/alejandroschuler/dml-tmle) R reference at 1e-8.
 
 ## Why
 
-Singh (2021) gives a beautiful closed-form RKHS estimator for the Riesz representer when the moment functional is `m(α) = α(1, x)` (TSM1). For arbitrary linear functionals — ATE, ATT, additive/local/stochastic shifts, custom user-defined `m()` — the augmentation engine in rieszboost reduces the problem to the same linear system, just over a richer index set. `krrr` does that reduction and dispatches to a tiered solver.
+Singh (2021) gives a closed-form RKHS estimator for the Riesz representer when the moment functional is `m(α) = α(1, x)` (TSM1). For arbitrary linear functionals — ATE, ATT, additive/local/stochastic shifts, custom user-defined `m()` — rieszreg's augmentation engine reduces the problem to the same linear system, just over a richer index set. `krrr` does that reduction and dispatches to a tiered solver.
 
 ## Install
 
+`krrr` depends on the [rieszreg](https://github.com/alejandroschuler/rieszreg) meta-package. Clone both as siblings:
+
 ```sh
 git clone https://github.com/alejandroschuler/krrr.git
+git clone https://github.com/alejandroschuler/rieszreg.git
 cd krrr
-git clone https://github.com/alejandroschuler/rieszboost.git ../rieszboost   # if not already present
 python3 -m venv .venv
-.venv/bin/pip install -e ../rieszboost/python
+.venv/bin/pip install -e ../rieszreg/python
 .venv/bin/pip install -e python/
 ```
 
@@ -65,7 +67,7 @@ print(krr.diagnose(df).summary())
 
 ## Built-in estimands
 
-Re-exported from rieszboost — same API, same semantics:
+Re-exported from rieszreg — same API, same semantics:
 
 | Factory | m(z, α) | Notes |
 |---|---|---|
@@ -159,7 +161,7 @@ Each fold's regressor does its own internal validation split for λ selection.
 print(krr.diagnose(df).summary())
 ```
 
-The base `Diagnostics` (RMS magnitude, |α| quantiles, extreme-row count, held-out Riesz loss) is identical to rieszboost's. Use `krrr.diagnose_kernel(krr, df)` for KRR-specific extras: chosen λ, support size, effective degrees of freedom, condition number of the kernel system.
+The base `Diagnostics` (RMS magnitude, |α| quantiles, extreme-row count, held-out Riesz loss) is shared via rieszreg. Use `krrr.diagnose_kernel(krr, df)` for KRR-specific extras: chosen λ, support size, effective degrees of freedom, condition number of the kernel system.
 
 ## Save and load
 

@@ -1,16 +1,16 @@
-"""KernelRidgeBackend satisfies rieszboost's Backend / Predictor protocols."""
+"""KernelRidgeBackend satisfies rieszreg's Backend / Predictor protocols."""
 
 from __future__ import annotations
 
 import numpy as np
 
-from rieszboost.backends.base import Backend, FitResult, Predictor
+from rieszreg.backends.base import Backend, FitResult, Predictor
 
 from krrr import KernelRidgeBackend, KernelPredictor
 
 
 def test_backend_has_fit_augmented():
-    """Structural Protocol check (rieszboost.Backend isn't @runtime_checkable)."""
+    """Structural Protocol check (rieszreg.Backend isn't @runtime_checkable)."""
     backend = KernelRidgeBackend()
     assert hasattr(backend, "fit_augmented")
     assert callable(backend.fit_augmented)
@@ -24,23 +24,23 @@ def test_predictor_is_a_predictor():
     assert hasattr(KernelPredictor, "predict_alpha")
 
 
-def test_backend_via_rieszbooster(binary_ate_data):
-    """RieszBooster(backend=KernelRidgeBackend(...)) fits and predicts."""
-    from rieszboost import ATE, RieszBooster
+def test_backend_via_riesz_estimator(binary_ate_data):
+    """RieszEstimator(backend=KernelRidgeBackend(...)) fits and predicts."""
+    from rieszreg import ATE, RieszEstimator
 
     df, _, _ = binary_ate_data
-    booster = RieszBooster(
+    est = RieszEstimator(
         estimand=ATE("a", ("x",)),
         backend=KernelRidgeBackend(lambda_grid=np.logspace(-3, 0, 6)),
         validation_fraction=0.25,
         n_estimators=1,
         learning_rate=0.0,
     )
-    booster.fit(df)
-    alpha_hat = booster.predict(df)
+    est.fit(df)
+    alpha_hat = est.predict(df)
     assert alpha_hat.shape == (len(df),)
     assert np.all(np.isfinite(alpha_hat))
     # Predictor type
-    assert booster.predictor_.kind == "krrr"
+    assert est.predictor_.kind == "krrr"
     # Riesz loss is a finite number
-    assert np.isfinite(booster.riesz_loss(df))
+    assert np.isfinite(est.riesz_loss(df))
