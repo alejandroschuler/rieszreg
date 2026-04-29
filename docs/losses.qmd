@@ -7,7 +7,7 @@ title: "Losses"
 The Bregman-Riesz loss generalizes the squared Riesz loss via a strictly convex potential $\phi$. `rieszreg` ships four built-in `LossSpec` classes; backends consume per-row gradient and Hessian sourced from the loss spec.
 
 ::: {.callout-note title="Backend support"}
-The boosting backend ([`rieszboost`](backends/boosting.qmd)) supports all four losses. The kernel ridge backend ([`krrr`](backends/kernel.qmd)) currently supports `SquaredLoss` only — non-quadratic losses require a Newton iteration on the kernel system. Pass an unsupported loss and the backend raises at fit time with a clear error.
+The boosting backend ([`rieszboost`](backends/boosting.qmd)) supports all four losses. The kernel ridge backend ([`krrr`](backends/kernel.qmd)) and the random forest backend ([`forestriesz`](backends/forest.qmd)) currently support `SquaredLoss` only — non-quadratic losses require a Newton iteration on the per-leaf or per-system solve. Pass an unsupported loss and the backend raises at fit time with a clear error.
 :::
 
 ## Loss table

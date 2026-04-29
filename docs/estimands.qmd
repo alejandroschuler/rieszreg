@@ -6,7 +6,7 @@ title: "Estimands"
 
 An `Estimand` describes the linear functional you want to fit. It holds three pieces of information: the column names $\alpha$ is indexed by (`feature_keys`), any per-row payload columns $m$ needs such as pre-sampled treatments for stochastic interventions (`extra_keys`), and the `m(z, alpha)` callable.
 
-This page covers the six built-in factories and how to write your own. The factories live in `rieszreg`; both `rieszboost` and `krrr` re-export them so `from rieszboost import ATE` and `from krrr import ATE` resolve to the same object.
+This page covers the six built-in factories and how to write your own. The factories live in `rieszreg`; `rieszboost`, `krrr`, and `forestriesz` all re-export them so `from rieszboost import ATE`, `from krrr import ATE`, and `from forestriesz import ATE` resolve to the same object.
 
 ## Built-in factories
 

@@ -4,7 +4,7 @@ title: "Quickstart — ATE in 30 lines"
 
 {{< include _setup.qmd >}}
 
-This page fits a Riesz representer for the average treatment effect on a synthetic dataset. We use the gradient-boosting convenience class `RieszBooster`; the [kernel-ridge backend](backends/kernel.qmd) page shows the same flow with `KernelRieszRegressor`. Pick the language tab on any code block; your choice persists across the site.
+This page fits a Riesz representer for the average treatment effect on a synthetic dataset. We use the gradient-boosting convenience class `RieszBooster`; the [kernel-ridge](backends/kernel.qmd) and [forest](backends/forest.qmd) backend pages show the same flow with `KernelRieszRegressor` and `ForestRieszRegressor`. Pick the language tab on any code block; your choice persists across the site.
 
 ## Simulate
 
@@ -171,4 +171,4 @@ cat(booster$diagnose(df)$summary)
 - [scikit-learn integration](sklearn-integration.qmd) for out-of-fold predictions used in TMLE / one-step / DML.
 - [Estimands](estimands.qmd) for the other built-ins and custom $m$.
 - [Diagnostics](diagnostics.qmd) for reading `.diagnose()`.
-- [Boosting backend](backends/boosting.qmd) and [kernel backend](backends/kernel.qmd) for hyperparameter tuning.
+- [Boosting](backends/boosting.qmd), [kernel](backends/kernel.qmd), and [forest](backends/forest.qmd) backends for hyperparameter tuning and inference options.

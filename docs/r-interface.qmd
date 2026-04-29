@@ -20,6 +20,8 @@ Sys.setenv(RETICULATE_PYTHON = "/path/to/RieszReg/.venv/bin/python")
 use_python_rieszboost("/path/to/RieszReg/.venv/bin/python")
 # or, for the kernel backend:
 use_python_krrr("/path/to/RieszReg/.venv/bin/python")
+# or, for the forest backend:
+use_python_forestriesz("/path/to/RieszReg/.venv/bin/python")
 ```
 
 `use_python_<pkg>()` accepts a path to a Python interpreter or a virtualenv directory and forwards to the appropriate reticulate function. It also imports the Python package so subsequent calls have no per-call import overhead.
@@ -63,7 +65,20 @@ use_python_krrr("/path/to/RieszReg/.venv/bin/python")
 | &nbsp;&nbsp;`$predict(df)` | `.predict(X)` |
 | &nbsp;&nbsp;`$diagnose(df)` | `.diagnose(X)` |
 
-R6's `$method()` syntax maps to Python's `.method()`. Integer-typed kwargs (`n_estimators`, `max_depth`, `random_state`, `early_stopping_rounds`, `n_landmarks`, `n_features`, `cg_max_iter`) take an `L` suffix in R: `n_estimators = 200L`. Other kwargs are auto-converted by reticulate.
+## API surface (forestriesz)
+
+| R | Python equivalent |
+|---|---|
+| `ForestRieszRegressor$new(estimand, n_estimators, max_depth, min_samples_leaf, honest, inference, ...)` | `forestriesz.ForestRieszRegressor(...)` |
+| &nbsp;&nbsp;`$fit(df)` | `.fit(X)` |
+| &nbsp;&nbsp;`$predict(df)` | `.predict(X)` |
+| &nbsp;&nbsp;`$predict_interval(df, alpha)` | `.predict_interval(X, alpha=)` (single-basis fits with `honest=TRUE, inference=TRUE`) |
+| &nbsp;&nbsp;`$diagnose(df)` | `.diagnose(X)` |
+| `load_forest_riesz_regressor(path)` | `ForestRieszRegressor.load(path)` |
+
+The R wrapper exposes the moment-style `ForestRieszRegressor` (single-basis fits — handles ATE/ATT/TSM via the auto-resolved sieve in Python). The augmentation-style `AugForestRieszRegressor` is Python-only in v1; call it from R via reticulate when you need a fully estimand-agnostic forest fit.
+
+R6's `$method()` syntax maps to Python's `.method()`. Integer-typed kwargs (`n_estimators`, `max_depth`, `random_state`, `early_stopping_rounds`, `n_landmarks`, `n_features`, `cg_max_iter`, `min_samples_leaf`, `subforest_size`) take an `L` suffix in R: `n_estimators = 200L`. Other kwargs are auto-converted by reticulate.
 
 ## Parity
 

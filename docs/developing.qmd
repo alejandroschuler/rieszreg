@@ -12,23 +12,32 @@ RieszReg/
 │   │   ├── estimands/             # Estimand + 6 factories + tracer
 │   │   ├── losses/                # LossSpec Protocol + 4 losses
 │   │   ├── augmentation.py        # build_augmented + AugmentedDataset
-│   │   ├── backends/base.py       # Backend Protocol, FitResult, Predictor + loader registry
+│   │   ├── backends/base.py       # Backend + MomentBackend Protocols, FitResult, Predictor + loader registry
 │   │   ├── diagnostics.py         # Diagnostics dataclass + diagnose()
-│   │   ├── estimator.py           # RieszEstimator (sklearn BaseEstimator)
+│   │   ├── estimator.py           # RieszEstimator (sklearn BaseEstimator); dispatches between fit_augmented / fit_rows
 │   │   └── testing/               # canonical DGPs, conformance, parity utilities
-│   └── r/rieszreg/                # shared R6 base class (planned)
-├── rieszboost/               # gradient-boosting backends + RieszBooster
+│   └── r/rieszreg/                # shared R6 base class
+├── rieszboost/               # gradient-boosting backends + RieszBooster (Backend.fit_augmented)
 │   ├── python/rieszboost/
 │   │   ├── estimator.py           # RieszBooster(RieszEstimator)
 │   │   └── backends/{xgboost,sklearn}.py
 │   └── r/rieszboost/              # R6 wrapper
-├── krrr/                     # kernel-ridge backend + KernelRieszRegressor
+├── krrr/                     # kernel-ridge backend + KernelRieszRegressor (Backend.fit_augmented)
 │   ├── python/krrr/
 │   │   ├── estimator.py           # KernelRieszRegressor(RieszEstimator)
 │   │   ├── backend.py             # KernelRidgeBackend
 │   │   ├── kernels.py             # kernel algebra
 │   │   └── solvers/               # direct, nystrom_cg, rff, falkon
 │   └── r/krrr/                    # R6 wrapper
+├── forestriesz/              # GRF-based backends (MomentBackend.fit_rows + Backend.fit_augmented)
+│   ├── python/forestriesz/
+│   │   ├── estimator.py           # ForestRieszRegressor(RieszEstimator) — moment-style
+│   │   ├── aug_estimator.py       # AugForestRieszRegressor(RieszEstimator) — aug-style, fully agnostic
+│   │   ├── backend.py             # ForestRieszBackend (MomentBackend.fit_rows)
+│   │   ├── aug_backend.py         # AugForestRieszBackend (Backend.fit_augmented)
+│   │   ├── _grf.py                # internal _RieszGRF subclass of econml.grf.BaseGRF
+│   │   └── feature_fns.py         # default_riesz_features auto-sieves
+│   └── r/forestriesz/             # R6 wrapper (moment-style only in v1)
 ├── docs/                     # this user guide (Quarto website)
 ├── reference/                # arXiv paper index
 ├── rieszreg/DESIGN.md        # meta-package design + learner-package contract
@@ -40,11 +49,17 @@ RieszReg/
 ```sh
 .venv/bin/python -m pytest rieszboost/python/tests -v
 .venv/bin/python -m pytest krrr/python/tests -v
+.venv/bin/python -m pytest forestriesz/python/tests -v
 
 Rscript -e '
   Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))
+  pkgload::load_all("rieszreg/r/rieszreg")
   pkgload::load_all("rieszboost/r/rieszboost")
   testthat::test_dir("rieszboost/r/rieszboost/tests/testthat")
+  pkgload::load_all("krrr/r/krrr")
+  testthat::test_dir("krrr/r/krrr/tests/testthat")
+  pkgload::load_all("forestriesz/r/forestriesz")
+  testthat::test_dir("forestriesz/r/forestriesz/tests/testthat")
 '
 ```
 
@@ -72,7 +87,7 @@ Then:
 
 1. Add to `_FACTORY_REGISTRY` in `rieszreg/python/rieszreg/estimands/base.py` so the round-trip serialization registry knows about it.
 2. Export from `rieszreg/python/rieszreg/__init__.py`.
-3. Add R wrappers in `rieszboost/r/rieszboost/R/rieszboost.R` and `krrr/r/krrr/R/krrr.R` (R wrappers re-export from rieszreg via reticulate).
+3. Add R wrappers in `rieszboost/r/rieszboost/R/rieszboost.R`, `krrr/r/krrr/R/krrr.R`, and `forestriesz/r/forestriesz/R/forestriesz.R` (R wrappers re-export from rieszreg via reticulate).
 4. Update `docs/estimands.qmd` with a row in the built-ins table and a runnable example in both languages.
 5. Add a test under `rieszreg/python/tests/`.
 6. Add a worked example under one of the implementation packages' `examples/`.
@@ -90,16 +105,22 @@ Losses also belong in `rieszreg`, not the backends.
 
 ## Adding a backend
 
-Implement the `Backend` Protocol from `rieszreg/python/rieszreg/backends/base.py`. One method, `fit_augmented(...)`, returning a `FitResult` whose `predictor` implements `predict_eta` and `predict_alpha`. Register the predictor's loader so save/load round-trip works:
+Pick the entry point that matches your learner's natural loss decomposition. Both Protocols live in `rieszreg/python/rieszreg/backends/base.py` and both return a `FitResult` whose `predictor` implements `predict_eta` and `predict_alpha`.
+
+**Augmentation-style — `Backend.fit_augmented(aug_train, aug_valid, loss, …)`.** For learners that minimize a per-evaluation-point loss (kernel ridge, gradient boosting). The orchestrator hands you a precomputed `AugmentedDataset` of `(a, b)` coefficients at evaluation points; you don't see the estimand. Reference implementations: `XGBoostBackend`, `SklearnBackend` (rieszboost), `KernelRidgeBackend` (krrr), `AugForestRieszBackend` (forestriesz).
+
+**Moment-style — `MomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, …)`.** For learners that minimize a per-original-row loss (random forests, neural nets). You receive raw rows + the estimand and call `rieszreg.trace(estimand, row)` per row to compute moments. Reference implementation: `ForestRieszBackend` (forestriesz).
+
+Implementations advertise at most one method; the orchestrator dispatches via `hasattr` and defaults to `fit_augmented` if both are present.
+
+Register the predictor's loader so save/load round-trip works:
 
 ```python
 from rieszreg.backends import register_predictor_loader
 register_predictor_loader("my-kind", MyPredictor.load)
 ```
 
-The backend sees an `AugmentedDataset` and a `LossSpec`. It does not need to know about the estimand or the tracer. `XGBoostBackend`, `SklearnBackend`, and `KernelRidgeBackend` are reference implementations.
-
-A new implementation package (e.g. `rieszforest`, `rieszneural`) follows the [contract in rieszreg/DESIGN.md, Part B](https://github.com/rieszreg/rieszreg/blob/main/rieszreg/DESIGN.md): depend on `rieszreg`, implement the `Backend` Protocol, satisfy the sklearn-conformance subset, contribute docs pages here.
+A new implementation package (e.g. `rieszneural`) follows the [contract in rieszreg/DESIGN.md, Part B](https://github.com/rieszreg/rieszreg/blob/main/rieszreg/DESIGN.md): depend on `rieszreg`, implement one of the two Protocols, satisfy the sklearn-conformance subset, contribute docs pages here.
 
 ## Living-doc rule
 
