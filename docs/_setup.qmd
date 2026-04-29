@@ -23,8 +23,12 @@ if (Sys.getenv("RETICULATE_PYTHON") == "") {
   }
 }
 
-# Dev-load the rieszboost R wrapper. krrr's R wrapper is loaded on demand
-# by pages that use it.
+# Dev-load rieszreg first (rieszboost and krrr import from it), then
+# rieszboost. krrr's R wrapper is loaded on demand by pages that use it.
+suppressMessages(pkgload::load_all(
+  file.path(.project_root, "../rieszreg/r/rieszreg"),
+  quiet = TRUE
+))
 suppressMessages(pkgload::load_all(
   file.path(.project_root, "../rieszboost/r/rieszboost"),
   quiet = TRUE

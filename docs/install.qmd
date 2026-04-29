@@ -8,9 +8,13 @@ title: "Install"
 
 ## Python
 
+The three packages live in sibling GitHub repos: [rieszreg](https://github.com/alejandroschuler/rieszreg) (meta-package + this user guide), [rieszboost](https://github.com/alejandroschuler/rieszboost), [krrr](https://github.com/alejandroschuler/krrr). Clone them into a parent directory:
+
 ```sh
-git clone https://github.com/alejandroschuler/RieszReg.git
-cd RieszReg
+mkdir RieszReg && cd RieszReg
+git clone https://github.com/alejandroschuler/rieszreg.git
+git clone https://github.com/alejandroschuler/rieszboost.git
+git clone https://github.com/alejandroschuler/krrr.git
 python3 -m venv .venv
 .venv/bin/pip install -e rieszreg/python
 .venv/bin/pip install -e rieszboost/python   # gradient boosting backend
