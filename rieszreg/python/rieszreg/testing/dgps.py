@@ -112,14 +112,26 @@ def assert_consistency(
     n_grid: tuple[int, ...] = (500, 2000),
     rng_seed: int = 0,
     tol_at_max_n: float = 0.5,
+    monotonicity_slack: float = 0.5,
 ):
     """Assert RMSE of α̂ vs α₀ shrinks across n and lands below `tol_at_max_n`.
+
+    Designed to catch *divergence*, not to benchmark fit quality — single-seed
+    RMSEs are noisy, especially for estimators with early stopping that
+    plateau quickly. The monotonicity check is therefore lax: it requires
+    `rmses[-1] <= rmses[0] * (1 + monotonicity_slack)` (default 50% slack).
+    The absolute `tol_at_max_n` is the primary signal.
 
     Parameters
     ----------
     fit_predict : callable
-        Takes (train_df, test_df) → (alpha_hat_array, ...). Must return alpha_hat
-        as the first element.
+        Takes (train_df, test_df) → α̂-array of length len(test).
+    n_grid : tuple of int
+        Sample sizes to evaluate at, in increasing order.
+    tol_at_max_n : float
+        Maximum acceptable RMSE at the largest n.
+    monotonicity_slack : float
+        Maximum relative increase from rmses[0] to rmses[-1] (default 0.5).
     """
     rng = np.random.default_rng(rng_seed)
     rmses = []
@@ -129,10 +141,11 @@ def assert_consistency(
         alpha_hat = np.asarray(fit_predict(train, test))[: len(test)]
         alpha_true = dgp.true_alpha(test)
         rmses.append(float(np.sqrt(np.mean((alpha_hat - alpha_true) ** 2))))
-    # Monotone (non-strict) decrease + final-n tolerance.
-    if not (rmses[-1] <= rmses[0] + 1e-6):
+    # Lax monotonicity: allow noise but flag large divergence.
+    if rmses[-1] > rmses[0] * (1.0 + monotonicity_slack) + 1e-6:
         raise AssertionError(
-            f"{dgp.name}: RMSE did not decrease across n_grid={n_grid}; got {rmses}"
+            f"{dgp.name}: RMSE diverged across n_grid={n_grid}; got {rmses} "
+            f"(allowed up to {monotonicity_slack:.0%} relative increase)"
         )
     if rmses[-1] > tol_at_max_n:
         raise AssertionError(

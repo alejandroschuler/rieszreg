@@ -79,5 +79,5 @@ def test_assert_consistency_rejects_non_decreasing():
         n = len(test)
         return dgp.true_alpha(test) + 5.0 * np.arange(1, n + 1) / n
 
-    with pytest.raises(AssertionError, match="did not decrease|above tolerance"):
+    with pytest.raises(AssertionError, match="diverged|above tolerance"):
         dgps.assert_consistency(bad, dgp=dgp, n_grid=(50, 60), tol_at_max_n=0.01)
