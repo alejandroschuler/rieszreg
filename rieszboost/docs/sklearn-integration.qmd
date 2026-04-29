@@ -139,5 +139,5 @@ cat(sprintf("best score (neg Riesz loss): %.4f\n",
 
 ## See also
 
-- [`examples/lee_schuler/binary_dgp.py`](https://github.com/alejandroschuler/rieszboost/blob/main/examples/lee_schuler/binary_dgp.py) builds an EEE estimator using `cross_val_predict` to produce out-of-fold $\hat\alpha$.
+- [`examples/lee_schuler/binary_dgp.py`](https://github.com/rieszreg/rieszboost/blob/main/examples/lee_schuler/binary_dgp.py) builds an EEE estimator using `cross_val_predict` to produce out-of-fold $\hat\alpha$.
 - [Diagnostics and tuning](diagnostics-and-tuning.qmd) covers which hyperparameters to vary in a grid search.

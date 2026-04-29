@@ -47,7 +47,7 @@ Rscript -e '
 
 ## Tracer
 
-The user writes `m(z, alpha)` with `+`, `-`, scalar `*`, and calls to `alpha(...)`. The library passes a `Tracer` in as `alpha`; each call returns a single-term `LinearForm`, and Python's operator overloading composes them. The result has `.as_pairs()` returning `[(coef, point), ...]`, which `build_augmented` consumes to construct the augmented dataset. Operations outside the linear-form algebra (squaring, integrals, constants) raise at trace time. See [`python/rieszboost/tracer.py`](https://github.com/alejandroschuler/rieszboost/blob/main/python/rieszboost/tracer.py).
+The user writes `m(z, alpha)` with `+`, `-`, scalar `*`, and calls to `alpha(...)`. The library passes a `Tracer` in as `alpha`; each call returns a single-term `LinearForm`, and Python's operator overloading composes them. The result has `.as_pairs()` returning `[(coef, point), ...]`, which `build_augmented` consumes to construct the augmented dataset. Operations outside the linear-form algebra (squaring, integrals, constants) raise at trace time. See [`python/rieszboost/tracer.py`](https://github.com/rieszreg/rieszboost/blob/main/python/rieszboost/tracer.py).
 
 ## Adding an estimand factory
 
@@ -126,6 +126,6 @@ Renders take ~30s with the committed `_freeze/` cache, ~3 minutes cold. Editing 
 
 ## CI
 
-The workflow at [`.github/workflows/docs.yml`](https://github.com/alejandroschuler/rieszboost/blob/main/.github/workflows/docs.yml) runs on push to `main` when any of `docs/`, `python/`, `r/`, `examples/`, or the workflow itself changes. It checks out the repo (restoring `_freeze/`), installs Python 3.11 + `rieszboost` + `matplotlib`, installs R + knitr + rmarkdown + reticulate, sets up Quarto, renders, and publishes `_site/` to the `gh-pages` branch.
+The workflow at [`.github/workflows/docs.yml`](https://github.com/rieszreg/rieszboost/blob/main/.github/workflows/docs.yml) runs on push to `main` when any of `docs/`, `python/`, `r/`, `examples/`, or the workflow itself changes. It checks out the repo (restoring `_freeze/`), installs Python 3.11 + `rieszboost` + `matplotlib`, installs R + knitr + rmarkdown + reticulate, sets up Quarto, renders, and publishes `_site/` to the `gh-pages` branch.
 
-The site lives at `https://alejandroschuler.github.io/rieszboost/`.
+The site lives at `https://rieszreg.github.io/rieszboost/`.

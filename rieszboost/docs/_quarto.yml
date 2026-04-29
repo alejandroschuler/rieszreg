@@ -8,14 +8,14 @@ website:
   title: "rieszboost"
   description: "Gradient boosting for Riesz representers — user guide."
   search: true
-  repo-url: https://github.com/alejandroschuler/rieszboost
+  repo-url: https://github.com/rieszreg/rieszboost
   repo-branch: main
   repo-actions: [edit, issue]
   page-navigation: true
   navbar:
     right:
       - icon: github
-        href: https://github.com/alejandroschuler/rieszboost
+        href: https://github.com/rieszreg/rieszboost
         aria-label: GitHub
   sidebar:
     style: floating

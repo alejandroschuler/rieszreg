@@ -7,7 +7,7 @@ title: "Install"
 ## Python
 
 ```sh
-git clone https://github.com/alejandroschuler/rieszboost.git
+git clone https://github.com/rieszreg/rieszboost.git
 cd rieszboost
 python3 -m venv .venv
 .venv/bin/pip install -e python/

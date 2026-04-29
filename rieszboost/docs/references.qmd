@@ -27,4 +27,4 @@ title: "References"
 
 ## Software
 
-- **Lee's reference implementation.** [github.com/kaitlynjlee/boosting_for_rr](https://github.com/kaitlynjlee/boosting_for_rr) — the implementation against which `rieszboost` is cross-checked. See [`examples/lee_schuler/COMPARISON.md`](https://github.com/alejandroschuler/rieszboost/blob/main/examples/lee_schuler/COMPARISON.md) for the parity report.
+- **Lee's reference implementation.** [github.com/kaitlynjlee/boosting_for_rr](https://github.com/kaitlynjlee/boosting_for_rr) — the implementation against which `rieszboost` is cross-checked. See [`examples/lee_schuler/COMPARISON.md`](https://github.com/rieszreg/rieszboost/blob/main/examples/lee_schuler/COMPARISON.md) for the parity report.
