@@ -473,6 +473,12 @@ window.Quarto = {
  <span class="menu-text">Kernel backend (krrr)</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../backends/forest.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Forest backend (forestriesz)</span></a>
+  </div>
+</li>
       </ul>
   </li>
         <li class="sidebar-item">
@@ -526,7 +532,7 @@ window.Quarto = {
 </header>
 
 
-<p>A backend consumes the augmented dataset (per-row quadratic and linear coefficients <span class="math inline">\(a_k\)</span>, <span class="math inline">\(b_k\)</span> produced by <code>rieszreg.build_augmented</code>) and a <code>LossSpec</code>, and returns a fitted <code>Predictor</code>. Two implementation packages ship today; both satisfy <code>rieszreg.backends.base.Backend</code> and slot into <code>RieszEstimator</code> interchangeably.</p>
+<p>A backend fits the Riesz representer for a given estimand and loss. Three implementation packages ship today; each slots into <code>RieszEstimator</code> through one of two Protocols. <code>rieszboost</code> and <code>krrr</code> consume the augmented <code>(a, b)</code> dataset (<code>Backend.fit_augmented</code>). <code>forestriesz</code> ships <em>both</em>: a moment-style <code>ForestRieszRegressor</code> that consumes original rows + per-row moments (<code>MomentBackend.fit_rows</code>), and an augmentation-style <code>AugForestRieszRegressor</code> that consumes the augmented dataset directly (<code>Backend.fit_augmented</code>).</p>
 <section id="pick-a-backend" class="level2">
 <h2 class="anchored" data-anchor-id="pick-a-backend">Pick a backend</h2>
 <table class="caption-top table">
@@ -535,6 +541,7 @@ window.Quarto = {
 <th></th>
 <th><a href="../backends/boosting.html">Boosting (<code>rieszboost</code>)</a></th>
 <th><a href="../backends/kernel.html">Kernel ridge (<code>krrr</code>)</a></th>
+<th><a href="../backends/forest.html">Forest (<code>forestriesz</code>)</a></th>
 </tr>
 </thead>
 <tbody>
@@ -542,41 +549,55 @@ window.Quarto = {
 <td><strong>Method</strong></td>
 <td>Gradient boosting (xgboost or sklearn)</td>
 <td>Closed-form solve of <span class="math inline">\((\mathrm{diag}(a) K + n\lambda I)\gamma = -b/2\)</span></td>
+<td>GRF-based per-leaf moment solve</td>
 </tr>
 <tr class="even">
 <td><strong>Algorithm</strong></td>
 <td>Lee &amp; Schuler (<a href="https://arxiv.org/abs/2501.04871">2501.04871</a>)</td>
 <td>Singh (<a href="https://arxiv.org/abs/2102.11076">2102.11076</a>)</td>
+<td>Chernozhukov, Newey, Quintas-Martínez, Syrgkanis (<a href="https://proceedings.mlr.press/v162/chernozhukov22a/chernozhukov22a.pdf">ICML 2022</a>)</td>
 </tr>
 <tr class="odd">
 <td><strong>Best for</strong></td>
 <td>Tabular data, <span class="math inline">\(n \gtrsim 1{,}000\)</span>, mixed feature types</td>
 <td>Smooth <span class="math inline">\(\alpha_0\)</span>, small/medium <span class="math inline">\(n\)</span>, low-dimensional <span class="math inline">\(X\)</span></td>
+<td>Many covariates, asymptotic CIs on <span class="math inline">\(\alpha(x)\)</span></td>
 </tr>
 <tr class="even">
 <td><strong>Iterative?</strong></td>
 <td>Yes (rounds + early stopping)</td>
 <td>No (closed-form per λ)</td>
+<td>No (single forest fit)</td>
 </tr>
 <tr class="odd">
 <td><strong>Hyperparameters</strong></td>
 <td><code>n_estimators</code>, <code>learning_rate</code>, <code>max_depth</code>, <code>reg_lambda</code>, <code>subsample</code></td>
 <td><code>kernel</code>, <code>lambda_grid</code>, <code>solver</code></td>
+<td><code>n_estimators</code>, <code>max_depth</code>, <code>min_samples_leaf</code>, <code>honest</code>, <code>riesz_feature_fns</code></td>
 </tr>
 <tr class="even">
 <td><strong>Loss support</strong></td>
 <td><code>SquaredLoss</code>, <code>KLLoss</code>, <code>BernoulliLoss</code>, <code>BoundedSquaredLoss</code></td>
+<td><code>SquaredLoss</code> only (today)</td>
 <td><code>SquaredLoss</code> only (today)</td>
 </tr>
 <tr class="odd">
 <td><strong>Scaling</strong></td>
 <td>Linear in <span class="math inline">\(n\)</span> via xgboost</td>
 <td><span class="math inline">\(O(n^3)\)</span> direct; Nyström + RFF + Falkon for larger <span class="math inline">\(n\)</span></td>
+<td><span class="math inline">\(O(n \log n)\)</span> per tree</td>
 </tr>
 <tr class="even">
+<td><strong>Confidence intervals</strong></td>
+<td>No</td>
+<td>No</td>
+<td>Yes (<code>predict_interval</code> on single-basis fits)</td>
+</tr>
+<tr class="odd">
 <td><strong>Convenience class</strong></td>
 <td><code>rieszboost.RieszBooster</code></td>
 <td><code>krrr.KernelRieszRegressor</code></td>
+<td><code>forestriesz.ForestRieszRegressor</code> (moment-style) and <code>forestriesz.AugForestRieszRegressor</code> (augmentation-style, fully estimand-agnostic)</td>
 </tr>
 </tbody>
 </table>
@@ -587,30 +608,42 @@ window.Quarto = {
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> RieszEstimator, ATE, SquaredLoss</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszboost.backends <span class="im">import</span> XGBoostBackend, SklearnBackend</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> krrr <span class="im">import</span> KernelRidgeBackend, Gaussian</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Default: xgboost</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>est <span class="op">=</span> RieszEstimator(estimand<span class="op">=</span>ATE(), backend<span class="op">=</span>XGBoostBackend())</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Sklearn boosting with KernelRidge as the base learner</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.kernel_ridge <span class="im">import</span> KernelRidge</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>est <span class="op">=</span> RieszEstimator(</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>ATE(),</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    backend<span class="op">=</span>SklearnBackend(<span class="kw">lambda</span>: KernelRidge(alpha<span class="op">=</span><span class="fl">1.0</span>, kernel<span class="op">=</span><span class="st">"rbf"</span>, gamma<span class="op">=</span><span class="fl">2.0</span>)),</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Kernel ridge directly</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>est <span class="op">=</span> RieszEstimator(</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>ATE(),</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    backend<span class="op">=</span>KernelRidgeBackend(kernel<span class="op">=</span>Gaussian(length_scale<span class="op">=</span><span class="st">"median"</span>)),</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The convenience classes are thin subclasses that bake in the backend and surface backend-specific hyperparameters as constructor args, so that they fit cleanly into <code>GridSearchCV</code>. See the <a href="../backends/boosting.html">boosting</a> and <a href="../backends/kernel.html">kernel</a> pages for each.</p>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> forestriesz <span class="im">import</span> ForestRieszBackend</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Default: xgboost</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>est <span class="op">=</span> RieszEstimator(estimand<span class="op">=</span>ATE(), backend<span class="op">=</span>XGBoostBackend())</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Sklearn boosting with KernelRidge as the base learner</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.kernel_ridge <span class="im">import</span> KernelRidge</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>est <span class="op">=</span> RieszEstimator(</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>ATE(),</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    backend<span class="op">=</span>SklearnBackend(<span class="kw">lambda</span>: KernelRidge(alpha<span class="op">=</span><span class="fl">1.0</span>, kernel<span class="op">=</span><span class="st">"rbf"</span>, gamma<span class="op">=</span><span class="fl">2.0</span>)),</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Kernel ridge directly</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>est <span class="op">=</span> RieszEstimator(</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>ATE(),</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    backend<span class="op">=</span>KernelRidgeBackend(kernel<span class="op">=</span>Gaussian(length_scale<span class="op">=</span><span class="st">"median"</span>)),</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Random forest (moment-style backend; fit_rows path)</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>est <span class="op">=</span> RieszEstimator(</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>ATE(),</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    backend<span class="op">=</span>ForestRieszBackend(n_estimators<span class="op">=</span><span class="dv">500</span>),</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The convenience classes are thin subclasses that bake in the backend and surface backend-specific hyperparameters as constructor args, so that they fit cleanly into <code>GridSearchCV</code>. See the <a href="../backends/boosting.html">boosting</a>, <a href="../backends/kernel.html">kernel</a>, and <a href="../backends/forest.html">forest</a> pages for each.</p>
 </section>
 <section id="adding-a-backend" class="level2">
 <h2 class="anchored" data-anchor-id="adding-a-backend">Adding a backend</h2>
-<p>Implement the <code>Backend</code> Protocol from <a href="https://github.com/rieszreg/rieszreg/blob/main/rieszreg/python/rieszreg/backends/base.py"><code>rieszreg.backends.base</code></a>: one method, <code>fit_augmented(...)</code>, returning a <code>FitResult</code> whose <code>predictor</code> implements <code>predict_eta</code> and <code>predict_alpha</code>. Register the predictor’s loader for round-trip via:</p>
+<p>Implement <em>one</em> of two Protocols from <a href="https://github.com/rieszreg/rieszreg/blob/main/rieszreg/python/rieszreg/backends/base.py"><code>rieszreg.backends.base</code></a>:</p>
+<ul>
+<li><code>Backend.fit_augmented(aug_train, aug_valid, loss, …)</code> — for augmentation-style learners (kernel ridge, gradient boosting). Implementations: <code>KernelRidgeBackend</code>, <code>XGBoostBackend</code>, <code>SklearnBackend</code>.</li>
+<li><code>MomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, …)</code> — for moment-style learners (random forests, neural nets). Compute per-row moments via <code>rieszreg.trace(estimand, row)</code>. Implementation: <code>ForestRieszBackend</code>.</li>
+</ul>
+<p>Either way, return a <code>FitResult</code> whose <code>predictor</code> implements <code>predict_eta</code> and <code>predict_alpha</code>. Register the predictor’s loader for round-trip via:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg.backends <span class="im">import</span> register_predictor_loader</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>register_predictor_loader(<span class="st">"my-kind"</span>, MyPredictor.load)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>XGBoostBackend</code>, <code>SklearnBackend</code>, and <code>KernelRidgeBackend</code> are reference implementations. See <a href="../developing.html">Developing</a> for the full contract.</p>
+<p>See <a href="../developing.html">Developing</a> for the full contract.</p>
 
 
 </section>

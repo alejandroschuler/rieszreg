@@ -473,6 +473,12 @@ window.Quarto = {
  <span class="menu-text">Kernel backend (krrr)</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./backends/forest.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Forest backend (forestriesz)</span></a>
+  </div>
+</li>
       </ul>
   </li>
         <li class="sidebar-item">
@@ -602,17 +608,17 @@ window.Quarto = {
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ATE</span>(<span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> <span class="st">"x"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function ATE.&lt;locals&gt;.m at 0x7f8a429736a0&gt;, extra_keys=(), name='ATE', factory_spec={'factory': 'ATE', 'args': {'treatment': 'a', 'covariates': ['x']}})
+<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function ATE.&lt;locals&gt;.m at 0x11eca1620&gt;, extra_keys=(), name='ATE', factory_spec={'factory': 'ATE', 'args': {'treatment': 'a', 'covariates': ['x']}})
  signature: (z, alpha)</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">TSM</span>(<span class="at">level =</span> <span class="dv">1</span>, <span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> <span class="st">"x"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function TSM.&lt;locals&gt;.m at 0x7f8a42973420&gt;, extra_keys=(), name='TSM(level=1.0)', factory_spec={'factory': 'TSM', 'args': {'level': 1.0, 'treatment': 'a', 'covariates': ['x']}})
+<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function TSM.&lt;locals&gt;.m at 0x13a35ade0&gt;, extra_keys=(), name='TSM(level=1.0)', factory_spec={'factory': 'TSM', 'args': {'level': 1.0, 'treatment': 'a', 'covariates': ['x']}})
  signature: (z, alpha)</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">LocalShift</span>(<span class="at">delta =</span> <span class="fl">0.3</span>, <span class="at">threshold =</span> <span class="fl">0.7</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function LocalShift.&lt;locals&gt;.m at 0x7f8a2bdd3d80&gt;, extra_keys=(), name='LocalShift(delta=0.3, threshold=0.7)', factory_spec={'factory': 'LocalShift', 'args': {'delta': 0.3, 'threshold': 0.7, 'treatment': 'a', 'covariates': ['x']}})
+<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function LocalShift.&lt;locals&gt;.m at 0x13a3600e0&gt;, extra_keys=(), name='LocalShift(delta=0.3, threshold=0.7)', factory_spec={'factory': 'LocalShift', 'args': {'delta': 0.3, 'threshold': 0.7, 'treatment': 'a', 'covariates': ['x']}})
  signature: (z, alpha)</code></pre>
 </div>
 </div>
@@ -713,7 +719,7 @@ window.Quarto = {
 <span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(est)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function m_weighted_contrast at 0x7f8a1fcc3c40&gt;, extra_keys=(), name='WeightedContrast', factory_spec=None)</code></pre>
+<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function m_weighted_contrast at 0x13a7c8e00&gt;, extra_keys=(), name='WeightedContrast', factory_spec=None)</code></pre>
 </div>
 </div>
 <p>Pass the estimand to any backend’s estimator class:</p>
