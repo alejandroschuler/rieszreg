@@ -1,14 +1,24 @@
 # rieszboost
 
-General-purpose gradient-boosting library for Riesz representers, implementing Lee & Schuler ([arXiv:2501.04871](https://arxiv.org/abs/2501.04871)).
+Gradient-boosting backend for the [RieszReg meta-package](../README.md), implementing Lee & Schuler ([arXiv:2501.04871](https://arxiv.org/abs/2501.04871)).
 
-## Living-doc rule (README + docs/)
+This package now depends on `rieszreg` for the shared abstractions (`Estimand`, `LossSpec`, `AugmentedDataset`, `build_augmented`, `Diagnostics`, `Backend` Protocol, `RieszEstimator` orchestrator). See [`../RIESZREG_DESIGN.md`](../RIESZREG_DESIGN.md) for the meta-package design and the contract every implementation package follows. `rieszboost` contributes:
 
-`README.md` is a living document — update it in the same edit whenever a change touches the public API surface (new estimand factory, new function exported from `rieszboost.__init__`, new backend, new loss), the supported feature list, the install/run instructions, or the quickstart example. If a change makes any line in the README false or outdated, the change is not done until the README is fixed. The README is the user-facing contract; CLAUDE.md is the implementation-side notes.
+- `XGBoostBackend` (default) and `SklearnBackend` — concrete `Backend` Protocol implementations.
+- `RieszBooster` — convenience subclass of `rieszreg.RieszEstimator` with `XGBoostBackend` defaulted and boosting hyperparameters (`max_depth`, `reg_lambda`, `subsample`) on the constructor.
+- R6 wrapper subclassing `rieszreg::RieszEstimatorR6`.
 
-The README's `## Status` and `## Roadmap` sections must stay current too — when a roadmap item ships, move it to "What works today" (or remove if mentioned elsewhere) **in the same commit**. When scope shifts (an item is dropped, deferred, or replaced by something new), update the roadmap with the rationale. Don't let either section drift behind reality. Same applies to any analogous status table in `examples/README.md`.
+The shared `python/rieszboost/{estimand,losses,tracer,augmentation,diagnostics}.py` modules are now thin re-export shims pointing at `rieszreg`. Don't add functionality to the shims; contribute to `rieszreg` and re-export here if needed.
 
-The same rule applies to the user guide at `docs/` (Quarto website, knitr engine, deployed to GitHub Pages on every push to main). Any change to the public API surface (Python in `python/rieszboost/` OR R in `r/rieszboost/R/`) must update both `README.md` AND the relevant page in `docs/` in the same edit. On bilingual pages (every page with executable code uses R + Python tabsets via `::: {.panel-tabset group="lang"}`), update BOTH the `{python}` tab and the `{r}` tab — the R wrapper is a first-class citizen, not an afterthought. The pre-commit hook at `.githooks/pre-commit` enforces this — a public-API change with no `docs/*.qmd` or `README.md` change in the same commit is rejected. Activate the hook once per clone with `git config core.hooksPath .githooks`. Bypass only for genuinely doc-irrelevant changes (internal refactor, tests, comments) with `--no-verify`.
+## Living-doc rule (README + meta-project docs)
+
+`README.md` is a living document — update it in the same edit whenever a change touches the public API surface (new backend, new convenience-class arg). If a change makes any line in the README false or outdated, the change is not done until the README is fixed.
+
+The user guide moved to the unified Quarto site at [`../docs/`](../docs/). The boosting-specific page is [`../docs/backends/boosting.qmd`](../docs/backends/boosting.qmd). Any change to the boosting backend that affects user-facing behavior must update that page in the same edit. On bilingual pages, update BOTH the `{python}` and `{r}` tabs.
+
+The pre-commit hook at `.githooks/pre-commit` enforces this — a public-API change with no `README.md` or `docs/*.qmd` change in the same commit is rejected. Activate the hook once per clone with `git config core.hooksPath .githooks`. Bypass only for genuinely doc-irrelevant changes (internal refactor, tests, comments) with `--no-verify`.
+
+The original `docs/` directory in this package is deprecated; see `docs/DEPRECATED.md`.
 
 ### Doc tone rules
 
@@ -41,16 +51,18 @@ The public API should feel like **ngboost / sklearn**:
 - Cross-fitting is `sklearn.model_selection.cross_val_predict`. Don't reintroduce a bespoke `crossfit()` function.
 - Hyperparameter tuning is `sklearn.model_selection.GridSearchCV` (or `HalvingGridSearchCV`, etc.). Don't introduce a `tune_riesz()`.
 
+**Apply this rule to every new feature, not just the public API surface.** Before writing any new code — especially anything procedural with a loop, a split, a grid, or a fold — ask: *is there an sklearn way to do this?* If yes, use it. The answer is yes more often than feels intuitive: cross-fitting (`cross_val_predict`), CV scoring (`cross_validate`), splits (`KFold`, `train_test_split`, `StratifiedKFold`), tuning (`GridSearchCV`, `HalvingGridSearchCV`, `RandomizedSearchCV`), composition (`Pipeline`, `ColumnTransformer`, `FunctionTransformer`), scoring (`make_scorer`), parallelism (`n_jobs=`). This applies to library code, examples, docs, and tests. A hand-rolled `for tr_idx, te_idx in KFold(...).split(X):` loop is a code smell — when you find one (yours or pre-existing), replace it with `cross_val_predict` unless you can articulate why sklearn's version is wrong for the task. Bespoke is reserved for things sklearn genuinely doesn't cover (the `LinearForm` tracer, the custom xgboost objective, the Bregman `LossSpec`).
+
 R-side mirrors this: R6 classes (`RieszBooster$new(estimand=, loss=, ...)$fit(df)$predict(df)`) rather than functional `fit_riesz()` shims.
 
 ## Layout
 
-- `python/` — primary implementation. Library is `rieszboost/`; tests in `tests/`. Build/dependency config in `pyproject.toml`.
-- `reference/` — arXiv source for the relevant papers (gitignored). See `reference/README.md` for the index and refetch script.
-- `.venv/` — local Python venv (gitignored once we add a top-level `.gitignore`).
-- `r/rieszboost/` — R6 wrapper via reticulate. Construct with `RieszBooster$new(estimand=, loss=, ...)`; `$fit(df)`, `$predict(df)`, `$score(df)`, `$diagnose(df)`. All estimand factories (`ATE()`, `ATT()`, `TSM()`, `AdditiveShift()`, `LocalShift()`, `StochasticIntervention()`) and loss specs (`SquaredLoss()`, `KLLoss()`) and backends (`XGBoostBackend()`, `SklearnBackend()`) are exposed. Custom user-supplied m() must currently be written in Python — the LinearForm tracer is Python-only. Run R tests via `pkgload::load_all` + `testthat::test_dir`; the parity test confirms R/Python predictions are bitwise-identical.
-- `docs/` — Quarto website (user guide). knitr engine (executes `{r}` chunks natively, `{python}` chunks via reticulate). Deployed to GitHub Pages by `.github/workflows/docs.yml` on push to main. Render locally with `quarto preview docs/`; one-shot build to `docs/_site/` with `quarto render docs/`. The `docs/_freeze/` directory IS committed to git (Quarto cache for CI speed); `docs/_site/` and `docs/.quarto/` are gitignored.
-- `.githooks/pre-commit` — enforces the living-doc rule above. Activate per clone with `git config core.hooksPath .githooks`.
+- `python/rieszboost/` — backend implementations (`XGBoostBackend`, `SklearnBackend`) and the `RieszBooster` convenience class. Shared modules (`estimand.py`, `losses.py`, `tracer.py`, `augmentation.py`, `diagnostics.py`, `backends/base.py`) are now thin re-export shims pointing at `rieszreg`. `pyproject.toml` declares `rieszreg>=0.0.1` as a dependency.
+- `r/rieszboost/` — R6 wrapper via reticulate. `RieszBooster` subclasses `rieszreg::RieszEstimatorR6` (~50 lines locally). Estimand and loss factories are re-exported from `rieszreg` via NAMESPACE. Run R tests by dev-loading both packages: `pkgload::load_all("../rieszreg/r/rieszreg"); pkgload::load_all("r/rieszboost"); testthat::test_dir(...)`.
+- `reference/` — moved to the meta-project top level at `../reference/` (the local copy is deprecated; will be removed).
+- `docs/` — deprecated; see `docs/DEPRECATED.md`. The unified Quarto site lives at `../docs/`.
+- `.githooks/pre-commit` — copy of the meta-project canonical hook (`../.githooks/pre-commit`). Activate per clone.
+- `.venv/` — local Python venv (gitignored).
 
 ## Run tests
 
@@ -65,21 +77,14 @@ R-side mirrors this: R6 classes (`RieszBooster$new(estimand=, loss=, ...)$fit(df
 - **m() is opaque, JAX-style.** Users write `m(z, alpha) -> LinearForm` using `+`, `-`, scalar `*`, and calls to `alpha(**kwargs)`. The `Tracer` (`rieszboost/tracer.py`) records each call as a `LinearTerm` and composes them into a `LinearForm`. Anything that leaves the linear-form algebra raises (signal to dispatch to slow path, when the slow path lands).
 - **Fast path = data augmentation + xgboost custom objective.** `engine.build_augmented` traces m on each row and assembles per-row (a, b) coefficients so the loss is `Σ a_j α(z̃_j)² + b_j α(z̃_j)`. xgboost's custom objective consumes gradient `2aF + b` and Hessian `2a` directly. Augmented rows with `a=0` get a small `eps` floor in the Hessian to keep leaf-weight optimization stable.
 - **Slow general path** (not yet implemented): Friedman-style gradient boosting against arbitrary base learners (sklearn, JAX, etc.) for non-finite-point m (integrals, derivatives).
-- **xgboost is lazy-imported** so the tracer and estimand factories are usable without xgboost or libomp.
+- **xgboost is lazy-imported** so the rest of the rieszboost / rieszreg API is usable without xgboost or libomp.
 
 ## What's done (v0.0.1)
 
-- **sklearn-compatible `RieszBooster(BaseEstimator)`** in `python/rieszboost/estimator.py`. Composes with `GridSearchCV`, `cross_val_predict`, `clone`, `Pipeline`. Configuration objects (estimand, loss, backend) baked in at construction; `.fit / .predict / .score / .diagnose` at use time. Accepts ndarray (columns matched to `estimand.feature_keys`) or DataFrame (columns matched by name; `extra_keys` payload pulled through).
-- **`Estimand` class** owns its input schema (`feature_keys`, `extra_keys`, m). No more `feature_keys=` arg on `fit()`. Factories: `ATE / ATT / LocalShift / TSM / AdditiveShift / StochasticIntervention`. ATT and LocalShift fit *partial-parameter* representers (full ATT/LASE require delta-method downstream).
-- **Backends** (swappable): `XGBoostBackend(hessian_floor=2.0, gradient_only=False)` and `SklearnBackend(base_learner_factory)`. New backends slot in without touching `RieszBooster`.
-- **Bregman-Riesz losses**: `LossSpec` protocol with `link_to_alpha` / `alpha_to_eta`. `SquaredLoss` (identity link, default), `KLLoss` (exp link, for density-ratio targets; requires non-negative m-coefficients).
-- `LinearForm` tracer + linearity enforcement; `build_augmented` extracted to `augmentation.py`.
-- `init={float, 'm1', None}` in α-space; loss spec converts to η for the booster.
-- Early stopping via `validation_fraction` (auto internal split) or explicit `eval_set=`; `best_iteration_` + predict-with-best-iteration baked in.
-- Cross-fitting via `sklearn.model_selection.cross_val_predict` (no bespoke `crossfit()` function).
-- Diagnostics: `booster.diagnose(X)` or top-level `rieszboost.diagnose(...)`.
-- R wrapper is R6-style: `RieszBooster$new(estimand=, loss=, ...)` with `$fit/$predict/$score/$diagnose`. Bitwise-identical predictions vs Python.
-- 51 Python tests + R parity test passing. Includes acceptance gates for `clone`, `GridSearchCV`, `cross_val_predict`.
+- **`RieszBooster`** subclasses `rieszreg.RieszEstimator`, defaulting backend to `XGBoostBackend()` and adding `max_depth`, `reg_lambda`, `subsample` constructor args. Composes with `GridSearchCV`, `cross_val_predict`, `clone`, `Pipeline`.
+- **Backends**: `XGBoostBackend(hessian_floor=2.0, gradient_only=False)` and `SklearnBackend(base_learner_factory)`. Both register their `Predictor` loader for the registry-based save/load path on import.
+- All shared abstractions (`Estimand`, `LossSpec`, `LinearForm`, `build_augmented`, `Diagnostics`) live in `rieszreg`; this package re-exports them.
+- 109 Python tests + 11 R parity tests passing. Includes acceptance gates for `clone`, `GridSearchCV`, `cross_val_predict`.
 
 ## Longitudinal / LMTP
 

@@ -13,8 +13,11 @@ Description: R wrapper around the Python rieszboost library implementing
 License: TBD
 Encoding: UTF-8
 Imports:
-    reticulate (>= 1.30)
+    R6,
+    reticulate (>= 1.30),
+    rieszreg (>= 0.0.1)
 Suggests:
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    pkgload
 SystemRequirements: Python (>= 3.10), the Python package 'rieszboost'
 RoxygenNote: 7.3.0

@@ -1,33 +1,49 @@
 #!/usr/bin/env bash
-# Pre-commit checks for rieszboost docs.
+# Shared pre-commit hook for the RieszReg family.
 #
-# 1. Block commits that touch the public API without touching the docs.
-# 2. Block commits whose staged docs/*.qmd files contain known anti-patterns:
-#    - design-decision metacommentary ("intentionally no X", "the design rule")
-#    - AI-flavored hedge phrases ("almost every problem", "the right choice")
+# Auto-detects the package from `git rev-parse --show-toplevel` and applies:
+#   1. Public-API change without README / docs update.
+#   2. Doc-tone-rule lint on staged docs/*.qmd and README.md (added lines):
+#        - design-decision metacommentary
+#        - AI-flavored hedge phrases
 #
-# Bypass with: git commit --no-verify
+# Each implementation package keeps a copy of this file at .githooks/pre-commit.
+# Activate per clone: `git config core.hooksPath .githooks`.
+# Bypass with: `git commit --no-verify`.
+
 set -euo pipefail
+
+repo_root=$(git rev-parse --show-toplevel)
+pkg=$(basename "$repo_root")
 
 staged=$(git diff --cached --name-only)
 
 # ----------------------------------------------------------------------
-# Check 1: public-API change without a docs update.
+# Check 1: public-API change without README/docs update.
 # ----------------------------------------------------------------------
-public_api_changed=$(echo "$staged" | grep -E '^(python/rieszboost/(__init__|estimator|estimand|augmentation|losses|diagnostics|tracer)\.py|python/rieszboost/backends/.*\.py|r/rieszboost/R/.*\.R)$' || true)
-docs_changed=$(echo "$staged" | grep -E '^(docs/.*\.qmd|docs/_quarto\.yml|README\.md)$' || true)
+api_re="^(python/${pkg}/(__init__|estimator|estimand|augmentation|losses|diagnostics|tracer)\\.py"
+api_re+="|python/${pkg}/(estimands|losses|backends|testing)/.*\\.py"
+api_re+="|r/${pkg}/R/.*\\.R"
+api_re+="|r/${pkg}/NAMESPACE"
+api_re+=")$"
 
-if [[ -n "$public_api_changed" && -z "$docs_changed" ]]; then
-  echo "ERROR: public-API change without a docs update."
+# Docs may live in the local docs/ (rieszboost legacy) or in the parent
+# RieszReg/docs/ (unified meta site, when this hook runs from a checkout
+# that contains it). README.md changes always satisfy the requirement.
+docs_re='^(docs/.*\.qmd|docs/_quarto\.yml|README\.md|\.\./docs/.*\.qmd)$'
+
+api_changed=$(echo "$staged" | grep -E "$api_re" || true)
+docs_changed=$(echo "$staged" | grep -E "$docs_re" || true)
+
+if [[ -n "$api_changed" && -z "$docs_changed" ]]; then
+  echo "ERROR: public-API change in '${pkg}' without a README or docs update."
   echo ""
   echo "Changed:"
-  echo "$public_api_changed" | sed 's/^/  - /'
+  echo "$api_changed" | sed 's/^/  - /'
   echo ""
-  echo "Update the relevant page under docs/ (and README.md if the"
-  echo "quickstart or install steps changed), then re-stage and re-commit."
-  echo ""
-  echo "On bilingual pages (most of them), update BOTH the {python} and {r}"
-  echo "tabs. The R wrapper is a first-class citizen."
+  echo "Update README.md and the relevant page in the meta-project Quarto"
+  echo "site (RieszReg/docs/), then re-stage and re-commit. On bilingual"
+  echo "pages, update BOTH the {python} and {r} tabs."
   echo ""
   echo "If this change genuinely cannot affect docs (internal refactor,"
   echo "test-only, comment fix), bypass with: git commit --no-verify"
@@ -36,32 +52,12 @@ fi
 
 # ----------------------------------------------------------------------
 # Check 2: forbidden phrases in staged docs/*.qmd or README.md.
-#
-# The docs describe what's currently in the package, in plain instructive
-# prose matching the ngboost user guide's tone. Two failure modes:
-#
-# A) Design-decision metacommentary. Phrases like "there is intentionally
-#    no bespoke crossfit() function" or "no separate feature_keys= argument"
-#    describe the API's negative space and date the docs. Just describe
-#    what the function DOES; what it isn't is irrelevant to the user.
-#
-# B) AI-flavored hedge / editorial framing. Phrases like "the workhorse",
-#    "the right choice for almost every", "almost never needs tuning",
-#    "intentionally", "by design", "the design rule says". They read as
-#    AI-flavored and don't carry information.
-#
-# This check greps the diff (lines being ADDED, not the whole file) so
-# pre-existing instances don't keep firing. Only blocks if you're staging
-# new or modified content that contains the patterns.
 # ----------------------------------------------------------------------
-docs_for_lint=$(echo "$staged" | grep -E '^(docs/.*\.qmd|README\.md)$' || true)
+docs_for_lint=$(echo "$staged" | grep -E '^(docs/.*\.qmd|README\.md|\.\./docs/.*\.qmd)$' || true)
 
 if [[ -n "$docs_for_lint" ]]; then
-  # Patterns to flag. Case-insensitive.
   forbidden_regex='(intentionally (no|absent|out of scope|not)|by design|the design rule|design rule (is|says)|no bespoke|no separate [a-z_]+= ?argument|almost (every|never)|right (choice|for almost)|the workhorse|the natural (api|way|approach|choice)|don'\''t reinvent|rather than reinvent|reinvent it|we chose [a-z]+ over)'
 
-  # Get only added lines from the staged diff (lines starting with `+`,
-  # excluding the `+++` file header), then grep them.
   hits=$(git diff --cached --unified=0 -- $docs_for_lint \
          | grep -E '^\+[^+]' \
          | grep -iE "$forbidden_regex" \

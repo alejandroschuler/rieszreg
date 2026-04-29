@@ -14,9 +14,9 @@ from typing import Any
 import numpy as np
 import xgboost as xgb
 
-from ..augmentation import AugmentedDataset
-from ..losses import LossSpec
-from .base import FitResult, Predictor
+from rieszreg.augmentation import AugmentedDataset
+from rieszreg.backends.base import FitResult, Predictor, register_predictor_loader
+from rieszreg.losses import LossSpec
 
 
 @dataclass
@@ -169,3 +169,6 @@ class XGBoostBackend:
             best_iteration=best_iteration,
             best_score=float(best_score) if best_score is not None else None,
         )
+
+
+register_predictor_loader("xgboost", XGBoostPredictor.load)

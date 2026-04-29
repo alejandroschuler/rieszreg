@@ -65,17 +65,19 @@ def load_data() -> pd.DataFrame:
 def fit_outcome_regression_oof(df: pd.DataFrame, n_folds: int = 5) -> np.ndarray:
     X = df[["a"] + COVARIATES].to_numpy(dtype=float)
     y = df["y"].to_numpy(dtype=float)
-    folds = KFold(n_splits=n_folds, shuffle=True, random_state=0).split(X)
-    oof = np.empty(len(df))
-    for tr_idx, te_idx in folds:
-        booster = xgb.train(
-            {"objective": "reg:squarederror", "learning_rate": 0.05,
-             "max_depth": 4, "reg_lambda": 1.0, "seed": 0, "verbosity": 0},
-            xgb.DMatrix(X[tr_idx], label=y[tr_idx]),
-            num_boost_round=300,
-        )
-        oof[te_idx] = booster.predict(xgb.DMatrix(X[te_idx]))
-    return oof
+    return cross_val_predict(
+        xgb.XGBRegressor(
+            objective="reg:squarederror",
+            learning_rate=0.05,
+            max_depth=4,
+            reg_lambda=1.0,
+            n_estimators=300,
+            random_state=0,
+            verbosity=0,
+        ),
+        X, y,
+        cv=KFold(n_splits=n_folds, shuffle=True, random_state=0),
+    )
 
 
 def fit_outcome_regression_full(df: pd.DataFrame) -> xgb.Booster:

@@ -4,6 +4,9 @@
 #' `use_python_rieszboost()`, then construct a [RieszBooster] and call
 #' `$fit(df)` / `$predict(df)`.
 #'
+#' Estimand and loss factories live in the shared `rieszreg` R package and
+#' are re-exported from here for convenience.
+#'
 #' @keywords internal
 "_PACKAGE"
 
@@ -40,126 +43,7 @@ use_python_rieszboost <- function(python = NULL, required = TRUE) {
 }
 
 
-.df_to_py <- function(data, estimand) {
-  # Convert R data.frame to a pandas DataFrame; preserves list-columns
-  # (e.g. shift_samples) by element-wise conversion.
-  cols <- colnames(data)
-  py_dict <- list()
-  for (k in cols) {
-    v <- data[[k]]
-    if (is.list(v)) {
-      # list-column: each row is a numeric vector (e.g. shift_samples)
-      py_dict[[k]] <- lapply(v, function(x) reticulate::r_to_py(as.numeric(x)))
-    } else {
-      py_dict[[k]] <- as.numeric(v)
-    }
-  }
-  pd <- reticulate::import("pandas", convert = FALSE)
-  pd$DataFrame(reticulate::r_to_py(py_dict))
-}
-
-
-# ---- Estimand factories (return opaque Python Estimand instances) ----
-
-#' Average treatment effect estimand: m(z, alpha) = alpha(1, x) - alpha(0, x).
-#' @param treatment Name of the treatment column.
-#' @param covariates Character vector of covariate column names.
-#' @return A Python `Estimand` object, suitable to pass to `RieszBooster$new(estimand=...)`.
-#' @export
-ATE <- function(treatment = "a", covariates = "x") {
-  .module()$ATE(treatment = treatment, covariates = as.list(covariates))
-}
-
-
-#' ATT *partial parameter* estimand: m(z, alpha) = a*(alpha(1,x) - alpha(0,x)).
-#' Full ATT divides by P(A=1) and is not a Riesz functional — combine
-#' alpha_partial with a delta-method EIF (Hubbard 2011) downstream.
-#' @inheritParams ATE
-#' @export
-ATT <- function(treatment = "a", covariates = "x") {
-  .module()$ATT(treatment = treatment, covariates = as.list(covariates))
-}
-
-
-#' Treatment-specific mean: m(z, alpha) = alpha(level, x).
-#' @param level Fixed treatment value.
-#' @inheritParams ATE
-#' @export
-TSM <- function(level, treatment = "a", covariates = "x") {
-  .module()$TSM(level = level, treatment = treatment, covariates = as.list(covariates))
-}
-
-
-#' Additive shift effect: m(z, alpha) = alpha(a + delta, x) - alpha(a, x).
-#' @param delta Shift magnitude.
-#' @inheritParams ATE
-#' @export
-AdditiveShift <- function(delta, treatment = "a", covariates = "x") {
-  .module()$AdditiveShift(delta = delta, treatment = treatment,
-                          covariates = as.list(covariates))
-}
-
-
-#' LASE *partial parameter* estimand. Full LASE divides by P(A < threshold)
-#' and is not a Riesz functional.
-#' @param delta Shift magnitude.
-#' @param threshold Cutoff; only rows with `a < threshold` get shifted.
-#' @inheritParams ATE
-#' @export
-LocalShift <- function(delta, threshold, treatment = "a", covariates = "x") {
-  .module()$LocalShift(delta = delta, threshold = threshold,
-                       treatment = treatment, covariates = as.list(covariates))
-}
-
-
-#' Stochastic intervention via pre-computed Monte Carlo samples per row.
-#' Pass a data.frame with a list-column under `samples_key` containing
-#' numeric vectors of shift samples.
-#' @inheritParams ATE
-#' @param samples_key Column holding the per-row sample vectors.
-#' @export
-StochasticIntervention <- function(samples_key = "shift_samples",
-                                   treatment = "a", covariates = "x") {
-  .module()$StochasticIntervention(samples_key = samples_key,
-                                   treatment = treatment,
-                                   covariates = as.list(covariates))
-}
-
-
-# ---- Loss specs ----
-
-#' Squared Riesz loss (default — the standard Lee-Schuler / Chernozhukov objective).
-#' @export
-SquaredLoss <- function() {
-  .module()$SquaredLoss()
-}
-
-#' KL-Bregman loss (phi = t log t with exp link). Suitable for density-ratio
-#' targets like TSM / IPSI; requires non-negative m-coefficients.
-#' @export
-KLLoss <- function(max_eta = 50.0) {
-  .module()$KLLoss(max_eta = max_eta)
-}
-
-#' Bernoulli-Bregman loss (phi = t log t + (1-t) log(1-t), sigmoid link).
-#' Forces predictions into (0, 1) — only useful when alpha_0 is known to lie
-#' there by problem structure.
-#' @export
-BernoulliLoss <- function(max_abs_eta = 30.0) {
-  .module()$BernoulliLoss(max_abs_eta = max_abs_eta)
-}
-
-#' Squared Riesz loss with predictions clipped into `(lo, hi)` via a
-#' sigmoid-scaled link. Useful for representers with hard prior bounds
-#' (e.g. trimmed propensity ratios). Pick bounds tightly around alpha_0;
-#' very generous bounds saturate the link and slow boosting.
-#' @export
-BoundedSquaredLoss <- function(lo, hi, max_abs_eta = 30.0) {
-  .module()$BoundedSquaredLoss(lo = lo, hi = hi, max_abs_eta = max_abs_eta)
-}
-
-
-# ---- Backends ----
+# ---- Backends (rieszboost-specific) ----
 
 #' Default backend: data augmentation + xgboost custom objective.
 #' @param hessian_floor Lower bound on per-row Hessian (default 2.0).
@@ -180,38 +64,20 @@ SklearnBackend <- function(base_learner_factory) {
 }
 
 
-# ---- Main estimator (R6) ----
+# ---- Main estimator (R6 subclass) ----
 
 #' RieszBooster — gradient-boosted estimator for the Riesz representer.
 #'
-#' R6 wrapper around the Python `rieszboost.RieszBooster`. Construct with the
-#' estimand baked in; standard `$fit(df)`, `$predict(df)`, `$score(df)`.
+#' Subclass of [rieszreg::RieszEstimatorR6] that defaults the backend to
+#' `XGBoostBackend()` and surfaces xgboost-specific hyperparameters
+#' (`max_depth`, `reg_lambda`, `subsample`) on the constructor.
 #'
 #' @export
-#' Load a RieszBooster from a directory written by `RieszBooster$save()`.
-#'
-#' For built-in estimands, fully reconstructs the estimand from the metadata.
-#' For custom estimands (Python-only), pass `estimand=` explicitly.
-#' @export
-load_riesz_booster <- function(path, estimand = NULL) {
-  args <- list(path = path)
-  if (!is.null(estimand)) args$estimand <- estimand
-  py_obj <- do.call(.module()$RieszBooster$load, args)
-  rb <- RieszBooster$new(estimand = py_obj$estimand,
-                         n_estimators = 1L)  # dummy, replaced below
-  rb$py <- py_obj
-  rb$estimand <- py_obj$estimand
-  rb
-}
-
-
 RieszBooster <- R6::R6Class(
   "RieszBooster",
+  inherit = rieszreg::RieszEstimatorR6,
   public = list(
-    py = NULL,
-    estimand = NULL,
-
-    #' @param estimand An `Estimand` returned by [ATE()], [ATT()], etc.
+    #' @param estimand An `Estimand` returned by [rieszreg::ATE()] etc.
     #' @param backend Backend object; default `XGBoostBackend()`.
     #' @param loss Loss spec; default `SquaredLoss()`.
     #' @param n_estimators,learning_rate,max_depth,reg_lambda,subsample
@@ -242,69 +108,31 @@ RieszBooster <- R6::R6Class(
       if (!is.null(early_stopping_rounds))
         args$early_stopping_rounds <- as.integer(early_stopping_rounds)
       if (!is.null(init)) args$init <- init
-      self$py <- do.call(.module()$RieszBooster, args)
-      self$estimand <- estimand
-      invisible(self)
-    },
-
-    fit = function(data, eval_set = NULL) {
-      X <- .df_to_py(data, self$estimand)
-      args <- list(X = X)
-      if (!is.null(eval_set)) {
-        args$eval_set <- .df_to_py(eval_set, self$estimand)
-      }
-      do.call(self$py$fit, args)
-      invisible(self)
-    },
-
-    predict = function(data) {
-      preds <- self$py$predict(.df_to_py(data, self$estimand))
-      as.numeric(reticulate::py_to_r(preds))
-    },
-
-    score = function(data) {
-      reticulate::py_to_r(self$py$score(.df_to_py(data, self$estimand)))
-    },
-
-    riesz_loss = function(data) {
-      reticulate::py_to_r(self$py$riesz_loss(.df_to_py(data, self$estimand)))
-    },
-
-    save = function(path) {
-      self$py$save(path)
-      invisible(self)
-    },
-
-    diagnose = function(data, ...) {
-      d <- self$py$diagnose(.df_to_py(data, self$estimand), ...)
-      list(
-        n = reticulate::py_to_r(d$n),
-        rms = reticulate::py_to_r(d$rms),
-        mean = reticulate::py_to_r(d$mean),
-        min = reticulate::py_to_r(d$min),
-        max = reticulate::py_to_r(d$max),
-        abs_quantiles = reticulate::py_to_r(d$abs_quantiles),
-        n_extreme = reticulate::py_to_r(d$n_extreme),
-        extreme_fraction = reticulate::py_to_r(d$extreme_fraction),
-        extreme_threshold = reticulate::py_to_r(d$extreme_threshold),
-        riesz_loss = reticulate::py_to_r(d$riesz_loss),
-        warnings = as.character(reticulate::py_to_r(d$warnings)),
-        summary = reticulate::py_to_r(d$summary())
-      )
-    },
-
-    print = function(...) {
-      cat("<RieszBooster>\n")
-      cat("  estimand   :", reticulate::py_to_r(self$estimand$name), "\n")
-      best_iter <- tryCatch(reticulate::py_to_r(self$py$best_iteration_),
-                            error = function(e) NULL)
-      if (!is.null(best_iter)) {
-        cat("  best_iter  :", best_iter, "\n")
-        cat("  best_score :", reticulate::py_to_r(self$py$best_score_), "\n")
-      } else {
-        cat("  status     : unfitted\n")
-      }
-      invisible(self)
+      py_object <- do.call(.module()$RieszBooster, args)
+      super$initialize(py_object = py_object, estimand = estimand)
     }
   )
 )
+
+
+#' Load a RieszBooster from a directory written by `RieszBooster$save()`.
+#'
+#' For built-in estimands, fully reconstructs the estimand from the metadata.
+#' For custom estimands (Python-only), pass `estimand=` explicitly.
+#' @param path Directory path.
+#' @param estimand Optional user-supplied `Estimand` (required for custom m).
+#' @export
+load_riesz_booster <- function(path, estimand = NULL) {
+  args <- list(path = path)
+  if (!is.null(estimand)) args$estimand <- estimand
+  py_obj <- do.call(.module()$RieszBooster$load, args)
+  rb <- RieszBooster$new(estimand = py_obj$estimand,
+                         n_estimators = 1L)  # dummy, replaced below
+  rb$py <- py_obj
+  rb$estimand <- py_obj$estimand
+  rb
+}
+
+
+# Estimand and loss factories are re-exported from rieszreg via NAMESPACE
+# (importFrom + export), so `library(rieszboost); ATE(...)` keeps working.

@@ -13,9 +13,9 @@ from typing import Any, Callable
 
 import numpy as np
 
-from ..augmentation import AugmentedDataset
-from ..losses import LossSpec
-from .base import FitResult, Predictor
+from rieszreg.augmentation import AugmentedDataset
+from rieszreg.backends.base import FitResult, Predictor, register_predictor_loader
+from rieszreg.losses import LossSpec
 
 
 @dataclass
@@ -182,3 +182,6 @@ class SklearnBackend:
             best_score=best_score if best_iter is not None else None,
             history=history,
         )
+
+
+register_predictor_loader("sklearn", SklearnPredictor.load)
