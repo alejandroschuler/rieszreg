@@ -163,7 +163,7 @@ This is the contract every implementation package must meet. Section structure f
 ## 2. Computational architecture
 
 ### 2.1 Backend Protocol
-- **[your package]** Implement *one* of two Protocols from `rieszreg.backends.base`. Both return `FitResult(predictor, best_iteration, best_score, history)`. Pick whichever fits your learner's natural loss decomposition:
+- **[your package]** Implement *at least one* of two Protocols from `rieszreg.backends.base`. Both return `FitResult(predictor, best_iteration, best_score, history)`. Pick whichever fits your learner's natural loss decomposition:
   - `Backend.fit_augmented(aug_train, aug_valid, loss, ...)` — for learners whose loss decomposes naturally over the augmented `(a, b)` evaluation points (kernel ridge, gradient boosting). Implementations: `KernelRidgeBackend` (krrr), `XGBoostBackend` / `SklearnBackend` (rieszboost).
   - `MomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, ...)` — for learners whose loss decomposes per original sample row (random forests, neural nets). Such backends compute per-row moments via `rieszreg.trace(estimand, row)` directly, avoiding the augmentation blow-up. Implementations: `ForestRieszBackend` (forestriesz).
 - **[design rule]** The orchestrator dispatches at fit time: if the backend exposes `fit_rows` and not `fit_augmented`, the moment path is used; otherwise the augmented path. Backends implementing both default to `fit_augmented` for back-compat.
@@ -171,7 +171,7 @@ This is the contract every implementation package must meet. Section structure f
 - **[your package]** `FitResult` shape must match the protocol so `RieszEstimator` can orchestrate uniformly.
 
 ### 2.2 Backend implementations
-- **[your package]** Concrete backends live in `<pkg>/backends/`. Examples in the wild: `XGBoostBackend(hessian_floor=2.0, gradient_only=False)` ([backends/xgboost.py:93](rieszboost/python/rieszboost/backends/xgboost.py:93)), `SklearnBackend(base_learner_factory)` ([backends/sklearn.py:93](rieszboost/python/rieszboost/backends/sklearn.py:93)), `KernelRidgeBackend` (krrr).
+- **[your package]** Concrete backends live in `<pkg>/backends/`. Examples in the wild: `XGBoostBackend(hessian_floor=2.0, gradient_only=False)` ([backends/xgboost.py:93](rieszboost/python/rieszboost/backends/xgboost.py:93)), `SklearnBackend(base_learner_factory)` ([backends/sklearn.py:93](rieszboost/python/rieszboost/backends/sklearn.py:93)), `KernelRidgeBackend` (krrr), `ForestRieszBackend` (forestriesz; moment-style, satisfies `MomentBackend.fit_rows`).
 - **[design rule]** Lazy-import optional heavy deps (xgboost, lightgbm, JAX, falkon, keops, torch) via `__getattr__` so the package is importable without them. Reference: [__init__.py:52-64](rieszboost/python/rieszboost/__init__.py:52).
 
 ### 2.3 Hyperparameter tuning
@@ -213,6 +213,7 @@ This is the contract every implementation package must meet. Section structure f
 
 ### 3.4 Public API surface (entry points in `__init__.py`)
 - **[your package]** Re-export the rieszreg primitives a typical user needs (estimand factories, loss factories, top-level estimator class, `diagnose`, `LinearForm`, `Tracer`) plus your own backend factories and convenience class. Pattern: [__init__.py:14-49](rieszboost/python/rieszboost/__init__.py:14).
+- **[design rule]** The re-export list is invariant across the two backend Protocols: even moment-style packages re-export `LinearForm` and `Tracer` so users can author custom `m()`s the same way (the backend just consumes them through `trace(estimand, row)` instead of `build_augmented`). Backend choice is an internal implementation detail; the user-facing surface is one `RieszEstimator` subclass with `fit / predict / score / diagnose`.
 - **[design rule]** Lazy `__getattr__` for any symbol that pulls in optional heavy deps.
 
 ### 3.5 Serialization & persistence
