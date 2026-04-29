@@ -1,6 +1,7 @@
 # Sibling implementation packages live in their own repos.
 rieszboost/
 krrr/
+forestriesz/
 
 # Local virtualenvs
 .venv/
