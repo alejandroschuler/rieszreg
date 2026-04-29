@@ -36,7 +36,7 @@ Both routes are first-class. The convenience class is just `RieszEstimator` with
 
 - **Concepts.** [What's a Riesz representer](intro.qmd) · [Estimands](estimands.qmd) · [Losses](losses.qmd).
 - **Get started.** [Install](install.qmd) · [Quickstart](quickstart.qmd).
-- **Usage.** [scikit-learn integration](sklearn-integration.qmd) · [Diagnostics](diagnostics.qmd) · [Save and load](save-and-load.qmd) · [R interface](r-interface.qmd).
+- **Usage.** [Tuning and Cross-Fitting](tuning-cross-fitting.qmd) · [Diagnostics](diagnostics.qmd) · [Save and load](save-and-load.qmd) · [R interface](r-interface.qmd).
 - **Backends.** [Overview](backends/index.qmd) · [Boosting](backends/boosting.qmd) · [Kernel](backends/kernel.qmd) · [Forest](backends/forest.qmd).
 - [Developing](developing.qmd).
 - [References](references.qmd).
