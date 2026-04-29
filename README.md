@@ -26,9 +26,18 @@ The user guide is a single Quarto site at [`docs/`](docs/) — sklearn-style, no
 
 ## Install
 
+The three packages live in sibling GitHub repos:
+[rieszreg](https://github.com/alejandroschuler/rieszreg) (this repo, the meta-package + unified docs),
+[rieszboost](https://github.com/alejandroschuler/rieszboost),
+[krrr](https://github.com/alejandroschuler/krrr).
+Clone them as siblings into a parent directory; the docs builds and CI assume
+that layout.
+
 ```sh
-git clone https://github.com/alejandroschuler/RieszReg.git
-cd RieszReg
+mkdir RieszReg && cd RieszReg
+git clone https://github.com/alejandroschuler/rieszreg.git
+git clone https://github.com/alejandroschuler/rieszboost.git
+git clone https://github.com/alejandroschuler/krrr.git
 python3 -m venv .venv
 .venv/bin/pip install -e rieszreg/python
 .venv/bin/pip install -e rieszboost/python   # gradient-boosting backend
