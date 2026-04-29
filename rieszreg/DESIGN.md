@@ -163,7 +163,10 @@ This is the contract every implementation package must meet. Section structure f
 ## 2. Computational architecture
 
 ### 2.1 Backend Protocol
-- **[your package]** Implement the `Backend` Protocol from `rieszreg.backends.base`: `fit_augmented(aug_train, aug_valid, loss, ...) -> FitResult(predictor, best_iteration, best_score, history)`. This is the package's main contribution.
+- **[your package]** Implement *one* of two Protocols from `rieszreg.backends.base`. Both return `FitResult(predictor, best_iteration, best_score, history)`. Pick whichever fits your learner's natural loss decomposition:
+  - `Backend.fit_augmented(aug_train, aug_valid, loss, ...)` — for learners whose loss decomposes naturally over the augmented `(a, b)` evaluation points (kernel ridge, gradient boosting). Implementations: `KernelRidgeBackend` (krrr), `XGBoostBackend` / `SklearnBackend` (rieszboost).
+  - `MomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, ...)` — for learners whose loss decomposes per original sample row (random forests, neural nets). Such backends compute per-row moments via `rieszreg.trace(estimand, row)` directly, avoiding the augmentation blow-up. Implementations: `ForestRieszBackend` (forestriesz).
+- **[design rule]** The orchestrator dispatches at fit time: if the backend exposes `fit_rows` and not `fit_augmented`, the moment path is used; otherwise the augmented path. Backends implementing both default to `fit_augmented` for back-compat.
 - **[your package]** Return a `Predictor` with `predict_eta()` and `predict_alpha()` (link applied). Inherit base interface from rieszreg; storage format is your choice.
 - **[your package]** `FitResult` shape must match the protocol so `RieszEstimator` can orchestrate uniformly.
 
@@ -205,7 +208,7 @@ This is the contract every implementation package must meet. Section structure f
 - **[design rule: sklearn-first, every feature]** Before writing any procedural code with loops, splits, grids, or folds, ask *"is there an sklearn way?"*. If yes, use it (`cross_val_predict`, `cross_validate`, `KFold`, `train_test_split`, `StratifiedKFold`, `GridSearchCV`, `HalvingGridSearchCV`, `RandomizedSearchCV`, `Pipeline`, `ColumnTransformer`, `FunctionTransformer`, `make_scorer`, `n_jobs=`). Hand-rolled fold loops are a code smell. Bespoke is reserved for things sklearn genuinely doesn't cover (the `LinearForm` tracer, the custom xgboost objective, the Bregman `LossSpec`).
 
 ### 3.3 Module separation of concerns
-- **[design rule]** Keep the seam structure that already works: `estimands/` (schema + functional), `losses/` (Bregman link/grad/Hessian), `tracer.py` + `augmentation.py` (symbolic linear-form algebra and dataset assembly), `backends/` (algorithm-specific `fit_augmented`), `estimator.py` (sklearn wrapper that orchestrates), `diagnostics.py` (health checks), `serialization.py` (save/load + factory_spec), `testing/` (DGPs and conformance helpers).
+- **[design rule]** Keep the seam structure that already works: `estimands/` (schema + functional), `losses/` (Bregman link/grad/Hessian), `tracer.py` + `augmentation.py` (symbolic linear-form algebra and dataset assembly — used by augmentation-style backends; moment-style backends call `trace` directly), `backends/` (algorithm-specific `fit_augmented` *or* `fit_rows`), `estimator.py` (sklearn wrapper that orchestrates and dispatches between the two backend paths), `diagnostics.py` (health checks), `serialization.py` (save/load + factory_spec), `testing/` (DGPs and conformance helpers).
 - **[your package]** Most of these come from `rieszreg`; in your package, `backends/` is what you actually own. Backend-specific code lives in `backends/<backend>.py`.
 
 ### 3.4 Public API surface (entry points in `__init__.py`)

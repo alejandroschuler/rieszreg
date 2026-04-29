@@ -1,12 +1,18 @@
 # RieszReg (meta-project)
 
+> **Read [`rieszreg/DESIGN.md`](rieszreg/DESIGN.md) first.** It is the authoritative
+> design document for the family — Part A is the meta-package architecture,
+> Part B is the contract every learner package (rieszboost, krrr, future)
+> must satisfy. Anything in this CLAUDE.md is operational notes; anything in
+> DESIGN.md is contract.
+
 A family of packages for Riesz regression. Top-level coordinator for:
 
 - [`rieszreg/`](rieszreg/) — meta-package: shared abstractions (`Estimand`, `LossSpec`, `RieszEstimator`, augmentation, diagnostics, `Backend` Protocol, testing utilities, R6 base class).
 - [`rieszboost/`](rieszboost/) — gradient-boosting backend (Lee & Schuler 2025).
 - [`krrr/`](krrr/) — kernel-ridge backend (Singh 2021).
 
-Implementation packages depend on `rieszreg` and provide concrete backends. `RIESZREG_DESIGN.md` is the authoritative design + learner-package contract.
+Implementation packages depend on `rieszreg` and provide concrete backends. The design doc lives inside the meta-package itself ([`rieszreg/DESIGN.md`](rieszreg/DESIGN.md)) so every collaborator who clones rieszreg gets it.
 
 ## GitHub home
 
@@ -65,7 +71,7 @@ from rieszreg.backends import register_predictor_loader
 register_predictor_loader("my-kind", MyPredictor.load)
 ```
 
-Provide a convenience class subclassing `rieszreg.RieszEstimator`. Subclass `rieszreg::RieszEstimatorR6` for the R wrapper. See `RIESZREG_DESIGN.md` Part B for the full contract.
+Provide a convenience class subclassing `rieszreg.RieszEstimator`. Subclass `rieszreg::RieszEstimatorR6` for the R wrapper. See `rieszreg/DESIGN.md` (Part B) for the full contract.
 
 ## Run tests
 

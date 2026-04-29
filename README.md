@@ -19,7 +19,7 @@ RieszReg/
 ├── reference/        # arXiv paper index, shared across packages
 ├── .githooks/        # canonical pre-commit hook (living-doc rule + tone lint)
 ├── .github/workflows # canonical CI (pytest + R parity, docs deploy)
-└── RIESZREG_DESIGN.md  # meta-package design + learner-package contract
+└── rieszreg/DESIGN.md  # meta-package design + learner-package contract
 ```
 
 The user guide is a single Quarto site at [`docs/`](docs/) — sklearn-style, not per-package — covering Concepts, Get started, Usage, Backends (one sub-page per backend package), R interface, Developing, and References.
@@ -97,7 +97,7 @@ Rscript -e '
 
 ## Contributing a new learner package
 
-`RIESZREG_DESIGN.md` Part B is the contract: depend on `rieszreg`, implement the `Backend` Protocol, satisfy the sklearn-conformance subset, contribute docs pages to `docs/`, follow the doc-tone and living-doc rules. The pre-commit hook at `.githooks/pre-commit` enforces the doc-tone and API-changes-update-docs rules.
+`rieszreg/DESIGN.md` (Part B) is the contract: depend on `rieszreg`, implement the `Backend` Protocol, satisfy the sklearn-conformance subset, contribute docs pages to `docs/`, follow the doc-tone and living-doc rules. The pre-commit hook at `.githooks/pre-commit` enforces the doc-tone and API-changes-update-docs rules.
 
 ## References
 

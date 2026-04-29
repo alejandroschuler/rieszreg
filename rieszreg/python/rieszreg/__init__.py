@@ -15,6 +15,7 @@ from .augmentation import AugmentedDataset, build_augmented
 from .backends import (
     Backend,
     FitResult,
+    MomentBackend,
     Predictor,
     load_predictor,
     register_predictor_loader,
@@ -58,6 +59,7 @@ __all__ = [
     "LinearForm",
     "LocalShift",
     "LossSpec",
+    "MomentBackend",
     "Predictor",
     "RieszEstimator",
     "SquaredLoss",

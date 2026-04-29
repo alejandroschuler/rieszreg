@@ -1,18 +1,37 @@
-"""Backend protocol: the swappable component that consumes augmented data
+"""Backend protocol: the swappable component that consumes the per-row data
 and a LossSpec and produces a fitted Predictor.
 
-Concrete backends live in implementation packages (rieszboost, krrr, etc.).
+Two entry points are supported. A backend implements at most one:
+
+  * ``fit_augmented`` — for learners whose loss decomposes naturally over
+    augmented evaluation points (kernel ridge, gradient boosting). Receives an
+    ``AugmentedDataset`` of (a, b) coefficients at concrete evaluation points.
+    Implementations: ``KernelRidgeBackend`` (krrr), ``XGBoostBackend`` /
+    ``SklearnBackend`` (rieszboost).
+  * ``fit_rows`` — for learners whose loss decomposes per original sample row
+    (random forests, neural nets). Receives raw ``rows`` plus the ``Estimand``
+    so the backend can compute per-row moments via ``rieszreg.trace`` directly.
+    Implementations: ``ForestRieszBackend`` (forestriesz).
+
+The ``RieszEstimator`` orchestrator dispatches by looking for ``fit_rows``
+first; if absent, it builds the augmented dataset and calls ``fit_augmented``.
+
+Concrete backends live in implementation packages (rieszboost, krrr,
+forestriesz, ...).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import numpy as np
 
 from ..augmentation import AugmentedDataset
 from ..losses import LossSpec
+
+if TYPE_CHECKING:  # pragma: no cover - type-only import
+    from ..estimands.base import Estimand
 
 
 class Predictor(Protocol):
@@ -48,10 +67,46 @@ class FitResult:
 
 
 class Backend(Protocol):
+    """Augmentation-style backend Protocol.
+
+    Implementers consume a precomputed ``AugmentedDataset`` of (a, b)
+    coefficients at evaluation points. The orchestrator builds the augmented
+    dataset by tracing the estimand on each input row before calling.
+    """
+
     def fit_augmented(
         self,
         aug_train: AugmentedDataset,
         aug_valid: AugmentedDataset | None,
+        loss: LossSpec,
+        *,
+        n_estimators: int,
+        learning_rate: float,
+        base_score: float,
+        early_stopping_rounds: int | None,
+        random_state: int,
+        hyperparams: dict[str, Any],
+    ) -> FitResult:
+        ...
+
+
+class MomentBackend(Protocol):
+    """Moment-style backend Protocol.
+
+    Alternative to ``Backend`` for learners that consume raw rows + the
+    estimand directly. Useful for random forests and neural nets where each
+    sample row contributes an independent loss term — these learners benefit
+    from per-row moment evaluation rather than the augmented (a, b) view.
+
+    The orchestrator passes through the same hyperparameter kwargs as
+    ``fit_augmented`` so backends share a uniform calling convention.
+    """
+
+    def fit_rows(
+        self,
+        rows_train: list[dict[str, Any]],
+        rows_valid: list[dict[str, Any]] | None,
+        estimand: "Estimand",
         loss: LossSpec,
         *,
         n_estimators: int,

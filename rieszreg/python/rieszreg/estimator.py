@@ -187,15 +187,13 @@ class RieszEstimator(BaseEstimator):
             X_train, X_valid = X, None
 
         rows_train = _rows_from_X(X_train, self.estimand)
-        aug_train = build_augmented(rows_train, self.estimand)
+        rows_valid = (
+            _rows_from_X(X_valid, self.estimand)
+            if X_valid is not None and len(X_valid) > 0
+            else None
+        )
 
-        aug_valid = None
-        if X_valid is not None and len(X_valid) > 0:
-            rows_valid = _rows_from_X(X_valid, self.estimand)
-            aug_valid = build_augmented(rows_valid, self.estimand)
-
-        result = backend.fit_augmented(
-            aug_train, aug_valid, loss,
+        common_kwargs = dict(
             n_estimators=self.n_estimators,
             learning_rate=self.learning_rate,
             base_score=base_score,
@@ -203,6 +201,21 @@ class RieszEstimator(BaseEstimator):
             random_state=self.random_state,
             hyperparams=self._backend_hyperparams(),
         )
+
+        # Dispatch: moment-style backends consume rows + estimand directly.
+        # Augmentation-style backends receive a precomputed AugmentedDataset.
+        # Backends implementing both default to fit_augmented for back-compat.
+        uses_moment_path = hasattr(backend, "fit_rows") and not hasattr(backend, "fit_augmented")
+        if uses_moment_path:
+            result = backend.fit_rows(
+                rows_train, rows_valid, self.estimand, loss, **common_kwargs
+            )
+        else:
+            aug_train = build_augmented(rows_train, self.estimand)
+            aug_valid = (
+                build_augmented(rows_valid, self.estimand) if rows_valid else None
+            )
+            result = backend.fit_augmented(aug_train, aug_valid, loss, **common_kwargs)
 
         self.predictor_ = result.predictor
         self.best_iteration_ = result.best_iteration
