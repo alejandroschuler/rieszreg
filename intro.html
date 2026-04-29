@@ -474,6 +474,7 @@ window.Quarto = {
   <li><a href="#riesz-regression" id="toc-riesz-regression" class="nav-link" data-scroll-target="#riesz-regression">Riesz regression</a></li>
   <li><a href="#pick-a-fitter" id="toc-pick-a-fitter" class="nav-link" data-scroll-target="#pick-a-fitter">Pick a fitter</a></li>
   <li><a href="#what-rieszreg-provides" id="toc-what-rieszreg-provides" class="nav-link" data-scroll-target="#what-rieszreg-provides">What <code>rieszreg</code> provides</a></li>
+  <li><a href="#related-work" id="toc-related-work" class="nav-link" data-scroll-target="#related-work">Related work</a></li>
   </ul>
 </nav>
     </div>
@@ -576,8 +577,9 @@ L(\alpha) \;=\; \mathbb{E}\!\left[\alpha(Z)^2 - 2\,m(Z, \alpha)\right]
 <ul>
 <li><strong><a href="./backends/boosting.html">Gradient boosting</a></strong> — the standard tool for tabular data. <code>rieszboost</code> plugs the per-row gradient and Hessian into xgboost’s custom-objective interface. Hyperparameters that work for outcome models transfer.</li>
 <li><strong><a href="./backends/kernel.html">Kernel ridge regression</a></strong> — closed form on small/medium data, exactly satisfies the variational characterization. <code>krrr</code> solves the linear system per λ; no boosting iterations.</li>
+<li><strong><a href="./backends/forest.html">Random forests</a></strong> — non-parametric and well-suited to many covariates. <code>forestriesz</code> ships two flavors built on EconML’s GRF: a moment-style fit with honest-split confidence intervals, and an augmentation-style fit that handles every estimand (including custom ones) without a sieve.</li>
 </ul>
-<p>The two backends produce different <span class="math inline">\(\hat\alpha\)</span>, but both are minimizers of the same population objective and converge to <span class="math inline">\(\alpha_0\)</span> under their respective consistency conditions.</p>
+<p>The three backends produce different <span class="math inline">\(\hat\alpha\)</span>, but all are minimizers of the same population objective and converge to <span class="math inline">\(\alpha_0\)</span> under their respective consistency conditions.</p>
 </section>
 <section id="what-rieszreg-provides" class="level2">
 <h2 class="anchored" data-anchor-id="what-rieszreg-provides">What <code>rieszreg</code> provides</h2>
@@ -586,6 +588,20 @@ L(\alpha) \;=\; \mathbb{E}\!\left[\alpha(Z)^2 - 2\,m(Z, \alpha)\right]
 <li>Fits <span class="math inline">\(\hat\alpha\)</span> for <code>ATE</code>, <code>ATT</code>, <code>TSM</code>, <code>AdditiveShift</code>, <code>LocalShift</code>, <code>StochasticIntervention</code>, or <a href="./estimands.html">your own estimand</a>.</li>
 <li>Composes with <code>cross_val_predict</code>, <code>GridSearchCV</code>, <code>Pipeline</code>.</li>
 <li>Surfaces near-positivity and outlier-extrapolation warnings via <code>.diagnose(X)</code>.</li>
+</ul>
+</section>
+<section id="related-work" class="level2">
+<h2 class="anchored" data-anchor-id="related-work">Related work</h2>
+<p>A few existing tools cover overlapping ground.</p>
+<p><a href="https://github.com/MasaKat0/genriesz"><strong>genriesz</strong></a> (Kato, 2026) is a single Python package implementing the Bregman-unified Riesz regression framework from <a href="https://arxiv.org/abs/2601.07752">arXiv:2601.07752</a>. It exposes <code>LinearFunctional</code> and <code>BregmanGenerator</code> abstractions, analogous to this project’s <code>Estimand</code> and <code>LossSpec</code>. It ships several basis-function classes (polynomial, random Fourier features, Nyström, KNN catchments, random-forest leaves, PyTorch embeddings) inside the package itself. Third parties cannot publish their own learners against a stable protocol. It is Python only.</p>
+<p><a href="https://github.com/py-why/EconML"><strong>EconML</strong></a> (Microsoft) provides <code>RieszNet</code>, <code>ForestRiesz</code>, and an <code>automatic_debiased_ml</code> module. The <code>forestriesz</code> package in this family wraps EconML’s <code>BaseGRF</code>. EconML is monolithic, with no third-party backend protocol, and Python only.</p>
+<p><a href="https://docs.doubleml.org/"><strong>DoubleML</strong></a> (Bach, Chernozhukov, Kurz, Spindler) is a mature DML library with parallel Python and R implementations. It expects the user to supply outcome and propensity nuisances using sklearn-compatible learners. Riesz regression is not the focal abstraction.</p>
+<p><a href="https://tlverse.org/"><strong>tlverse</strong></a> (van der Laan group) is an R-only family of packages (<code>sl3</code>, <code>tmle3</code>, <code>lmtp</code>, <code>hal9001</code>, …) organized around TMLE and SuperLearner. The meta-package + sibling-backends shape is the closest organizational match to this project.</p>
+<p>What’s distinctive here:</p>
+<ul>
+<li>The <code>Backend</code> / <code>MomentBackend</code> split, exposed as a stable Protocol, lets a third-party learner package depend on <code>rieszreg</code> and ship as its own PyPI/CRAN release. New learners do not require a PR upstream.</li>
+<li>The split itself reflects two structurally different fitting strategies: augmentation-style (kernel ridge, gradient boosting via <code>fit_augmented</code>) vs.&nbsp;moment-style (forests, neural nets via <code>fit_rows</code>).</li>
+<li>Cross-language Python + R coverage at the family level via R6 wrappers per package, not just bindings to a Python core.</li>
 </ul>
 <p>Next: <a href="./install.html">install</a> and the <a href="./quickstart.html">quickstart</a>.</p>
 

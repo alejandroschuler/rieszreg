@@ -517,23 +517,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 │   │   ├── estimands/             # Estimand + 6 factories + tracer
 │   │   ├── losses/                # LossSpec Protocol + 4 losses
 │   │   ├── augmentation.py        # build_augmented + AugmentedDataset
-│   │   ├── backends/base.py       # Backend Protocol, FitResult, Predictor + loader registry
+│   │   ├── backends/base.py       # Backend + MomentBackend Protocols, FitResult, Predictor + loader registry
 │   │   ├── diagnostics.py         # Diagnostics dataclass + diagnose()
-│   │   ├── estimator.py           # RieszEstimator (sklearn BaseEstimator)
+│   │   ├── estimator.py           # RieszEstimator (sklearn BaseEstimator); dispatches between fit_augmented / fit_rows
 │   │   └── testing/               # canonical DGPs, conformance, parity utilities
-│   └── r/rieszreg/                # shared R6 base class (planned)
-├── rieszboost/               # gradient-boosting backends + RieszBooster
+│   └── r/rieszreg/                # shared R6 base class
+├── rieszboost/               # gradient-boosting backends + RieszBooster (Backend.fit_augmented)
 │   ├── python/rieszboost/
 │   │   ├── estimator.py           # RieszBooster(RieszEstimator)
 │   │   └── backends/{xgboost,sklearn}.py
 │   └── r/rieszboost/              # R6 wrapper
-├── krrr/                     # kernel-ridge backend + KernelRieszRegressor
+├── krrr/                     # kernel-ridge backend + KernelRieszRegressor (Backend.fit_augmented)
 │   ├── python/krrr/
 │   │   ├── estimator.py           # KernelRieszRegressor(RieszEstimator)
 │   │   ├── backend.py             # KernelRidgeBackend
 │   │   ├── kernels.py             # kernel algebra
 │   │   └── solvers/               # direct, nystrom_cg, rff, falkon
 │   └── r/krrr/                    # R6 wrapper
+├── forestriesz/              # GRF-based backends (MomentBackend.fit_rows + Backend.fit_augmented)
+│   ├── python/forestriesz/
+│   │   ├── estimator.py           # ForestRieszRegressor(RieszEstimator) — moment-style
+│   │   ├── aug_estimator.py       # AugForestRieszRegressor(RieszEstimator) — aug-style, fully agnostic
+│   │   ├── backend.py             # ForestRieszBackend (MomentBackend.fit_rows)
+│   │   ├── aug_backend.py         # AugForestRieszBackend (Backend.fit_augmented)
+│   │   ├── _grf.py                # internal _RieszGRF subclass of econml.grf.BaseGRF
+│   │   └── feature_fns.py         # default_riesz_features auto-sieves
+│   └── r/forestriesz/             # R6 wrapper (moment-style only in v1)
 ├── docs/                     # this user guide (Quarto website)
 ├── reference/                # arXiv paper index
 ├── rieszreg/DESIGN.md        # meta-package design + learner-package contract
@@ -543,12 +552,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="run-tests">Run tests</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/python</span> <span class="at">-m</span> pytest rieszboost/python/tests <span class="at">-v</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/python</span> <span class="at">-m</span> pytest krrr/python/tests <span class="at">-v</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="st">  Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="st">  pkgload::load_all("rieszboost/r/rieszboost")</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="st">  testthat::test_dir("rieszboost/r/rieszboost/tests/testthat")</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="st">'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/python</span> <span class="at">-m</span> pytest forestriesz/python/tests <span class="at">-v</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="st">  Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="st">  pkgload::load_all("rieszreg/r/rieszreg")</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="st">  pkgload::load_all("rieszboost/r/rieszboost")</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="st">  testthat::test_dir("rieszboost/r/rieszboost/tests/testthat")</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="st">  pkgload::load_all("krrr/r/krrr")</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="st">  testthat::test_dir("krrr/r/krrr/tests/testthat")</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="st">  pkgload::load_all("forestriesz/r/forestriesz")</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="st">  testthat::test_dir("forestriesz/r/forestriesz/tests/testthat")</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="st">'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><code>xgboost</code> requires <code>libomp</code> on macOS: <code>brew install libomp</code> once.</p>
 </section>
 <section id="tracer" class="level2">
@@ -569,7 +584,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ol type="1">
 <li>Add to <code>_FACTORY_REGISTRY</code> in <code>rieszreg/python/rieszreg/estimands/base.py</code> so the round-trip serialization registry knows about it.</li>
 <li>Export from <code>rieszreg/python/rieszreg/__init__.py</code>.</li>
-<li>Add R wrappers in <code>rieszboost/r/rieszboost/R/rieszboost.R</code> and <code>krrr/r/krrr/R/krrr.R</code> (R wrappers re-export from rieszreg via reticulate).</li>
+<li>Add R wrappers in <code>rieszboost/r/rieszboost/R/rieszboost.R</code>, <code>krrr/r/krrr/R/krrr.R</code>, and <code>forestriesz/r/forestriesz/R/forestriesz.R</code> (R wrappers re-export from rieszreg via reticulate).</li>
 <li>Update <code>docs/estimands.qmd</code> with a row in the built-ins table and a runnable example in both languages.</li>
 <li>Add a test under <code>rieszreg/python/tests/</code>.</li>
 <li>Add a worked example under one of the implementation packages’ <code>examples/</code>.</li>
@@ -589,11 +604,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="adding-a-backend" class="level2">
 <h2 class="anchored" data-anchor-id="adding-a-backend">Adding a backend</h2>
-<p>Implement the <code>Backend</code> Protocol from <code>rieszreg/python/rieszreg/backends/base.py</code>. One method, <code>fit_augmented(...)</code>, returning a <code>FitResult</code> whose <code>predictor</code> implements <code>predict_eta</code> and <code>predict_alpha</code>. Register the predictor’s loader so save/load round-trip works:</p>
+<p>Pick the entry point that matches your learner’s natural loss decomposition. Both Protocols live in <code>rieszreg/python/rieszreg/backends/base.py</code> and both return a <code>FitResult</code> whose <code>predictor</code> implements <code>predict_eta</code> and <code>predict_alpha</code>.</p>
+<p><strong>Augmentation-style — <code>Backend.fit_augmented(aug_train, aug_valid, loss, …)</code>.</strong> For learners that minimize a per-evaluation-point loss (kernel ridge, gradient boosting). The orchestrator hands you a precomputed <code>AugmentedDataset</code> of <code>(a, b)</code> coefficients at evaluation points; you don’t see the estimand. Reference implementations: <code>XGBoostBackend</code>, <code>SklearnBackend</code> (rieszboost), <code>KernelRidgeBackend</code> (krrr), <code>AugForestRieszBackend</code> (forestriesz).</p>
+<p><strong>Moment-style — <code>MomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, …)</code>.</strong> For learners that minimize a per-original-row loss (random forests, neural nets). You receive raw rows + the estimand and call <code>rieszreg.trace(estimand, row)</code> per row to compute moments. Reference implementation: <code>ForestRieszBackend</code> (forestriesz).</p>
+<p>Implementations advertise at most one method; the orchestrator dispatches via <code>hasattr</code> and defaults to <code>fit_augmented</code> if both are present.</p>
+<p>Register the predictor’s loader so save/load round-trip works:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg.backends <span class="im">import</span> register_predictor_loader</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>register_predictor_loader(<span class="st">"my-kind"</span>, MyPredictor.load)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The backend sees an <code>AugmentedDataset</code> and a <code>LossSpec</code>. It does not need to know about the estimand or the tracer. <code>XGBoostBackend</code>, <code>SklearnBackend</code>, and <code>KernelRidgeBackend</code> are reference implementations.</p>
-<p>A new implementation package (e.g.&nbsp;<code>rieszforest</code>, <code>rieszneural</code>) follows the <a href="https://github.com/rieszreg/rieszreg/blob/main/rieszreg/DESIGN.md">contract in rieszreg/DESIGN.md, Part B</a>: depend on <code>rieszreg</code>, implement the <code>Backend</code> Protocol, satisfy the sklearn-conformance subset, contribute docs pages here.</p>
+<p>A new implementation package (e.g.&nbsp;<code>rieszneural</code>) follows the <a href="https://github.com/rieszreg/rieszreg/blob/main/rieszreg/DESIGN.md">contract in rieszreg/DESIGN.md, Part B</a>: depend on <code>rieszreg</code>, implement one of the two Protocols, satisfy the sklearn-conformance subset, contribute docs pages here.</p>
 </section>
 <section id="living-doc-rule" class="level2">
 <h2 class="anchored" data-anchor-id="living-doc-rule">Living-doc rule</h2>

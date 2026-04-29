@@ -548,7 +548,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    cloned <span class="op">=</span> clone(loaded)</span>
 <span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"clone OK          :"</span>, cloned.estimand.name)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>['/var/folders/07/xf4cwwjd7nggpmy8y006ww6w0000gq/T/tmp9mvbpnql/booster.pkl']
+<pre><code>['/var/folders/07/xf4cwwjd7nggpmy8y006ww6w0000gq/T/tmpjnofcrjn/booster.pkl']
 predictions match : True
 clone OK          : ATE</code></pre>
 </div>
@@ -689,7 +689,7 @@ best_iteration preserved : 199</code></pre>
 <span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>    loaded <span class="op">=</span> RieszBooster.load(p, estimand<span class="op">=</span>custom)</span>
 <span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"loaded with custom estimand OK"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>expected error: Saved estimator at /var/folders/07/xf4cwwjd7nggpmy8y006ww6w0000gq/T/tmpy60lwfoq/ ...
+<pre><code>expected error: Saved estimator at /var/folders/07/xf4cwwjd7nggpmy8y006ww6w0000gq/T/tmpk5r9505u/ ...
 loaded with custom estimand OK</code></pre>
 </div>
 </div>
@@ -698,7 +698,7 @@ loaded with custom estimand OK</code></pre>
 <h2 class="anchored" data-anchor-id="whats-in-the-file">What’s in the file</h2>
 <p>Per-backend binary payload, plus <code>metadata.json</code> containing:</p>
 <ul>
-<li><code>predictor_kind</code>: <code>"xgboost"</code> (rieszboost), <code>"sklearn"</code> (rieszboost), or <code>"krrr"</code> (krrr).</li>
+<li><code>predictor_kind</code>: <code>"xgboost"</code> (rieszboost), <code>"sklearn"</code> (rieszboost), <code>"krrr"</code> (krrr), <code>"forestriesz"</code> (forestriesz moment-style), or <code>"aug-forestriesz"</code> (forestriesz augmentation-style).</li>
 <li><code>loss</code>: <code>{"type": "SquaredLoss" | "KLLoss" | …, "args": {…}}</code> — re-instantiated with <code>loss_from_spec(...)</code> on load.</li>
 <li><code>estimand_factory_spec</code>: <code>{"factory": "ATE" | …}</code> for built-ins, <code>null</code> for custom.</li>
 <li><code>feature_keys</code> / <code>extra_keys</code>, <code>base_score</code>, <code>best_iteration</code>, <code>best_score</code>.</li>

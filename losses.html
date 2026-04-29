@@ -544,7 +544,7 @@ window.Quarto = {
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>The boosting backend (<a href="./backends/boosting.html"><code>rieszboost</code></a>) supports all four losses. The kernel ridge backend (<a href="./backends/kernel.html"><code>krrr</code></a>) currently supports <code>SquaredLoss</code> only — non-quadratic losses require a Newton iteration on the kernel system. Pass an unsupported loss and the backend raises at fit time with a clear error.</p>
+<p>The boosting backend (<a href="./backends/boosting.html"><code>rieszboost</code></a>) supports all four losses. The kernel ridge backend (<a href="./backends/kernel.html"><code>krrr</code></a>) and the random forest backend (<a href="./backends/forest.html"><code>forestriesz</code></a>) currently support <code>SquaredLoss</code> only — non-quadratic losses require a Newton iteration on the per-leaf or per-system solve. Pass an unsupported loss and the backend raises at fit time with a clear error.</p>
 </div>
 </div>
 <section id="loss-table" class="level2">

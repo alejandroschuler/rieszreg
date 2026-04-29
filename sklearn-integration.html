@@ -533,8 +533,8 @@ window.Quarto = {
 </header>
 
 
-<p>Both <code>RieszBooster</code> and <code>KernelRieszRegressor</code> are subclasses of <code>rieszreg.RieszEstimator</code>, which inherits from <code>sklearn.base.BaseEstimator</code>. They compose with <code>cross_val_predict</code>, <code>GridSearchCV</code>, <code>Pipeline</code>, <code>clone</code>, and the rest of <code>sklearn.model_selection</code>.</p>
-<p>This page uses <code>RieszBooster</code>; the same patterns work for <code>KernelRieszRegressor</code> with backend-specific hyperparameters.</p>
+<p><code>RieszBooster</code>, <code>KernelRieszRegressor</code>, <code>ForestRieszRegressor</code>, and <code>AugForestRieszRegressor</code> are all subclasses of <code>rieszreg.RieszEstimator</code>, which inherits from <code>sklearn.base.BaseEstimator</code>. They compose with <code>cross_val_predict</code>, <code>GridSearchCV</code>, <code>Pipeline</code>, <code>clone</code>, and the rest of <code>sklearn.model_selection</code>.</p>
+<p>This page uses <code>RieszBooster</code>; the same patterns work for the kernel and forest convenience classes with backend-specific hyperparameters.</p>
 <section id="cross-fitting" class="level2">
 <h2 class="anchored" data-anchor-id="cross-fitting">Cross-fitting</h2>
 <p>Plug-in <span class="math inline">\(\hat\alpha\)</span> in a one-step / TMLE / DML estimator must be out-of-fold. Use <code>cross_val_predict</code>:</p>
@@ -670,7 +670,7 @@ window.Quarto = {
 <pre><code>GridSearchCV(cv=3,
              estimator=RieszBooster(early_stopping_rounds=20,
                                     estimand=Estimand(feature_keys=('a', 'x'),
-                                                      m=&lt;function ATE.&lt;locals&gt;.m at 0x13483e7a0&gt;,
+                                                      m=&lt;function ATE.&lt;locals&gt;.m at 0x13e49e7a0&gt;,
                                                       extra_keys=(),
                                                       name='ATE',
                                                       factory_spec={'args': {'covariates': ['x'],
@@ -716,7 +716,7 @@ $max_depth
 <h2 class="anchored" data-anchor-id="see-also">See also</h2>
 <ul>
 <li><a href="https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/lee_schuler/binary_dgp.py"><code>rieszboost/examples/lee_schuler/binary_dgp.py</code></a> builds an EEE estimator using <code>cross_val_predict</code> to produce out-of-fold <span class="math inline">\(\hat\alpha\)</span>.</li>
-<li><a href="./backends/boosting.html">Boosting backend</a> and <a href="./backends/kernel.html">kernel backend</a> cover backend-specific tuning grids.</li>
+<li><a href="./backends/boosting.html">Boosting</a>, <a href="./backends/kernel.html">kernel</a>, and <a href="./backends/forest.html">forest</a> backend pages cover backend-specific tuning grids.</li>
 </ul>
 
 
