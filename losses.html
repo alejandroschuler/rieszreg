@@ -544,7 +544,13 @@ window.Quarto = {
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>The boosting backend (<a href="./backends/boosting.html"><code>rieszboost</code></a>) supports all four losses. The kernel ridge backend (<a href="./backends/kernel.html"><code>krrr</code></a>) and the random forest backend (<a href="./backends/forest.html"><code>forestriesz</code></a>) currently support <code>SquaredLoss</code> only — non-quadratic losses require a Newton iteration on the per-leaf or per-system solve. Pass an unsupported loss and the backend raises at fit time with a clear error.</p>
+<ul>
+<li><strong>Boosting</strong> (<a href="./backends/boosting.html"><code>rieszboost</code></a>): all four losses.</li>
+<li><strong>Kernel ridge</strong> (<a href="./backends/kernel.html"><code>krrr</code></a>): <code>SquaredLoss</code> only — non-quadratic losses need a Newton iteration on the kernel system.</li>
+<li><strong>Random forest, augmentation-style</strong> (<code>forestriesz.AugForestRieszRegressor</code>): all four losses. Tree structure from the squared MSE criterion, then a per-leaf Newton replaces each leaf’s stored θ with the Bregman optimum.</li>
+<li><strong>Random forest, moment-style</strong> (<code>forestriesz.ForestRieszRegressor</code>): <code>SquaredLoss</code> only — the moment-style per-leaf gradient is not exposed by the loss API.</li>
+</ul>
+<p>Pass an unsupported loss and the backend raises at fit time with a clear error.</p>
 </div>
 </div>
 <section id="loss-table" class="level2">
