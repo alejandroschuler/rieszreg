@@ -210,7 +210,7 @@ For built-in estimands the metadata round-trips automatically. For a custom `Est
 
 ## Sklearn integration
 
-`RieszNet` is a `BaseEstimator`, so it composes with `clone`, `GridSearchCV`, `cross_val_predict`, `Pipeline`. See [sklearn integration](../sklearn-integration.qmd).
+`RieszNet` is a `BaseEstimator`, so it composes with `clone`, `GridSearchCV`, `cross_val_predict`, `Pipeline`. See [Tuning and cross-fitting](../tuning-and-cross-fitting.qmd).
 
 ## Loss support
 

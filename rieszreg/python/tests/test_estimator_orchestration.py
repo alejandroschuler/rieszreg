@@ -14,8 +14,10 @@ from rieszreg import (
     ATE,
     AugmentedDataset,
     FitResult,
+    KLLoss,
     RieszEstimator,
     SquaredLoss,
+    build_augmented,
 )
 
 
@@ -69,13 +71,33 @@ def test_fit_predict_with_ndarray():
     assert pred.shape == (3,)
 
 
-def test_score_returns_negative_riesz_loss():
+def test_score_uses_squared_yardstick():
+    """`score()` evaluates the canonical squared Riesz loss regardless of the
+    training loss (sklearn convention: scoring is detached from training)."""
     df = pd.DataFrame({"a": [0.0, 1.0], "x": [0.1, 0.5]})
-    est = RieszEstimator(
+
+    est_sq = RieszEstimator(
         estimand=ATE(), backend=_StubBackend(), loss=SquaredLoss(),
     ).fit(df)
-    # score = -riesz_loss
-    assert est.score(df) == pytest.approx(-est.riesz_loss(df))
+    est_kl = RieszEstimator(
+        estimand=ATE(), backend=_StubBackend(), loss=KLLoss(),
+    ).fit(df)
+
+    def _expected_neg_squared(est):
+        rows = [
+            {k: df[k].iloc[i] for k in est.estimand.feature_keys}
+            for i in range(len(df))
+        ]
+        aug = build_augmented(rows, est.estimand)
+        eta = est.predictor_.predict_eta(aug.features)
+        alpha = est.loss_.link_to_alpha(eta)
+        sq = SquaredLoss()
+        return -float(np.sum(sq.loss_row(aug.a, aug.b, alpha)) / aug.n_rows)
+
+    assert est_sq.score(df) == pytest.approx(_expected_neg_squared(est_sq))
+    assert est_kl.score(df) == pytest.approx(_expected_neg_squared(est_kl))
+    # Squared training: score == -riesz_loss (yardstick coincides with training loss).
+    assert est_sq.score(df) == pytest.approx(-est_sq.riesz_loss(df))
 
 
 def test_predict_unfitted_raises():

@@ -30,7 +30,7 @@ website:
           - quickstart.qmd
       - section: "Usage"
         contents:
-          - sklearn-integration.qmd
+          - tuning-and-cross-fitting.qmd
           - diagnostics.qmd
           - save-and-load.qmd
           - r-interface.qmd

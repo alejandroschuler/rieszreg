@@ -43,6 +43,7 @@ from .losses import (
     SquaredLoss,
     loss_from_spec,
 )
+from .scoring import riesz_scorer
 
 __all__ = [
     "ATE",
@@ -72,5 +73,6 @@ __all__ = [
     "load_predictor",
     "loss_from_spec",
     "register_predictor_loader",
+    "riesz_scorer",
     "trace",
 ]
