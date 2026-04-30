@@ -1,6 +1,6 @@
 # krrr
 
-Kernel ridge Riesz regression, in **Python** and **R**. Sister package to [rieszboost](https://github.com/rieszreg/rieszboost) in the [RieszReg family](https://github.com/rieszreg/rieszreg): same scope (Riesz representers for linear functionals; `θ(P) = E[m(Z, g₀)]`), same user-facing API, but the fitter is kernel ridge regression instead of gradient boosting.
+Kernel ridge Riesz regression, in **Python** and **R**. Sister package to [rieszboost](https://github.com/rieszreg/rieszboost) in the [RieszReg family](https://github.com/rieszreg/rieszreg): same scope (Riesz representers for linear estimands; `ψ = E[m(μ)(Z)]`), same user-facing API, but the learner is kernel ridge regression instead of gradient boosting.
 
 Implements [Singh, *Kernel Ridge Riesz Representers* (arXiv:2102.11076)](https://arxiv.org/abs/2102.11076) for the full set of estimands the rieszreg framework supports — not just TSM1 — by piping rieszreg's augmentation engine into a kernel solve. Includes scalable solvers (Nyström-preconditioned conjugate gradient; random Fourier features; optional Falkon for GPU / very large n).
 
@@ -72,10 +72,10 @@ Re-exported from rieszreg — same API, same semantics:
 | Factory | m(z, α) | Notes |
 |---|---|---|
 | `ATE(treatment, covariates)` | α(1, x) − α(0, x) | Average treatment effect |
-| `ATT(treatment, covariates)` | a · (α(1, x) − α(0, x)) | ATT *partial parameter* |
+| `ATT(treatment, covariates)` | a · (α(1, x) − α(0, x)) | ATT *partial-estimand* surface |
 | `TSM(level, treatment, covariates)` | α(level, x) | Treatment-specific mean |
 | `AdditiveShift(delta, ...)` | α(a + δ, x) − α(a, x) | Continuous-treatment shift |
-| `LocalShift(delta, threshold, ...)` | 1(a < threshold) · (α(a + δ, x) − α(a, x)) | LASE *partial parameter* |
+| `LocalShift(delta, threshold, ...)` | 1(a < threshold) · (α(a + δ, x) − α(a, x)) | LASE *partial-estimand* surface |
 | `StochasticIntervention(samples_key, ...)` | (1/K) Σₖ α(a'ₖ, x) | Stochastic interventions / IPSI |
 
 Custom `m()` works too (write the functional opaquely; `LinearForm` tracing extracts the points and coefficients):
