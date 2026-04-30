@@ -1,12 +1,12 @@
 ---
-title: "RieszReg"
-subtitle: "Riesz regression for semiparametric inference"
+pagetitle: "RieszReg"
+title-block-style: none
 engine: knitr
 ---
 
 {{< include _setup.qmd >}}
 
-![](banner.svg){.hero-banner fig-alt="RieszReg banner"}
+![](banner.svg){.hero-banner fig-alt="RieszReg — Riesz regression for semiparametric inference"}
 
 `rieszreg` estimates the Riesz representer $\alpha_0$ of a linear functional $\theta(P) = \mathbb{E}[m(Z, g_0)]$ — the building block of one-step, TMLE, and DML inference — with gradient boosting ([`rieszboost`](backends/boosting.qmd)), kernel ridge ([`krrr`](backends/kernel.qmd)), random forests ([`forestriesz`](backends/forest.qmd)), or neural nets ([`riesznet`](backends/neural.qmd)). It ships built-in factories for ATE, ATT, TSM, additive shifts, local shifts, stochastic interventions, and arbitrary user-defined estimands; the squared Riesz loss plus the wider Bregman family (KL, Bernoulli, bounded squared); and sklearn-native tuning, model selection, and cross-fitting. Python and R, with bitwise-identical predictions on the same input.
 

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" role="img" aria-label="RieszReg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 96" role="img" aria-label="RieszReg">
   <title>RieszReg</title>
   <defs>
     <linearGradient id="rr-grad" x1="0" y1="0" x2="1" y2="1">
@@ -8,18 +8,18 @@
   </defs>
   <!-- Mark: a stylized "R" formed by a curve + a horizontal axis,
        evoking a regression line through a representer surface. -->
-  <g transform="translate(8, 8)">
-    <rect x="0" y="0" width="48" height="48" rx="10" fill="url(#rr-grad)"/>
+  <g transform="translate(12, 12)">
+    <rect x="0" y="0" width="72" height="72" rx="15" fill="url(#rr-grad)"/>
     <!-- baseline -->
-    <line x1="6" y1="40" x2="42" y2="40" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+    <line x1="9" y1="60" x2="63" y2="60" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
     <!-- regression curve -->
-    <path d="M 6 34 Q 18 12 30 24 T 42 14"
-          fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M 9 51 Q 27 18 45 36 T 63 21"
+          fill="none" stroke="#ffffff" stroke-width="3.75" stroke-linecap="round"/>
     <!-- alpha symbol marker -->
-    <circle cx="30" cy="24" r="2.5" fill="#ffffff"/>
+    <circle cx="45" cy="36" r="3.75" fill="#ffffff"/>
   </g>
   <!-- Wordmark -->
-  <text x="68" y="42"
+  <text x="100" y="71"
         font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
-        font-size="28" font-weight="700" fill="#1a1a1a">RieszReg</text>
+        font-size="56" font-weight="700" fill="#1a1a1a">RieszReg</text>
 </svg>
