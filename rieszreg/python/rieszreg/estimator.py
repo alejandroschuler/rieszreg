@@ -102,19 +102,18 @@ class RieszEstimator(BaseEstimator):
         Carries `feature_keys`, `extra_keys`, and the `m(z, alpha)` callable.
         Required.
     backend : Backend
-        Concrete backend implementing the `fit_augmented` Protocol.
-        Required (no default at this level).
+        Concrete backend implementing the `fit_augmented` (or `fit_rows`)
+        Protocol. Required (no default at this level). All learner-specific
+        knobs (`n_estimators`, `learning_rate`, `early_stopping_rounds`,
+        NN training-loop config, kernel choice, etc.) live on the backend
+        constructor — see DESIGN.md §A.1 (the agnostic-orchestrator rule).
     loss : LossSpec, default=None
         The Bregman-Riesz loss to minimize. Defaults to `SquaredLoss()`.
-    n_estimators : int, default=200
-    learning_rate : float, default=0.05
-    early_stopping_rounds : int or None
-        If set, requires either `validation_fraction>0` or `eval_set=...` at
-        fit time.
-    validation_fraction : float, default=0.0
-        Fraction of training data held out internally for early stopping.
-    init : float, "m1", or None
-        α-space initialization. None defers to `loss.default_init_alpha()`.
+    init : float or None
+        α-space initialization. ``None`` (default) sets α to the constant
+        that minimizes the empirical Riesz loss — namely ``m̄ = E[m(Z, 1)]``
+        on the training rows, projected into the loss's α-domain. Pass an
+        explicit float to override (e.g. ``init=0`` for hard-zero start).
     random_state : int, default=0
     """
 
@@ -123,20 +122,12 @@ class RieszEstimator(BaseEstimator):
         estimand: Estimand,
         backend: Backend | None = None,
         loss: LossSpec | None = None,
-        n_estimators: int = 200,
-        learning_rate: float = 0.05,
-        early_stopping_rounds: int | None = None,
-        validation_fraction: float = 0.0,
         init: float | str | None = None,
         random_state: int = 0,
     ):
         self.estimand = estimand
         self.backend = backend
         self.loss = loss
-        self.n_estimators = n_estimators
-        self.learning_rate = learning_rate
-        self.early_stopping_rounds = early_stopping_rounds
-        self.validation_fraction = validation_fraction
         self.init = init
         self.random_state = random_state
 
@@ -164,25 +155,15 @@ class RieszEstimator(BaseEstimator):
         loss = self._resolved_loss()
         backend = self._resolved_backend()
 
-        # Resolve init in α-space, then convert to η.
-        init_arg = self.init
-        if init_arg is None:
-            init_alpha = loss.default_init_alpha()
-        elif init_arg == "m1":
-            rows_for_init = _rows_from_X(X, self.estimand)
-            per_row = [sum(c for c, _ in trace(self.estimand, z)) for z in rows_for_init]
-            init_alpha = float(np.mean(per_row))
-        elif isinstance(init_arg, (int, float)):
-            init_alpha = float(init_arg)
-        else:
-            raise ValueError(f"init must be float, 'm1', or None; got {init_arg!r}")
-        base_score = float(loss.alpha_to_eta(init_alpha))
-
-        # Resolve validation slice.
+        # Resolve validation slice. Backends that use a held-out slice for
+        # fit-time logic (early stopping, λ selection) expose
+        # `validation_fraction` as a constructor attribute; the orchestrator
+        # reads it via getattr and performs the split before augmentation.
+        val_frac = float(getattr(backend, "validation_fraction", 0.0) or 0.0)
         if eval_set is not None:
             X_train, X_valid = X, eval_set
-        elif self.validation_fraction > 0 or self.early_stopping_rounds is not None:
-            X_train, X_valid = _split_X(X, self.validation_fraction or 0.2, self.random_state)
+        elif val_frac > 0:
+            X_train, X_valid = _split_X(X, val_frac, self.random_state)
         else:
             X_train, X_valid = X, None
 
@@ -193,11 +174,25 @@ class RieszEstimator(BaseEstimator):
             else None
         )
 
+        # Resolve init in α-space, then convert to η.
+        # Default (init=None): use the constant that minimizes the empirical
+        # Riesz loss. For any Bregman loss with strictly convex φ this is
+        # m̄ = E[m(Z, 1)] (FOC ψ'(a) = φ''(a)·m̄ collapses to a = m̄ via
+        # ψ'(t) = t·φ''(t)). Each loss projects m̄ into its α-domain.
+        init_arg = self.init
+        if init_arg is None:
+            m_bar = float(np.mean(
+                [sum(c for c, _ in trace(self.estimand, z)) for z in rows_train]
+            ))
+            init_alpha = loss.best_constant_init(m_bar)
+        elif isinstance(init_arg, (int, float)):
+            init_alpha = float(init_arg)
+        else:
+            raise ValueError(f"init must be float or None; got {init_arg!r}")
+        base_score = float(loss.alpha_to_eta(init_alpha))
+
         common_kwargs = dict(
-            n_estimators=self.n_estimators,
-            learning_rate=self.learning_rate,
             base_score=base_score,
-            early_stopping_rounds=self.early_stopping_rounds,
             random_state=self.random_state,
             hyperparams=self._backend_hyperparams(),
         )
@@ -249,7 +244,7 @@ class RieszEstimator(BaseEstimator):
 
     def diagnose(self, X, **kwargs):
         from .diagnostics import diagnose
-        return diagnose(booster=self, X=X, **kwargs)
+        return diagnose(estimator=self, X=X, **kwargs)
 
     # ---- serialization ----
 
@@ -257,8 +252,9 @@ class RieszEstimator(BaseEstimator):
         """Save a fitted estimator to a directory.
 
         Writes:
-          - the predictor's binary payload (e.g. `booster.ubj`,
-            `predictor.joblib`) via `predictor.save(dir_path)`
+          - the predictor's binary payload (whatever format the backend uses —
+            native model files, joblib pickles, torch state_dicts, etc.) via
+            `predictor.save(dir_path)`
           - `metadata.json` with the loss spec, estimand factory_spec (if
             built-in), feature_keys, base_score, best_iteration_, and the
             estimator's constructor hyperparameters.
@@ -299,10 +295,6 @@ class RieszEstimator(BaseEstimator):
     def _save_hyperparameters(self) -> dict:
         """Snapshot of constructor args for round-trip. Subclasses extend."""
         return {
-            "n_estimators": self.n_estimators,
-            "learning_rate": self.learning_rate,
-            "early_stopping_rounds": self.early_stopping_rounds,
-            "validation_fraction": self.validation_fraction,
             "init": self.init,
             "random_state": self.random_state,
         }
@@ -363,10 +355,6 @@ class RieszEstimator(BaseEstimator):
         return cls(
             estimand=estimand,
             loss=loss,
-            n_estimators=hyperparameters.get("n_estimators", 200),
-            learning_rate=hyperparameters.get("learning_rate", 0.05),
-            early_stopping_rounds=hyperparameters.get("early_stopping_rounds"),
-            validation_fraction=hyperparameters.get("validation_fraction", 0.0),
             init=hyperparameters.get("init"),
             random_state=hyperparameters.get("random_state", 0),
         )

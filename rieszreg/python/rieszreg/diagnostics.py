@@ -57,30 +57,29 @@ class Diagnostics:
 def diagnose(
     alpha_hat: np.ndarray | None = None,
     *,
-    booster=None,
+    estimator=None,
     X=None,
-    rows: Sequence[dict[str, Any]] | None = None,
-    m=None,
     extreme_threshold: float = 30.0,
     extreme_fraction_warn: float = 0.01,
 ) -> Diagnostics:
-    """Compute diagnostics from either pre-computed `alpha_hat` or by
-    predicting with `booster.predict(X)`. If `(booster, X)` is given, the
-    held-out Riesz loss is computed automatically using the booster's
-    estimand and loss spec.
+    """Compute diagnostics from either pre-computed ``alpha_hat`` or by
+    predicting with ``estimator.predict(X)``. If ``(estimator, X)`` is given,
+    the held-out Riesz loss is computed automatically via ``estimator.riesz_loss``.
 
-    `rows` / `m` are accepted for backward compatibility (legacy callers) —
-    if you have a fitted estimator, just pass `booster=…, X=…`.
+    Parameters
+    ----------
+    alpha_hat : np.ndarray, optional
+        Precomputed predictions on the eval set.
+    estimator : RieszEstimator, optional
+        A fitted estimator. Used to compute predictions and the held-out
+        Riesz loss when ``alpha_hat`` is not supplied.
+    X : DataFrame or ndarray, optional
+        Eval data. Required when ``estimator`` is supplied.
     """
     if alpha_hat is None:
-        if booster is None:
-            raise ValueError("diagnose requires either alpha_hat or booster + X")
-        if X is None and rows is None:
-            raise ValueError("diagnose requires X (or rows for legacy boosters)")
-        if X is not None:
-            alpha_hat = np.asarray(booster.predict(X))
-        else:
-            alpha_hat = np.asarray(booster.predict(rows))
+        if estimator is None or X is None:
+            raise ValueError("diagnose requires either alpha_hat or (estimator, X)")
+        alpha_hat = np.asarray(estimator.predict(X))
     alpha_hat = np.asarray(alpha_hat)
 
     abs_alpha = np.abs(alpha_hat)
@@ -89,16 +88,8 @@ def diagnose(
     extreme_fraction = float(n_extreme / len(alpha_hat))
 
     riesz_loss = None
-    if booster is not None:
-        if X is not None and hasattr(booster, "riesz_loss") and callable(booster.riesz_loss):
-            try:
-                riesz_loss = booster.riesz_loss(X)
-            except TypeError:
-                # Legacy signature `riesz_loss(rows, m)`
-                if rows is not None and m is not None:
-                    riesz_loss = booster.riesz_loss(rows, m)
-        elif rows is not None and m is not None and hasattr(booster, "riesz_loss"):
-            riesz_loss = booster.riesz_loss(rows, m)
+    if estimator is not None and X is not None and hasattr(estimator, "riesz_loss"):
+        riesz_loss = estimator.riesz_loss(X)
 
     warnings: list[str] = []
     if extreme_fraction > extreme_fraction_warn:
@@ -111,7 +102,7 @@ def diagnose(
         warnings.append(
             f"max |alpha_hat| ({quantiles[1.0]:.1f}) is >10x the 99th percentile "
             f"({quantiles[0.99]:.1f}) — likely a single extrapolation outlier; "
-            "consider tighter tree depth, larger reg_lambda, or earlier stopping."
+            "regularize harder or restrict the function class."
         )
 
     return Diagnostics(

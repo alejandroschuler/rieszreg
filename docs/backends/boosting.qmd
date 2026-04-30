@@ -67,11 +67,13 @@ df = pd.DataFrame({"a": a.astype(float), "x": x})
 
 booster = RieszBooster(
     estimand=ATE(),
-    backend=SklearnBackend(lambda: KernelRidge(alpha=1.0, kernel="rbf", gamma=2.0)),
-    n_estimators=80,
-    learning_rate=0.05,
-    early_stopping_rounds=10,
-    validation_fraction=0.2,
+    backend=SklearnBackend(
+        base_learner_factory=lambda: KernelRidge(alpha=1.0, kernel="rbf", gamma=2.0),
+        n_estimators=80,
+        learning_rate=0.05,
+        early_stopping_rounds=10,
+        validation_fraction=0.2,
+    ),
 ).fit(df)
 
 alpha_hat  = booster.predict(df)
@@ -99,11 +101,13 @@ factory <- reticulate::py_func(function() sk_kr$KernelRidge(alpha = 1.0,
 
 booster <- RieszBooster$new(
   estimand = ATE(),
-  backend = SklearnBackend(base_learner_factory = factory),
-  n_estimators = 80L,
-  learning_rate = 0.05,
-  early_stopping_rounds = 10L,
-  validation_fraction = 0.2
+  backend = SklearnBackend(
+    base_learner_factory = factory,
+    n_estimators = 80L,
+    learning_rate = 0.05,
+    early_stopping_rounds = 10L,
+    validation_fraction = 0.2
+  )
 )
 booster$fit(df)
 

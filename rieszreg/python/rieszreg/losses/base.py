@@ -13,10 +13,14 @@ reformulation gives a per-row loss term
 where (a_j, b_j) are augmented coefficients (a_j = 1 for original rows, a_j = 0
 and b_j = -2·c_k for the k-th counterfactual point of m).
 
-A boosting backend's additive booster outputs `η = sum of trees + base_score`.
-Each LossSpec defines a **link** mapping η → α. SquaredLoss uses the identity
-link (η = α). KLLoss uses the exp link (α = exp(η)) so that α stays positive
-under all leaf updates. Gradient and Hessian are computed in η space.
+Backends produce a real-valued score `η` (additive trees + base_score for
+boosting; closed-form linear combinations for kernel ridge; the network
+output for neural backends; per-leaf θ·φ for forests). Each LossSpec
+defines a **link** mapping η → α. SquaredLoss uses the identity link
+(η = α). KLLoss uses the exp link (α = exp(η)) so that α stays positive.
+Gradient and Hessian are computed in η space; backends that need them call
+`gradient(...)` and `hessian(...)` (others apply autograd directly to
+`loss_row(...)`).
 """
 
 from __future__ import annotations
@@ -30,7 +34,7 @@ class LossSpec(Protocol):
     name: str
 
     def link_to_alpha(self, eta: np.ndarray) -> np.ndarray:
-        """Inverse link: convert boosted output η to α."""
+        """Inverse link: convert backend output η to α."""
         ...
 
     def alpha_to_eta(self, alpha: float | np.ndarray) -> float | np.ndarray:
@@ -51,8 +55,16 @@ class LossSpec(Protocol):
         """∂²loss_row/∂η² (floored)."""
         ...
 
-    def default_init_alpha(self) -> float:
-        """Sensible α-space default for `init=` if user doesn't override."""
+    def best_constant_init(self, m_bar: float) -> float:
+        """Loss-minimizing constant α* given m̄ = E[m(Z, 1)].
+
+        For any Bregman loss with strictly convex φ, the constant minimizer
+        of the per-row Riesz loss `ψ(a) - φ'(a)·m̄` satisfies the FOC
+        `ψ'(a) = φ''(a)·m̄`, and `ψ(t) = t·φ'(t) - φ(t)` gives
+        `ψ'(t) = t·φ''(t)`, so `a* = m̄`. Implementations project `m̄`
+        into the loss's α-domain (KL needs α > 0; Bernoulli needs
+        α ∈ (0, 1); BoundedSquared needs α ∈ (lo, hi)).
+        """
         ...
 
     def validate_coefficients(self, b: np.ndarray) -> None:

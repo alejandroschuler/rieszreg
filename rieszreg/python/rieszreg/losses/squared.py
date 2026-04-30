@@ -28,8 +28,9 @@ class SquaredLoss:
         del b, eta
         return np.maximum(2.0 * a, hessian_floor)
 
-    def default_init_alpha(self):
-        return 0.0
+    def best_constant_init(self, m_bar: float) -> float:
+        # Identity link, all of R is in domain — no projection needed.
+        return float(m_bar)
 
     def validate_coefficients(self, b):
         return  # any signed b ok

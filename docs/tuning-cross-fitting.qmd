@@ -4,9 +4,9 @@ title: "Tuning and Cross-Fitting"
 
 {{< include _setup.qmd >}}
 
-`RieszBooster`, `KernelRieszRegressor`, `ForestRieszRegressor`, and `AugForestRieszRegressor` are all subclasses of `rieszreg.RieszEstimator`, which itself inherits from `sklearn.base.BaseEstimator`. Every sklearn tool that works on an estimator works here: `cross_val_predict`, `GridSearchCV`, `Pipeline`, `clone`, `set_params`, `RandomizedSearchCV`, `HalvingGridSearchCV`, and the rest of `sklearn.model_selection`. Hyperparameter grids, cross-fitting folds, and multi-learner selection all use the same API you already know.
+`RieszBooster`, `KernelRieszRegressor`, `ForestRieszRegressor`, `AugForestRieszRegressor`, and `RieszNet` are all subclasses of `rieszreg.RieszEstimator`, which itself inherits from `sklearn.base.BaseEstimator`. Every sklearn tool that works on an estimator works here: `cross_val_predict`, `GridSearchCV`, `Pipeline`, `clone`, `set_params`, `RandomizedSearchCV`, `HalvingGridSearchCV`, and the rest of `sklearn.model_selection`. Hyperparameter grids, cross-fitting folds, and multi-learner selection all use the same API you already know.
 
-This page uses `RieszBooster` and `ForestRieszRegressor`; the same patterns work for `KernelRieszRegressor` and `AugForestRieszRegressor`.
+This page uses `RieszBooster` and `ForestRieszRegressor`; the same patterns work for `KernelRieszRegressor`, `AugForestRieszRegressor`, and `RieszNet`.
 
 ## Cross-fitting
 
@@ -230,4 +230,4 @@ Every Riesz estimator exposes the standard `BaseEstimator` interface:
 ## See also
 
 - [`rieszboost/examples/lee_schuler/binary_dgp.py`](https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/lee_schuler/binary_dgp.py) builds an EEE estimator using `cross_val_predict` to produce out-of-fold $\hat\alpha$.
-- [Boosting](backends/boosting.qmd), [kernel](backends/kernel.qmd), and [forest](backends/forest.qmd) backend pages cover backend-specific tuning grids.
+- [Boosting](backends/boosting.qmd), [kernel](backends/kernel.qmd), [forest](backends/forest.qmd), and [neural](backends/neural.qmd) backend pages cover backend-specific tuning grids.

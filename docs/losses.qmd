@@ -11,6 +11,7 @@ The Bregman-Riesz loss generalizes the squared Riesz loss via a strictly convex 
 - **Kernel ridge** ([`krrr`](backends/kernel.qmd)): `SquaredLoss` only — non-quadratic losses need a Newton iteration on the kernel system.
 - **Random forest, augmentation-style** (`forestriesz.AugForestRieszRegressor`): all four losses. Tree structure from the squared MSE criterion, then a per-leaf Newton replaces each leaf's stored θ with the Bregman optimum.
 - **Random forest, moment-style** (`forestriesz.ForestRieszRegressor`): `SquaredLoss` only — the moment-style per-leaf gradient is not exposed by the loss API.
+- **Neural network** ([`riesznet`](backends/neural.qmd)): all four losses. Each loss's per-row Bregman form is implemented in autograd-friendly torch ops; gradient parity vs the analytic loss is checked at 1e-8.
 
 Pass an unsupported loss and the backend raises at fit time with a clear error.
 :::
@@ -132,6 +133,39 @@ Generous bounds make the sigmoid link saturate over most of $\eta$, so boosting 
 
 `BernoulliLoss` is the same construction with $\text{lo}=0$, $\text{hi}=1$ and the Bernoulli Bregman potential. Use it when $\alpha_0$ is a probability.
 
+## Initialization
+
+Every `RieszEstimator` subclass takes an `init=` constructor arg that controls the α-space starting value of the model. The orchestrator converts `init` to an η-space `base_score` via `loss.alpha_to_eta`; backends use `base_score` as a prediction offset (boosting starts the additive sum from there, neural backends add it inside the forward pass, kernel-ridge folds it into the linear-system right-hand side, forests add it to the leaf prediction).
+
+The default — `init=None` — sets α to the **empirical loss-minimizing constant**.
+
+For any Bregman loss with strictly convex $\phi$, the constant $a^*$ that minimizes the per-row Riesz loss
+$$
+P_n L(a) \;=\; \psi(a) \;-\; \varphi'(a) \cdot \bar m, \qquad \bar m = P_n[m(Z, 1)]
+$$
+satisfies the FOC $\psi'(a) = \varphi''(a) \bar m$. Using $\psi(t) = t \varphi'(t) - \varphi(t)$ we get $\psi'(t) = t \varphi''(t)$, so the FOC collapses to $a^* = \bar m$. The result is **loss-independent** — the only loss-specific step is projecting $\bar m$ into the loss's α-domain when its codomain is restricted (KL: $\alpha > 0$; Bernoulli: $\alpha \in (0,1)$; BoundedSquared: $\alpha \in (\mathrm{lo}, \mathrm{hi})$). Each `LossSpec` exposes `best_constant_init(m_bar)` for that projection.
+
+For the built-in estimands $\bar m$ is structurally constant (doesn't depend on the data realization):
+
+| Estimand | $m(z, 1)$ per row | $\bar m$ |
+|---|---|---|
+| `ATE`, `ATT`, `AdditiveShift`, `LocalShift` | $1 + (-1) = 0$ | $0$ |
+| `TSM(v)` | $1$ | $1$ |
+| `StochasticIntervention` | $K \cdot (1/K) = 1$ | $1$ |
+
+For custom estimands $\bar m$ can depend on the data; the orchestrator computes it from the training rows after the validation split (no peeking) by tracing each row and averaging the sum of trace coefficients.
+
+Override the default by passing a float:
+
+```python
+booster = RieszBooster(estimand=ATE(), init=0.0)        # explicit zero baseline
+booster = RieszBooster(estimand=TSM(level=1), init=2.5) # informed prior
+```
+
+::: {.callout-note title="Boundary cases"}
+For `BernoulliLoss` + `TSM` (or any density-ratio estimand with $\bar m = 1$) the loss-minimizing constant sits on the upper boundary, and the projection clips to $1 - \varepsilon$. The sigmoid is saturated at that init and gradients are tiny, so iterative training may stall. Pass `init=0.5` (or another interior value) when this matters. The `KLLoss` / `BoundedSquaredLoss` boundaries can hit the same issue when $\bar m$ lands exactly on a bound.
+:::
+
 ## Custom losses
 
 ::: {.callout-note title="Python-only"}
@@ -145,7 +179,7 @@ class LossSpec(Protocol):
     name: str
 
     def link_to_alpha(self, eta: np.ndarray) -> np.ndarray:
-        """Inverse link: convert boosted output η to α."""
+        """Inverse link: convert backend output η to α."""
     def alpha_to_eta(self, alpha):
         """Forward link: convert α to η (used for `init=` translation)."""
     def loss_row(self, a, b, alpha):
@@ -154,8 +188,8 @@ class LossSpec(Protocol):
         """∂loss_row/∂η, using α = link_to_alpha(η)."""
     def hessian(self, a, b, eta, hessian_floor):
         """∂²loss_row/∂η² (floored)."""
-    def default_init_alpha(self) -> float:
-        """α-space default for `init=` if user doesn't override."""
+    def best_constant_init(self, m_bar: float) -> float:
+        """Loss-minimizing constant α* given m̄ = E[m(Z, 1)]."""
     def validate_coefficients(self, b: np.ndarray) -> None:
         """Raise if (a, b) violate this loss's domain."""
 ```

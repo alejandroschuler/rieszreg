@@ -115,13 +115,13 @@ def test_backend_implementing_both_defaults_to_fit_augmented(df):
 
 def test_moment_path_passes_validation_rows(df):
     backend = _MomentOnlyBackend()
+    backend.validation_fraction = 0.2
     est = RieszEstimator(
         estimand=ATE(),
         backend=backend,
         loss=SquaredLoss(),
-        validation_fraction=0.2,
     )
     est.fit(df)
     assert backend.calls == ["fit_rows"]
-    # With validation_fraction=0.2, train has 40 rows, valid has 10.
+    # With backend.validation_fraction=0.2, train has 40 rows, valid has 10.
     assert len(backend.last_rows) == 40
