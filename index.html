@@ -478,6 +478,12 @@ window.Quarto = {
  <span class="menu-text">Forest backend (forestriesz)</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./backends/neural.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Neural-network backend (riesznet)</span></a>
+  </div>
+</li>
       </ul>
   </li>
         <li class="sidebar-item">
@@ -537,6 +543,7 @@ window.Quarto = {
 <li><a href="./backends/boosting.html"><code>rieszboost</code></a> — gradient boosting (xgboost / sklearn) implementing <a href="https://arxiv.org/abs/2501.04871">Lee &amp; Schuler (arXiv:2501.04871)</a>.</li>
 <li><a href="./backends/kernel.html"><code>krrr</code></a> — closed-form kernel ridge regression following <a href="https://arxiv.org/abs/2102.11076">Singh (arXiv:2102.11076)</a>.</li>
 <li><a href="./backends/forest.html"><code>forestriesz</code></a> — random-forest moment estimation following <a href="https://proceedings.mlr.press/v162/chernozhukov22a/chernozhukov22a.pdf">Chernozhukov, Newey, Quintas-Martínez, Syrgkanis (ICML 2022)</a>, with honest-split confidence intervals.</li>
+<li><a href="./backends/neural.html"><code>riesznet</code></a> — neural-network estimation with PyTorch autograd, following <a href="https://arxiv.org/abs/2110.03031">Chernozhukov, Newey, Quintas-Martínez, Syrgkanis (arXiv:2110.03031)</a>. The convenience class covers MLPs; arbitrary <code>nn.Module</code> factories plug in directly.</li>
 </ul>
 <p>R and Python predictions are bitwise-identical on the same input. Most pages present every code example in both languages; pick a tab and your choice persists across the site.</p>
 <section id="two-ways-to-compose" class="level2">
@@ -560,7 +567,7 @@ window.Quarto = {
 <li><strong>Concepts.</strong> <a href="./intro.html">What’s a Riesz representer</a> · <a href="./estimands.html">Estimands</a> · <a href="./losses.html">Losses</a>.</li>
 <li><strong>Get started.</strong> <a href="./install.html">Install</a> · <a href="./quickstart.html">Quickstart</a>.</li>
 <li><strong>Usage.</strong> <a href="./sklearn-integration.html">scikit-learn integration</a> · <a href="./diagnostics.html">Diagnostics</a> · <a href="./save-and-load.html">Save and load</a> · <a href="./r-interface.html">R interface</a>.</li>
-<li><strong>Backends.</strong> <a href="./backends/index.html">Overview</a> · <a href="./backends/boosting.html">Boosting</a> · <a href="./backends/kernel.html">Kernel</a> · <a href="./backends/forest.html">Forest</a>.</li>
+<li><strong>Backends.</strong> <a href="./backends/index.html">Overview</a> · <a href="./backends/boosting.html">Boosting</a> · <a href="./backends/kernel.html">Kernel</a> · <a href="./backends/forest.html">Forest</a> · <a href="./backends/neural.html">Neural</a>.</li>
 <li><a href="./developing.html">Developing</a>.</li>
 <li><a href="./references.html">References</a>.</li>
 </ul>
@@ -574,7 +581,7 @@ window.Quarto = {
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Every code block in this guide ran at build time. The numbers and figures came from the version of <code>rieszreg</code>, <code>rieszboost</code>, <code>krrr</code>, and <code>forestriesz</code> that produced this page.</p>
+<p>Every code block in this guide ran at build time. The numbers and figures came from the version of <code>rieszreg</code>, <code>rieszboost</code>, <code>krrr</code>, <code>forestriesz</code>, and <code>riesznet</code> that produced this page.</p>
 </div>
 </div>
 

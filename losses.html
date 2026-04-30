@@ -479,6 +479,12 @@ window.Quarto = {
  <span class="menu-text">Forest backend (forestriesz)</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./backends/neural.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Neural-network backend (riesznet)</span></a>
+  </div>
+</li>
       </ul>
   </li>
         <li class="sidebar-item">
@@ -506,6 +512,7 @@ window.Quarto = {
   <li><a href="#loss-table" id="toc-loss-table" class="nav-link active" data-scroll-target="#loss-table">Loss table</a></li>
   <li><a href="#klloss-for-density-ratio-targets" id="toc-klloss-for-density-ratio-targets" class="nav-link" data-scroll-target="#klloss-for-density-ratio-targets"><code>KLLoss</code> for density-ratio targets</a></li>
   <li><a href="#boundedsquaredloss-for-hard-prior-bounds" id="toc-boundedsquaredloss-for-hard-prior-bounds" class="nav-link" data-scroll-target="#boundedsquaredloss-for-hard-prior-bounds"><code>BoundedSquaredLoss</code> for hard prior bounds</a></li>
+  <li><a href="#initialization" id="toc-initialization" class="nav-link" data-scroll-target="#initialization">Initialization</a></li>
   <li><a href="#custom-losses" id="toc-custom-losses" class="nav-link" data-scroll-target="#custom-losses">Custom losses</a></li>
   </ul>
 </nav>
@@ -549,6 +556,7 @@ window.Quarto = {
 <li><strong>Kernel ridge</strong> (<a href="./backends/kernel.html"><code>krrr</code></a>): <code>SquaredLoss</code> only — non-quadratic losses need a Newton iteration on the kernel system.</li>
 <li><strong>Random forest, augmentation-style</strong> (<code>forestriesz.AugForestRieszRegressor</code>): all four losses. Tree structure from the squared MSE criterion, then a per-leaf Newton replaces each leaf’s stored θ with the Bregman optimum.</li>
 <li><strong>Random forest, moment-style</strong> (<code>forestriesz.ForestRieszRegressor</code>): <code>SquaredLoss</code> only — the moment-style per-leaf gradient is not exposed by the loss API.</li>
+<li><strong>Neural network</strong> (<a href="./backends/neural.html"><code>riesznet</code></a>): all four losses. Each loss’s per-row Bregman form is implemented in autograd-friendly torch ops; gradient parity vs the analytic loss is checked at 1e-8.</li>
 </ul>
 <p>Pass an unsupported loss and the backend raises at fit time with a clear error.</p>
 </div>
@@ -706,7 +714,7 @@ window.Quarto = {
 <span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>alpha_hat <span class="op">=</span> booster.predict(df)</span>
 <span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"alpha_hat in (</span><span class="sc">{</span>alpha_hat<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.3f}</span><span class="ss">, </span><span class="sc">{</span>alpha_hat<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.3f}</span><span class="ss">)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>alpha_hat in (0.267, 11.751)</code></pre>
+<pre><code>alpha_hat in (0.182, 11.591)</code></pre>
 </div>
 </div>
 </div>
@@ -722,7 +730,7 @@ window.Quarto = {
 <span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"alpha_hat in (%.3f, %.3f)</span><span class="sc">\n</span><span class="st">"</span>,</span>
 <span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>            <span class="fu">min</span>(alpha_hat), <span class="fu">max</span>(alpha_hat)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>alpha_hat in (0.267, 11.812)</code></pre>
+<pre><code>alpha_hat in (0.204, 11.784)</code></pre>
 </div>
 </div>
 </div>
@@ -743,6 +751,58 @@ window.Quarto = {
 </div>
 <p><code>BernoulliLoss</code> is the same construction with <span class="math inline">\(\text{lo}=0\)</span>, <span class="math inline">\(\text{hi}=1\)</span> and the Bernoulli Bregman potential. Use it when <span class="math inline">\(\alpha_0\)</span> is a probability.</p>
 </section>
+<section id="initialization" class="level2">
+<h2 class="anchored" data-anchor-id="initialization">Initialization</h2>
+<p>Every <code>RieszEstimator</code> subclass takes an <code>init=</code> constructor arg that controls the α-space starting value of the model. The orchestrator converts <code>init</code> to an η-space <code>base_score</code> via <code>loss.alpha_to_eta</code>; backends use <code>base_score</code> as a prediction offset (boosting starts the additive sum from there, neural backends add it inside the forward pass, kernel-ridge folds it into the linear-system right-hand side, forests add it to the leaf prediction).</p>
+<p>The default — <code>init=None</code> — sets α to the <strong>empirical loss-minimizing constant</strong>.</p>
+<p>For any Bregman loss with strictly convex <span class="math inline">\(\phi\)</span>, the constant <span class="math inline">\(a^*\)</span> that minimizes the per-row Riesz loss <span class="math display">\[
+P_n L(a) \;=\; \psi(a) \;-\; \varphi'(a) \cdot \bar m, \qquad \bar m = P_n[m(Z, 1)]
+\]</span> satisfies the FOC <span class="math inline">\(\psi'(a) = \varphi''(a) \bar m\)</span>. Using <span class="math inline">\(\psi(t) = t \varphi'(t) - \varphi(t)\)</span> we get <span class="math inline">\(\psi'(t) = t \varphi''(t)\)</span>, so the FOC collapses to <span class="math inline">\(a^* = \bar m\)</span>. The result is <strong>loss-independent</strong> — the only loss-specific step is projecting <span class="math inline">\(\bar m\)</span> into the loss’s α-domain when its codomain is restricted (KL: <span class="math inline">\(\alpha &gt; 0\)</span>; Bernoulli: <span class="math inline">\(\alpha \in (0,1)\)</span>; BoundedSquared: <span class="math inline">\(\alpha \in (\mathrm{lo}, \mathrm{hi})\)</span>). Each <code>LossSpec</code> exposes <code>best_constant_init(m_bar)</code> for that projection.</p>
+<p>For the built-in estimands <span class="math inline">\(\bar m\)</span> is structurally constant (doesn’t depend on the data realization):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Estimand</th>
+<th><span class="math inline">\(m(z, 1)\)</span> per row</th>
+<th><span class="math inline">\(\bar m\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ATE</code>, <code>ATT</code>, <code>AdditiveShift</code>, <code>LocalShift</code></td>
+<td><span class="math inline">\(1 + (-1) = 0\)</span></td>
+<td><span class="math inline">\(0\)</span></td>
+</tr>
+<tr class="even">
+<td><code>TSM(v)</code></td>
+<td><span class="math inline">\(1\)</span></td>
+<td><span class="math inline">\(1\)</span></td>
+</tr>
+<tr class="odd">
+<td><code>StochasticIntervention</code></td>
+<td><span class="math inline">\(K \cdot (1/K) = 1\)</span></td>
+<td><span class="math inline">\(1\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>For custom estimands <span class="math inline">\(\bar m\)</span> can depend on the data; the orchestrator computes it from the training rows after the validation split (no peeking) by tracing each row and averaging the sum of trace coefficients.</p>
+<p>Override the default by passing a float:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>booster <span class="op">=</span> RieszBooster(estimand<span class="op">=</span>ATE(), init<span class="op">=</span><span class="fl">0.0</span>)        <span class="co"># explicit zero baseline</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>booster <span class="op">=</span> RieszBooster(estimand<span class="op">=</span>TSM(level<span class="op">=</span><span class="dv">1</span>), init<span class="op">=</span><span class="fl">2.5</span>) <span class="co"># informed prior</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-note callout-titled" title="Boundary cases">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Boundary cases
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For <code>BernoulliLoss</code> + <code>TSM</code> (or any density-ratio estimand with <span class="math inline">\(\bar m = 1\)</span>) the loss-minimizing constant sits on the upper boundary, and the projection clips to <span class="math inline">\(1 - \varepsilon\)</span>. The sigmoid is saturated at that init and gradients are tiny, so iterative training may stall. Pass <code>init=0.5</code> (or another interior value) when this matters. The <code>KLLoss</code> / <code>BoundedSquaredLoss</code> boundaries can hit the same issue when <span class="math inline">\(\bar m\)</span> lands exactly on a bound.</p>
+</div>
+</div>
+</section>
 <section id="custom-losses" class="level2">
 <h2 class="anchored" data-anchor-id="custom-losses">Custom losses</h2>
 <div class="callout callout-style-default callout-note callout-titled" title="Python-only">
@@ -759,23 +819,23 @@ window.Quarto = {
 </div>
 </div>
 <p>Implement the <code>LossSpec</code> protocol from <code>rieszreg.losses</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LossSpec(Protocol):</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> link_to_alpha(<span class="va">self</span>, eta: np.ndarray) <span class="op">-&gt;</span> np.ndarray:</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Inverse link: convert boosted output η to α."""</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> alpha_to_eta(<span class="va">self</span>, alpha):</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Forward link: convert α to η (used for `init=` translation)."""</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> loss_row(<span class="va">self</span>, a, b, alpha):</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Per-row loss in α space: a·ψ(α) + (b/2)·φ'(α)."""</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> gradient(<span class="va">self</span>, a, b, eta):</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""∂loss_row/∂η, using α = link_to_alpha(η)."""</span></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> hessian(<span class="va">self</span>, a, b, eta, hessian_floor):</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""∂²loss_row/∂η² (floored)."""</span></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> default_init_alpha(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""α-space default for `init=` if user doesn't override."""</span></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> validate_coefficients(<span class="va">self</span>, b: np.ndarray) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Raise if (a, b) violate this loss's domain."""</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LossSpec(Protocol):</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> link_to_alpha(<span class="va">self</span>, eta: np.ndarray) <span class="op">-&gt;</span> np.ndarray:</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Inverse link: convert backend output η to α."""</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> alpha_to_eta(<span class="va">self</span>, alpha):</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Forward link: convert α to η (used for `init=` translation)."""</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> loss_row(<span class="va">self</span>, a, b, alpha):</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Per-row loss in α space: a·ψ(α) + (b/2)·φ'(α)."""</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> gradient(<span class="va">self</span>, a, b, eta):</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""∂loss_row/∂η, using α = link_to_alpha(η)."""</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> hessian(<span class="va">self</span>, a, b, eta, hessian_floor):</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""∂²loss_row/∂η² (floored)."""</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> best_constant_init(<span class="va">self</span>, m_bar: <span class="bu">float</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Loss-minimizing constant α* given m̄ = E[m(Z, 1)]."""</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> validate_coefficients(<span class="va">self</span>, b: np.ndarray) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Raise if (a, b) violate this loss's domain."""</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><a href="https://github.com/rieszreg/rieszreg/blob/main/rieszreg/python/rieszreg/losses/squared.py"><code>SquaredLoss</code></a> and <a href="https://github.com/rieszreg/rieszreg/blob/main/rieszreg/python/rieszreg/losses/kl.py"><code>KLLoss</code></a> are short reference implementations.</p>
 <p>The Bregman extension follows Hines &amp; Miles (<a href="https://arxiv.org/abs/2510.16127">2510.16127</a>) and Kato (<a href="https://arxiv.org/abs/2601.07752">2601.07752</a>).</p>
 

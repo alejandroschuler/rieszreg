@@ -450,6 +450,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">Forest backend (forestriesz)</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./backends/neural.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Neural-network backend (riesznet)</span></a>
+  </div>
+</li>
       </ul>
   </li>
         <li class="sidebar-item">
@@ -478,6 +484,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#api-surface-rieszboost" id="toc-api-surface-rieszboost" class="nav-link" data-scroll-target="#api-surface-rieszboost">API surface (rieszboost)</a></li>
   <li><a href="#api-surface-krrr" id="toc-api-surface-krrr" class="nav-link" data-scroll-target="#api-surface-krrr">API surface (krrr)</a></li>
   <li><a href="#api-surface-forestriesz" id="toc-api-surface-forestriesz" class="nav-link" data-scroll-target="#api-surface-forestriesz">API surface (forestriesz)</a></li>
+  <li><a href="#api-surface-riesznet" id="toc-api-surface-riesznet" class="nav-link" data-scroll-target="#api-surface-riesznet">API surface (riesznet)</a></li>
   <li><a href="#parity" id="toc-parity" class="nav-link" data-scroll-target="#parity">Parity</a></li>
   <li><a href="#custom-python-objects-from-r" id="toc-custom-python-objects-from-r" class="nav-link" data-scroll-target="#custom-python-objects-from-r">Custom Python objects from R</a></li>
   <li><a href="#reaching-the-python-object-directly" id="toc-reaching-the-python-object-directly" class="nav-link" data-scroll-target="#reaching-the-python-object-directly">Reaching the Python object directly</a></li>
@@ -520,7 +527,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># or, for the kernel backend:</span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">use_python_krrr</span>(<span class="st">"/path/to/RieszReg/.venv/bin/python"</span>)</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># or, for the forest backend:</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">use_python_forestriesz</span>(<span class="st">"/path/to/RieszReg/.venv/bin/python"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">use_python_forestriesz</span>(<span class="st">"/path/to/RieszReg/.venv/bin/python"</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># or, for the neural backend:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">use_python_riesznet</span>(<span class="st">"/path/to/RieszReg/.venv/bin/python"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><code>use_python_&lt;pkg&gt;()</code> accepts a path to a Python interpreter or a virtualenv directory and forwards to the appropriate reticulate function. It also imports the Python package so subsequent calls have no per-call import overhead.</p>
 </section>
 <section id="api-surface-rieszboost" class="level2">
@@ -714,7 +723,45 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 <p>The R wrapper exposes the moment-style <code>ForestRieszRegressor</code> (single-basis fits — handles ATE/ATT/TSM via the auto-resolved sieve in Python). The augmentation-style <code>AugForestRieszRegressor</code> is Python-only in v1; call it from R via reticulate when you need a fully estimand-agnostic forest fit.</p>
-<p>R6’s <code>$method()</code> syntax maps to Python’s <code>.method()</code>. Integer-typed kwargs (<code>n_estimators</code>, <code>max_depth</code>, <code>random_state</code>, <code>early_stopping_rounds</code>, <code>n_landmarks</code>, <code>n_features</code>, <code>cg_max_iter</code>, <code>min_samples_leaf</code>, <code>subforest_size</code>) take an <code>L</code> suffix in R: <code>n_estimators = 200L</code>. Other kwargs are auto-converted by reticulate.</p>
+</section>
+<section id="api-surface-riesznet" class="level2">
+<h2 class="anchored" data-anchor-id="api-surface-riesznet">API surface (riesznet)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>R</th>
+<th>Python equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>RieszNet$new(estimand, hidden_sizes, activation, dropout, learning_rate, weight_decay, epochs, batch_size, device, dtype, ...)</code></td>
+<td><code>riesznet.RieszNet(...)</code></td>
+</tr>
+<tr class="even">
+<td>&nbsp;&nbsp;<code>$fit(df, eval_set=)</code></td>
+<td><code>.fit(X, eval_set=)</code></td>
+</tr>
+<tr class="odd">
+<td>&nbsp;&nbsp;<code>$predict(df)</code></td>
+<td><code>.predict(X)</code></td>
+</tr>
+<tr class="even">
+<td>&nbsp;&nbsp;<code>$diagnose(df)</code></td>
+<td><code>.diagnose(X)</code></td>
+</tr>
+<tr class="odd">
+<td><code>load_riesz_net(path)</code></td>
+<td><code>RieszNet.load(path)</code></td>
+</tr>
+</tbody>
+</table>
+<p>The R wrapper exposes the simple-MLP convenience surface only. Custom torch architectures (custom <code>nn.Module</code> factory, custom optimizer, custom scheduler) are Python-only — define the factory in Python at module top level and call into Python via reticulate. <code>TorchBackend</code> direct construction is also Python-only in v1.</p>
+<p>R6’s <code>$method()</code> syntax maps to Python’s <code>.method()</code>. Integer-typed kwargs (<code>n_estimators</code>, <code>max_depth</code>, <code>random_state</code>, <code>early_stopping_rounds</code>, <code>n_landmarks</code>, <code>n_features</code>, <code>cg_max_iter</code>, <code>min_samples_leaf</code>, <code>subforest_size</code>, <code>epochs</code>, <code>batch_size</code>) take an <code>L</code> suffix in R: <code>n_estimators = 200L</code>. Other kwargs are auto-converted by reticulate.</p>
 </section>
 <section id="parity" class="level2">
 <h2 class="anchored" data-anchor-id="parity">Parity</h2>

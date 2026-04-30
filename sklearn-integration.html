@@ -479,6 +479,12 @@ window.Quarto = {
  <span class="menu-text">Forest backend (forestriesz)</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./backends/neural.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Neural-network backend (riesznet)</span></a>
+  </div>
+</li>
       </ul>
   </li>
         <li class="sidebar-item">
@@ -533,8 +539,8 @@ window.Quarto = {
 </header>
 
 
-<p><code>RieszBooster</code>, <code>KernelRieszRegressor</code>, <code>ForestRieszRegressor</code>, and <code>AugForestRieszRegressor</code> are all subclasses of <code>rieszreg.RieszEstimator</code>, which inherits from <code>sklearn.base.BaseEstimator</code>. They compose with <code>cross_val_predict</code>, <code>GridSearchCV</code>, <code>Pipeline</code>, <code>clone</code>, and the rest of <code>sklearn.model_selection</code>.</p>
-<p>This page uses <code>RieszBooster</code>; the same patterns work for the kernel and forest convenience classes with backend-specific hyperparameters.</p>
+<p><code>RieszBooster</code>, <code>KernelRieszRegressor</code>, <code>ForestRieszRegressor</code>, <code>AugForestRieszRegressor</code>, and <code>RieszNet</code> are all subclasses of <code>rieszreg.RieszEstimator</code>, which inherits from <code>sklearn.base.BaseEstimator</code>. They compose with <code>cross_val_predict</code>, <code>GridSearchCV</code>, <code>Pipeline</code>, <code>clone</code>, and the rest of <code>sklearn.model_selection</code>.</p>
+<p>This page uses <code>RieszBooster</code>; the same patterns work for the kernel, forest, and neural convenience classes with backend-specific hyperparameters.</p>
 <section id="cross-fitting" class="level2">
 <h2 class="anchored" data-anchor-id="cross-fitting">Cross-fitting</h2>
 <p>Plug-in <span class="math inline">\(\hat\alpha\)</span> in a one-step / TMLE / DML estimator must be out-of-fold. Use <code>cross_val_predict</code>:</p>
@@ -670,7 +676,7 @@ window.Quarto = {
 <pre><code>GridSearchCV(cv=3,
              estimator=RieszBooster(early_stopping_rounds=20,
                                     estimand=Estimand(feature_keys=('a', 'x'),
-                                                      m=&lt;function ATE.&lt;locals&gt;.m at 0x13e49e7a0&gt;,
+                                                      m=&lt;function ATE.&lt;locals&gt;.m at 0x13b5e9a80&gt;,
                                                       extra_keys=(),
                                                       name='ATE',
                                                       factory_spec={'args': {'covariates': ['x'],
