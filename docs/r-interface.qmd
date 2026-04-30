@@ -6,7 +6,7 @@ title: "R interface"
 
 Each implementation package ships an R6 wrapper that calls the Python implementation through [reticulate](https://rstudio.github.io/reticulate/). Predictions are bitwise-identical to the Python results on the same input.
 
-The R API is covered throughout the guide via the bilingual tabsets: see [install](install.qmd) for setup, [quickstart](quickstart.qmd) for the standard fit pattern, and [estimands](estimands.qmd) for the full estimand inventory. This page is the focused R reference.
+The R API is covered throughout the guide via the bilingual tabsets: see [install](install.qmd) for setup, the [landing-page quickstart](index.qmd#quickstart) for the standard fit pattern, and [estimands](estimands.qmd) for the full estimand inventory. This page is the focused R reference.
 
 ## Setup
 

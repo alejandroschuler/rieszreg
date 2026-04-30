@@ -1,5 +1,5 @@
 ---
-title: "What's a Riesz representer, and why fit one?"
+title: "What is Riesz Regression?"
 ---
 
 ## The setup
@@ -96,4 +96,4 @@ What's distinctive here:
 - The split itself reflects two structurally different fitting strategies: augmentation-style (kernel ridge, gradient boosting via `fit_augmented`) vs. moment-style (forests, neural nets via `fit_rows`).
 - Cross-language Python + R coverage at the family level via R6 wrappers per package, not just bindings to a Python core.
 
-Next: [install](install.qmd) and the [quickstart](quickstart.qmd).
+Next: [install](install.qmd) and the [quickstart](index.qmd#quickstart) on the landing page.

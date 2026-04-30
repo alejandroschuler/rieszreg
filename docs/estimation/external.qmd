@@ -1,0 +1,102 @@
+---
+title: "External packages: DoubleML, EconML, tlverse"
+---
+
+This page sketches how to wire `rieszreg`'s cross-fit $\hat\alpha$ into mature DML/TMLE libraries. The recipes use the synthetic ATE setup from the [landing-page quickstart](../index.qmd#quickstart). The code is illustrative — install the relevant external package locally and adapt to your data.
+
+## DoubleML (Python)
+
+`DoubleML` separates the estimator class (`DoubleMLPLR`, `DoubleMLIRM`, …) from the nuisance learners. To use a `rieszreg`-fit Riesz representer, wrap the booster as a `predict_proba`-exposing classifier shim and hand it to `DoubleMLIRM`'s `ml_m` slot.
+
+```python
+import doubleml as dml
+import numpy as np, pandas as pd
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.model_selection import KFold, cross_val_predict
+from rieszreg import ATE
+from rieszboost import RieszBooster
+
+# 1. Cross-fit α̂ via rieszreg.
+cv      = KFold(n_splits=5, shuffle=True, random_state=0)
+booster = RieszBooster(
+    estimand=ATE(treatment="a", covariates=("x",)),
+    n_estimators=400, learning_rate=0.05, max_depth=3,
+)
+booster.fit(df[["a", "x"]])
+
+# 2. Wrap booster as a propensity classifier: π̂(x) = 1 / α̂(a=1, x).
+class _RieszAsClassifier:
+    def fit(self, X, y): return self
+    def predict_proba(self, X):
+        df_ = pd.DataFrame({"a": np.ones(len(X)), "x": X[:, 0]})
+        alpha_1 = booster.predict(df_)
+        pi_hat  = np.clip(1.0 / np.maximum(alpha_1, 1e-6), 1e-6, 1 - 1e-6)
+        return np.column_stack([1 - pi_hat, pi_hat])
+
+# 3. Pass into DoubleMLIRM in place of a propensity learner.
+dml_data = dml.DoubleMLData(df, y_col="y", d_cols="a", x_cols=["x"])
+plr = dml.DoubleMLIRM(
+    dml_data,
+    ml_g=GradientBoostingRegressor(n_estimators=200, max_depth=3, random_state=0),
+    ml_m=_RieszAsClassifier(),
+    n_folds=5,
+)
+plr.fit()
+print(plr.summary)
+```
+
+`plr.summary` reports point estimate, SE, and 95% CI. The wrap-around is needed because `DoubleMLIRM` expects a propensity classifier; for Riesz functionals where $\hat\alpha$ is not a simple inverse-propensity (continuous shifts, stochastic interventions), the cleaner integration is the [custom-code](custom.qmd) DML/TMLE pattern.
+
+## DoubleML (R)
+
+The R port has the same API. Pass the `RieszBooster` R6 wrapper through reticulate to provide $\hat\alpha$, and let `DoubleML::DoubleMLIRM` handle the outcome learner via [`mlr3`](https://mlr3.mlr-org.com/).
+
+```r
+library(DoubleML)
+library(mlr3)
+library(mlr3learners)
+
+booster <- RieszBooster$new(
+  estimand = ATE(treatment = "a", covariates = "x"),
+  n_estimators = 400L, learning_rate = 0.05, max_depth = 3L
+)
+booster$fit(df)
+alpha_hat <- booster$predict(df)
+
+dml_data <- DoubleMLData$new(df, y_col = "y", d_cols = "a", x_cols = "x")
+ml_g     <- lrn("regr.ranger", num.trees = 500L)
+
+# Wrap alpha_hat as a custom mlr3 PipeOp that returns it as predict_proba —
+# see the DoubleML tutorial on injecting precomputed nuisances for the recipe.
+pi_hat   <- pmin(pmax(1 / pmax(alpha_hat[df$a == 1], 1e-6), 1e-6), 1 - 1e-6)
+```
+
+## EconML
+
+EconML's [`automatic_debiased_ml`](https://econml.azurewebsites.net/) module ships its own Riesz fitter (`RieszNet`, `ForestRiesz`). The `forestriesz` package in this family wraps EconML's `BaseGRF` directly, so a forest-style fit is already EconML-native. For an estimand EconML doesn't ship (e.g. a custom continuous-shift functional defined via the `LinearForm` tracer), use `rieszreg` end-to-end with the [custom-code](custom.qmd) DML/TMLE pattern — the integration there is full transparency, not chaining.
+
+## tlverse (R)
+
+`tmle3` from [tlverse](https://tlverse.org/) is TMLE-native and accepts pre-fit nuisances through its `Likelihood_factor` API. Pass cross-fit $\hat\alpha$ as a fixed treatment-mechanism factor, and `tmle3` performs the targeting step.
+
+```r
+library(tmle3)
+
+booster <- RieszBooster$new(
+  estimand = ATE(treatment = "a", covariates = "x"),
+  n_estimators = 400L, learning_rate = 0.05, max_depth = 3L
+)
+booster$fit(df)
+alpha_hat <- booster$predict(df)
+
+# Wrap alpha_hat in a tmle3 Likelihood_factor that returns the precomputed
+# values when queried, and pass it to tmle3_Spec_TMLE_ATE() in place of the
+# default sl3-trained propensity learner. See the tmle3 vignette on custom
+# Likelihood_factor implementations for the full recipe.
+```
+
+## See also
+
+- [Estimation → custom code](custom.qmd) — no-dependency DML/TMLE walk-through.
+- [`DoubleML` user guide](https://docs.doubleml.org/stable/index.html).
+- [`tmle3` introduction](https://tlverse.org/tmle3/articles/intro_tmle3.html).

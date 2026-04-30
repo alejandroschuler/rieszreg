@@ -4,6 +4,7 @@ project:
   render:
     - "*.qmd"
     - "backends/*.qmd"
+    - "estimation/*.qmd"
 
 website:
   title: "RieszReg"
@@ -11,6 +12,8 @@ website:
   search: true
   page-navigation: true
   navbar:
+    logo: logo.svg
+    title: "RieszReg"
     right:
       - icon: github
         href: https://github.com/rieszreg/rieszreg
@@ -19,17 +22,12 @@ website:
     style: floating
     contents:
       - index.qmd
-      - section: "Concepts"
-        contents:
-          - intro.qmd
-          - estimands.qmd
-          - losses.qmd
-      - section: "Get started"
-        contents:
-          - install.qmd
-          - quickstart.qmd
+      - intro.qmd
+      - install.qmd
       - section: "Usage"
         contents:
+          - estimands.qmd
+          - losses.qmd
           - tuning-and-cross-fitting.qmd
           - diagnostics.qmd
           - save-and-load.qmd
@@ -41,6 +39,11 @@ website:
           - backends/kernel.qmd
           - backends/forest.qmd
           - backends/neural.qmd
+      - section: "Estimation"
+        contents:
+          - estimation/index.qmd
+          - estimation/custom.qmd
+          - estimation/external.qmd
       - developing.qmd
       - references.qmd
 

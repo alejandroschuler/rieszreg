@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 280" role="img" aria-label="RieszReg banner">
+  <title>RieszReg banner</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0e2b5c"/>
+      <stop offset="55%" stop-color="#2d6cdf"/>
+      <stop offset="100%" stop-color="#16a085"/>
+    </linearGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="280" fill="url(#bg)"/>
+
+  <!-- Subtle grid -->
+  <g stroke="#ffffff" stroke-opacity="0.08" stroke-width="1">
+    <line x1="0"   y1="70"  x2="1200" y2="70"/>
+    <line x1="0"   y1="140" x2="1200" y2="140"/>
+    <line x1="0"   y1="210" x2="1200" y2="210"/>
+    <line x1="200"  y1="0" x2="200"  y2="280"/>
+    <line x1="400"  y1="0" x2="400"  y2="280"/>
+    <line x1="600"  y1="0" x2="600"  y2="280"/>
+    <line x1="800"  y1="0" x2="800"  y2="280"/>
+    <line x1="1000" y1="0" x2="1000" y2="280"/>
+  </g>
+
+  <!-- Soft highlight band -->
+  <rect width="1200" height="280" fill="url(#fade)"/>
+
+  <!-- Two regression-style curves: one smoother (kernel/forest feel), one sharper (boosting feel) -->
+  <path d="M 0 200 C 200 60, 380 250, 560 130 S 880 60, 1200 170"
+        fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 0 230 L 80 220 L 160 200 L 240 210 L 320 170 L 400 180 L 480 130 L 560 150 L 640 110 L 720 130 L 800 90 L 880 110 L 960 70 L 1040 90 L 1120 60 L 1200 80"
+        fill="none" stroke="#ffffff" stroke-opacity="0.30" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- Scattered datapoints -->
+  <g fill="#ffffff" fill-opacity="0.85">
+    <circle cx="60"   cy="218" r="3"/>
+    <circle cx="140"  cy="190" r="3"/>
+    <circle cx="230"  cy="205" r="3"/>
+    <circle cx="320"  cy="160" r="3"/>
+    <circle cx="410"  cy="178" r="3"/>
+    <circle cx="500"  cy="138" r="3"/>
+    <circle cx="600"  cy="146" r="3"/>
+    <circle cx="690"  cy="118" r="3"/>
+    <circle cx="780"  cy="100" r="3"/>
+    <circle cx="870"  cy="116" r="3"/>
+    <circle cx="960"  cy="78"  r="3"/>
+    <circle cx="1050" cy="92"  r="3"/>
+    <circle cx="1140" cy="64"  r="3"/>
+  </g>
+
+  <!-- Title -->
+  <text x="80" y="135"
+        font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+        font-size="72" font-weight="800" fill="#ffffff" letter-spacing="-1.5">RieszReg</text>
+
+  <!-- Tagline -->
+  <text x="84" y="178"
+        font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+        font-size="22" font-weight="400" fill="#ffffff" fill-opacity="0.92">
+    Riesz regression for semiparametric inference
+  </text>
+
+  <!-- α symbol on the right -->
+  <text x="1085" y="190"
+        font-family="'Latin Modern Math', 'STIX Two Math', 'Cambria Math', serif"
+        font-size="160" font-weight="400" fill="#ffffff" fill-opacity="0.18"
+        text-anchor="middle">α</text>
+</svg>

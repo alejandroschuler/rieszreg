@@ -4,44 +4,176 @@ subtitle: "Riesz regression for semiparametric inference"
 engine: knitr
 ---
 
-The `rieszreg` family estimates the Riesz representer $\alpha_0$ of a linear functional $\theta(P) = \mathbb{E}[m(Z, g_0)]$, the building block of one-step, TMLE, and DML estimators in semiparametric inference.
+{{< include _setup.qmd >}}
 
-The meta-package `rieszreg` holds the shared abstractions: `Estimand` factories, Bregman-Riesz `LossSpec`s, the augmentation engine, the `Backend` Protocol, and the sklearn-compatible `RieszEstimator` orchestrator. Implementation packages provide concrete backends:
+![](banner.svg){.hero-banner fig-alt="RieszReg banner"}
 
-- [`rieszboost`](backends/boosting.qmd) — gradient boosting (xgboost / sklearn) implementing [Lee & Schuler (arXiv:2501.04871)](https://arxiv.org/abs/2501.04871).
-- [`krrr`](backends/kernel.qmd) — closed-form kernel ridge regression following [Singh (arXiv:2102.11076)](https://arxiv.org/abs/2102.11076).
-- [`forestriesz`](backends/forest.qmd) — random-forest moment estimation following [Chernozhukov, Newey, Quintas-Martínez, Syrgkanis (ICML 2022)](https://proceedings.mlr.press/v162/chernozhukov22a/chernozhukov22a.pdf), with honest-split confidence intervals.
-- [`riesznet`](backends/neural.qmd) — neural-network estimation with PyTorch autograd, following [Chernozhukov, Newey, Quintas-Martínez, Syrgkanis (arXiv:2110.03031)](https://arxiv.org/abs/2110.03031). The convenience class covers MLPs; arbitrary `nn.Module` factories plug in directly.
+`rieszreg` estimates the Riesz representer $\alpha_0$ of a linear functional $\theta(P) = \mathbb{E}[m(Z, g_0)]$ — the building block of one-step, TMLE, and DML inference — with gradient boosting ([`rieszboost`](backends/boosting.qmd)), kernel ridge ([`krrr`](backends/kernel.qmd)), random forests ([`forestriesz`](backends/forest.qmd)), or neural nets ([`riesznet`](backends/neural.qmd)). It ships built-in factories for ATE, ATT, TSM, additive shifts, local shifts, stochastic interventions, and arbitrary user-defined estimands; the squared Riesz loss plus the wider Bregman family (KL, Bernoulli, bounded squared); and sklearn-native tuning, model selection, and cross-fitting. Python and R, with bitwise-identical predictions on the same input.
 
-R and Python predictions are bitwise-identical on the same input. Most pages present every code example in both languages; pick a tab and your choice persists across the site.
+## What is Riesz regression?
 
-## Two ways to compose
+You want to estimate some causal or structural target — say, the average treatment effect $\theta = \mathbb{E}[g_0(1, X) - g_0(0, X)]$, where $g_0(a, x) = \mathbb{E}[Y \mid A = a, X = x]$. A regression $\hat g$ for $g_0$ is biased; the standard fix uses a weight. For ATE, the weight is the inverse-propensity score:
 
-```python
-# Convenience class with sensible defaults baked in:
-from rieszboost import RieszBooster
-from rieszreg import ATE
-booster = RieszBooster(estimand=ATE(), n_estimators=200)
-booster.fit(X)
+$$
+\alpha_0(a, x) \;=\; \frac{a}{\pi(x)} - \frac{1-a}{1-\pi(x)},
+$$
 
-# Or compose explicitly: pick any backend, pass it to RieszEstimator
-from rieszreg import RieszEstimator, ATE, SquaredLoss
-from rieszboost.backends import XGBoostBackend
-est = RieszEstimator(estimand=ATE(), loss=SquaredLoss(), backend=XGBoostBackend())
-est.fit(X)
+so a weighting estimator averages $\alpha_0(A_i, X_i) \cdot Y_i$ over the sample. Modern efficient estimators (one-step, TMLE, DML) instead use $\alpha_0$ to *correct* the plug-in regression:
+
+$$
+\hat\theta \;=\; \frac{1}{n} \sum_i \big[\, m(Z_i, \hat g) + \hat\alpha(Z_i)\,(Y_i - \hat g(Z_i)) \,\big].
+$$
+
+Under the [Riesz representation theorem](intro.qmd), $\alpha_0$ exists for every linear functional of $g_0$, and Chernozhukov et al. ([arXiv:2104.14737](https://arxiv.org/abs/2104.14737)) showed it is the unique minimizer of a regression loss. `rieszreg` learns $\alpha_0$ directly from data: no propensity model, no truncation, no density derivatives. The same machinery handles continuous shifts, stochastic interventions, and any custom $m$ a user can write down — for which closed-form weights typically involve density derivatives that nobody wants to estimate.
+
+For the longer derivation and a survey of the closed-form weights for each built-in estimand, see [What is Riesz regression?](intro.qmd). A general-audience introduction to representers is in [Williams, Hines & Rudolph (2025), *Riesz representers for the rest of us*](https://arxiv.org/abs/2507.19413).
+
+## Quickstart
+
+Fit a Riesz representer for ATE on a synthetic binary-treatment dataset, select between two backends with cross-validation, and use the cross-fit $\hat\alpha$ for a DML point estimate and Wald CI.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+
+```{python}
+#| code-fold: true
+#| code-summary: "Simulate"
+import os
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+import numpy as np
+import pandas as pd
+
+rng = np.random.default_rng(0)
+n = 2000
+x = rng.uniform(0, 1, n)
+pi = 1 / (1 + np.exp(-(-0.02 * x - x**2 + 4 * np.log(x + 0.3) + 1.5)))
+a = rng.binomial(1, pi)
+mu = 5 * x + 9 * x * a + 5 * np.sin(x * np.pi) + 25 * (a - 2)
+y = mu + rng.normal(0, 1.0, n)
+df = pd.DataFrame({"a": a.astype(float), "x": x, "y": y})
+true_alpha = a / pi - (1 - a) / (1 - pi)
 ```
 
-Both routes are first-class. The convenience class is just `RieszEstimator` with the backend defaulted.
+We have a data frame `df` with treatment `a`, covariate `x`, outcome `y`, and we know the closed-form $\alpha_0$ to score against.
 
-## Pages
+### Custom loss: bounded squared
 
-- **Concepts.** [What's a Riesz representer](intro.qmd) · [Estimands](estimands.qmd) · [Losses](losses.qmd).
-- **Get started.** [Install](install.qmd) · [Quickstart](quickstart.qmd).
-- **Usage.** [Tuning and Cross-Fitting](tuning-cross-fitting.qmd) · [Diagnostics](diagnostics.qmd) · [Save and load](save-and-load.qmd) · [R interface](r-interface.qmd).
-- **Backends.** [Overview](backends/index.qmd) · [Boosting](backends/boosting.qmd) · [Kernel](backends/kernel.qmd) · [Forest](backends/forest.qmd) · [Neural](backends/neural.qmd).
-- [Developing](developing.qmd).
-- [References](references.qmd).
+`BoundedSquaredLoss(lo, hi)` is squared-loss in $\alpha$-space with a sigmoid-scaled link that keeps $\hat\alpha$ in $(\text{lo}, \text{hi})$. Use it when you have a prior bound on the IPW magnitudes (e.g. you'd truncate propensities at $\varepsilon = 0.02$, which caps $|\alpha_0|$ at $1/\varepsilon = 50$).
+
+```{python}
+import torch
+torch.set_num_threads(1)
+from rieszreg import ATE, BoundedSquaredLoss
+from rieszboost import RieszBooster
+from riesznet import RieszNet
+
+estimand = ATE(treatment="a", covariates=("x",))
+loss     = BoundedSquaredLoss(lo=-50.0, hi=50.0)
+
+boost = RieszBooster(
+    estimand=estimand, loss=loss,
+    n_estimators=200, learning_rate=0.05, max_depth=3,
+)
+net   = RieszNet(
+    estimand=estimand, loss=loss,
+    hidden_sizes=(32, 32), epochs=60, learning_rate=1e-2,
+)
+```
+
+### Cross-validated 2-learner selection
+
+`.score(X)` returns the canonical squared Riesz loss (negated, so higher is better — sklearn convention). `cross_val_score` ranks the two learners on the same CV split.
+
+```{python}
+from sklearn.model_selection import cross_val_score, cross_val_predict, KFold
+
+cv = KFold(n_splits=5, shuffle=True, random_state=0)
+s_boost = cross_val_score(boost, df, cv=cv).mean()
+s_net   = cross_val_score(net,   df, cv=cv).mean()
+print(f"RieszBooster CV score = {s_boost:+.4f}")
+print(f"RieszNet     CV score = {s_net:+.4f}")
+
+best = boost if s_boost >= s_net else net
+alpha_hat = cross_val_predict(best, df, cv=cv)
+```
+
+`alpha_hat` is out-of-fold — every row was predicted by a model that did not see it during training, the property a one-step / DML / TMLE plug-in needs.
+
+### Sanity check
+
+```{python}
+#| echo: false
+#| fig-cap: "Out-of-fold $\\hat\\alpha$ vs the closed-form $\\alpha_0$ on the synthetic ATE DGP."
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots()
+ax.scatter(true_alpha, alpha_hat, s=4, alpha=0.4)
+lim = max(abs(true_alpha).max(), abs(alpha_hat).max())
+ax.plot([-lim, lim], [-lim, lim], "k--", lw=1)
+ax.set_xlabel(r"$\alpha_0$ (closed-form)")
+ax.set_ylabel(r"$\hat\alpha$ (cross-fit)")
+plt.show()
+```
+
+### DML point estimate and CI
+
+```{python}
+#| code-fold: true
+#| code-summary: "Cross-fit outcome regression"
+from sklearn.ensemble import GradientBoostingRegressor
+
+mu_model = GradientBoostingRegressor(
+    n_estimators=300, learning_rate=0.05, max_depth=3, random_state=0,
+)
+X_full = df[["a", "x"]].to_numpy()
+mu_oof = cross_val_predict(mu_model, X_full, df["y"].to_numpy(), cv=cv)
+
+# Counterfactual predictions need a model fit on the full data.
+mu_full = mu_model.fit(X_full, df["y"].to_numpy())
+mu1 = mu_full.predict(np.column_stack([np.ones(n), x]))
+mu0 = mu_full.predict(np.column_stack([np.zeros(n), x]))
+```
+
+```{python}
+eif  = (mu1 - mu0) + alpha_hat * (df["y"].to_numpy() - mu_oof)
+psi  = float(eif.mean())
+se   = float(np.sqrt(np.var(eif, ddof=1) / n))
+ci   = (psi - 1.96 * se, psi + 1.96 * se)
+print(f"ψ̂_ATE  = {psi:.3f}")
+print(f"SE     = {se:.3f}")
+print(f"95% CI = [{ci[0]:.3f}, {ci[1]:.3f}]")
+```
+
+## R
+
+```{r}
+set.seed(0)
+n     <- 2000
+x     <- runif(n)
+prop  <- 1 / (1 + exp(-(-0.02 * x - x^2 + 4 * log(x + 0.3) + 1.5)))
+a     <- rbinom(n, 1, prop)
+mu    <- 5 * x + 9 * x * a + 5 * sin(x * pi) + 25 * (a - 2)
+y     <- mu + rnorm(n, 0, 1)
+df    <- data.frame(a = as.numeric(a), x = x, y = y)
+
+booster <- RieszBooster$new(
+  estimand = ATE(treatment = "a", covariates = "x"),
+  loss = BoundedSquaredLoss(lo = -50, hi = 50),
+  n_estimators = 200L, learning_rate = 0.05, max_depth = 3L
+)
+booster$fit(df)
+alpha_hat <- booster$predict(df)
+cat(sprintf("min alpha_hat = %.3f, max alpha_hat = %.3f\n",
+            min(alpha_hat), max(alpha_hat)))
+```
+
+The full DML pipeline (cross-fit α̂ + cross-fit μ̂ + Wald CI) is in [Estimation → custom code](estimation/custom.qmd), with the same tabset.
+
+:::
+
+For TMLE on top of these nuisances, and integration with `DoubleML` and other downstream packages, see [Estimation](estimation/index.qmd). For backend-specific tuning, see [Backends](backends/index.qmd).
 
 ::: {.callout-tip title="Code execution"}
-Every code block in this guide ran at build time. The numbers and figures came from the version of `rieszreg`, `rieszboost`, `krrr`, `forestriesz`, and `riesznet` that produced this page.
+Every code block on this page ran at build time. The numbers and figures came from the version of `rieszreg`, `rieszboost`, `krrr`, `forestriesz`, and `riesznet` that produced this page.
 :::

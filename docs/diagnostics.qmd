@@ -4,7 +4,7 @@ title: "Diagnostics"
 
 {{< include _setup.qmd >}}
 
-You don't observe $\alpha_0$ on real data, so the validation curve from `early_stopping_rounds` is the only training-time signal. After fitting, `.diagnose()` reports magnitude statistics and warnings about extreme tail values, near-positivity violations, and single-point extrapolation. Those warnings often matter more for downstream variance than the bulk fit quality.
+You don't observe $\alpha_0$ on real data, so the held-out Riesz loss from cross-validation (`cross_val_score`, or whatever validation signal a backend exposes during fit) is the only training-time signal. After fitting, `.diagnose()` reports magnitude statistics and warnings about extreme tail values, near-positivity violations, and single-point extrapolation. Those warnings often matter more for downstream variance than the bulk fit quality.
 
 `.diagnose()` is defined in `rieszreg.diagnostics` and works for any `RieszEstimator` subclass. Backend-specific extensions (e.g. `KernelDiagnostics` adds chosen λ, support size, effective d.o.f., and the kernel matrix's condition number) layer on top of the shared base.
 

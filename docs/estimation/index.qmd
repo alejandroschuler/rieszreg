@@ -1,0 +1,13 @@
+---
+title: "Estimation"
+---
+
+A cross-fit Riesz representer $\hat\alpha$ is the input to one-step, DML, and TMLE estimators of the target functional $\theta$. Pair it with a cross-fit outcome regression $\hat\mu$ and the influence function gives a $\sqrt n$-consistent, asymptotically normal estimator with a Wald CI.
+
+Two routes are documented here:
+
+- [**Custom code.**](custom.qmd) Write the influence-function arithmetic by hand. ~30 lines for one-step / DML, ~10 more for the TMLE targeting step. No extra dependencies; the math is fully transparent. Walks through the Lalonde NSW dataset in Python and R.
+
+- [**External packages.**](external.qmd) Plug `rieszreg`'s cross-fit $\hat\alpha$ into [`DoubleML`](https://docs.doubleml.org/) (Python and R), or use it as a drop-in replacement for the Riesz step inside [EconML](https://github.com/py-why/EconML)'s `automatic_debiased_ml`. R users on [tlverse](https://tlverse.org/) can pass $\hat\alpha$ as a learned nuisance into `tmle3`.
+
+Cross-fitting itself happens at the `rieszreg` boundary via `sklearn.model_selection.cross_val_predict` — see [Tuning and cross-fitting](../tuning-and-cross-fitting.qmd). What's downstream of that is what these two pages cover.
