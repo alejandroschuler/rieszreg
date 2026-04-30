@@ -52,9 +52,9 @@ class Predictor(Protocol):
     def predict_alpha(self, features: np.ndarray) -> np.ndarray: ...
 
     def save(self, dir_path) -> None:
-        """Write the binary payload (booster.ubj, predictor.joblib, ...) into
-        `dir_path`. Metadata (loss, estimand spec, hyperparameters) is written
-        by the orchestrator estimator separately."""
+        """Write the binary payload (e.g. native model file, joblib pickle,
+        torch state_dict) into `dir_path`. Metadata (loss, estimand spec,
+        hyperparameters) is written by the orchestrator estimator separately."""
         ...
 
 
@@ -72,6 +72,12 @@ class Backend(Protocol):
     Implementers consume a precomputed ``AugmentedDataset`` of (a, b)
     coefficients at evaluation points. The orchestrator builds the augmented
     dataset by tracing the estimand on each input row before calling.
+
+    Method kwargs are universal: data, ``base_score``, ``random_state``,
+    and ``hyperparams`` (a dict for backend-specific passthrough). All
+    learner-specific knobs (``n_estimators``, ``learning_rate``,
+    ``early_stopping_rounds``, kernel choice, …) live on the concrete
+    backend's constructor — see DESIGN.md §A.1.
     """
 
     def fit_augmented(
@@ -80,10 +86,7 @@ class Backend(Protocol):
         aug_valid: AugmentedDataset | None,
         loss: LossSpec,
         *,
-        n_estimators: int,
-        learning_rate: float,
         base_score: float,
-        early_stopping_rounds: int | None,
         random_state: int,
         hyperparams: dict[str, Any],
     ) -> FitResult:
@@ -98,8 +101,9 @@ class MomentBackend(Protocol):
     sample row contributes an independent loss term — these learners benefit
     from per-row moment evaluation rather than the augmented (a, b) view.
 
-    The orchestrator passes through the same hyperparameter kwargs as
-    ``fit_augmented`` so backends share a uniform calling convention.
+    Same calling convention as ``Backend.fit_augmented``: data, ``base_score``,
+    ``random_state``, and ``hyperparams``. Learner-specific knobs live on the
+    concrete backend.
     """
 
     def fit_rows(
@@ -109,10 +113,7 @@ class MomentBackend(Protocol):
         estimand: "Estimand",
         loss: LossSpec,
         *,
-        n_estimators: int,
-        learning_rate: float,
         base_score: float,
-        early_stopping_rounds: int | None,
         random_state: int,
         hyperparams: dict[str, Any],
     ) -> FitResult:

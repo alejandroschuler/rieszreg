@@ -1,9 +1,9 @@
 """Estimand: a self-contained description of the linear functional to fit.
 
 An `Estimand` carries (1) the column names alpha is indexed by (`feature_keys`),
-(2) per-row payload columns that aren't tree features but are referenced by m
-(`extra_keys`, e.g. "shift_samples" for stochastic interventions), and (3) the
-opaque m(z, alpha) callable itself.
+(2) per-row payload columns that aren't fit-time inputs but are referenced by
+m (`extra_keys`, e.g. "shift_samples" for stochastic interventions), and (3)
+the opaque m(z, alpha) callable itself.
 
 The orchestrator estimator reads `feature_keys` and `extra_keys` off the
 estimand at fit time — no need for the user to pass these as separate arguments.
@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Sequence
 
 
-@dataclass
+@dataclass(eq=False)
 class Estimand:
     feature_keys: tuple[str, ...]
     m: Callable[..., Any]
@@ -32,6 +32,28 @@ class Estimand:
 
     def __call__(self, z, alpha):
         return self.m(z, alpha)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Estimand):
+            return NotImplemented
+        # Built-in estimands compare by factory_spec — two `ATE()` calls
+        # produce different `m` closures but represent the same functional.
+        if self.factory_spec is not None or other.factory_spec is not None:
+            return self.factory_spec == other.factory_spec
+        # Custom estimands fall back to identity-on-`m` plus structural fields.
+        return (
+            self.feature_keys == other.feature_keys
+            and self.extra_keys == other.extra_keys
+            and self.name == other.name
+            and self.m is other.m
+        )
+
+    def __hash__(self) -> int:
+        if self.factory_spec is not None:
+            # factory_spec is JSON-serializable by design; use that as the key.
+            import json
+            return hash(json.dumps(self.factory_spec, sort_keys=True, default=str))
+        return hash((self.feature_keys, self.extra_keys, self.name, id(self.m)))
 
     def __reduce__(self):
         """Round-trip via the factory_spec for built-in estimands.

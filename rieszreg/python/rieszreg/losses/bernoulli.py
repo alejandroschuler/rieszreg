@@ -57,8 +57,10 @@ class BernoulliLoss:
         alpha = self.link_to_alpha(eta)
         return np.maximum(a * alpha * (1.0 - alpha), hessian_floor)
 
-    def default_init_alpha(self):
-        return 0.5
+    def best_constant_init(self, m_bar: float) -> float:
+        # Sigmoid link: α ∈ (0, 1). Clip m̄ to the interior.
+        eps = float(np.exp(-self.max_abs_eta))
+        return float(np.clip(m_bar, eps, 1.0 - eps))
 
     def validate_coefficients(self, b):
         if np.any(b > 0):

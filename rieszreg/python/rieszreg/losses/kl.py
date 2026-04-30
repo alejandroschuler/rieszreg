@@ -19,7 +19,7 @@ class KLLoss:
     name = "kl"
 
     def __init__(self, max_eta: float = 50.0):
-        # Clip η before exp() to avoid overflow when the booster makes a big step.
+        # Clip η before exp() to avoid overflow when the backend takes a big update step.
         self.max_eta = float(max_eta)
 
     def _clip(self, eta):
@@ -51,8 +51,10 @@ class KLLoss:
         alpha = np.exp(self._clip(eta))
         return np.maximum(a * alpha, hessian_floor)
 
-    def default_init_alpha(self):
-        return 1.0
+    def best_constant_init(self, m_bar: float) -> float:
+        # Exp link: α > 0. Floor m̄ at the smallest α the link can represent.
+        eps = float(np.exp(-self.max_eta))
+        return max(float(m_bar), eps)
 
     def validate_coefficients(self, b):
         if np.any(b > 0):

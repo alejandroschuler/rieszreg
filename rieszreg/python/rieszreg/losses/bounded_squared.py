@@ -73,8 +73,10 @@ class BoundedSquaredLoss:
         h = 2.0 * a * d_alpha**2 + (2.0 * a * alpha + b) * d2_alpha
         return np.maximum(h, hessian_floor)
 
-    def default_init_alpha(self):
-        return 0.5 * (self.lo + self.hi)
+    def best_constant_init(self, m_bar: float) -> float:
+        # Scaled-sigmoid link: α ∈ (lo, hi). Clip m̄ to the interior.
+        eps = (self.hi - self.lo) * float(np.exp(-self.max_abs_eta))
+        return float(np.clip(m_bar, self.lo + eps, self.hi - eps))
 
     def validate_coefficients(self, b):
         return  # any signed b ok (it's still squared loss in α)

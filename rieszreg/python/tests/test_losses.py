@@ -74,8 +74,11 @@ def test_bounded_squared_clipping():
     alpha = loss.link_to_alpha(eta)
     assert alpha.min() > 2.0
     assert alpha.max() < 8.0
-    # Default init is the midpoint.
-    assert loss.default_init_alpha() == pytest.approx(5.0)
+    # m̄ outside the interval is clipped to the interior.
+    assert loss.best_constant_init(0.0) > 2.0    # below lo → floored
+    assert loss.best_constant_init(100.0) < 8.0  # above hi → ceilinged
+    # m̄ inside the interval round-trips.
+    assert loss.best_constant_init(5.0) == pytest.approx(5.0)
 
 
 def test_bounded_squared_rejects_inverted_bounds():

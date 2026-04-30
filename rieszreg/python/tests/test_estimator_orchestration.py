@@ -109,10 +109,8 @@ def test_ndarray_with_extra_keys_raises():
 
 def test_sklearn_clone_round_trip():
     from sklearn.base import clone
-    est = RieszEstimator(estimand=ATE(), backend=_StubBackend(),
-                         n_estimators=42, learning_rate=0.07)
+    est = RieszEstimator(estimand=ATE(), backend=_StubBackend(), random_state=42)
     cloned = clone(est)
-    assert cloned.n_estimators == 42
-    assert cloned.learning_rate == 0.07
+    assert cloned.random_state == 42
     # Cloned estimator is unfit.
     assert not hasattr(cloned, "predictor_")

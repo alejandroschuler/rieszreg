@@ -25,7 +25,68 @@ Tags used in Part B:
 - Single docs site at the meta-package level. Single `reference/`. Shared base R6 class.
 - Eliminate the current code duplication: krrr today imports `Estimand`, `LinearForm`, `LossSpec`, `AugmentedDataset`, `build_augmented`, `Diagnostics`, and `RieszBooster` from rieszboost. Those imports should redirect to `rieszreg`.
 
-## A.2 Python module layout (`rieszreg/`)
+## A.2 Layering: tier-1, tier-2, tier-3
+
+Three tiers determine where an abstraction lives. Misclassifying an abstraction is the most common source of design rot in this project — the rule below is the operational test that catches it.
+
+**Tier 1 — universal.** Applies to *every* learner. Lives at the top of `rieszreg`'s public API: `Estimand`, `LossSpec`, `Diagnostics`, the `Backend` / `MomentBackend` Protocols, `RieszEstimator` orchestrator, the predictor-loader registry, `RieszEstimatorR6` base R6 class. Tier-1 objects accept only args that every plausible backend can use meaningfully.
+
+**Tier 2 — shared utility.** Used by *multiple* learners but not all. `build_augmented` / `AugmentedDataset` (consumed by augmentation-style backends), `trace(estimand, row)` helper (consumed by moment-style backends), the `rieszreg.testing.dgps` canonical DGPs (used by every package's consistency suite, but optional). Lives in `rieszreg`, but tier-1 objects invoke them as opt-in services — never bake them in. Tier-1 dispatch may select between tier-2 utilities based on backend type; tier-2 must not appear in any tier-1 object's constructor signature or method-kwarg list.
+
+**Tier 3 — learner-specific.** `n_estimators`, `learning_rate`, `epochs`, `batch_size`, `early_stopping_rounds`, `kernel`, `lambda_grid`, `riesz_feature_fns`, `hessian_floor`, `solver`, `n_landmarks`, etc. Lives in implementation packages, on the concrete backend dataclass.
+
+### The agnostic-orchestrator rule
+
+`RieszEstimator.__init__` accepts only tier-1 args:
+- `estimand`, `backend`, `loss` — required structural inputs.
+- `init`, `random_state` — universal fit-time config.
+
+The `Backend` / `MomentBackend` Protocol method signatures pass only:
+- data (`AugmentedDataset` for augmentation-style, `rows + estimand` for moment-style).
+- the `loss` spec.
+- `base_score` (η-space init, computed by the orchestrator from `init` + `loss.alpha_to_eta`).
+- `random_state`.
+- `hyperparams` — a dict for backend-specific passthrough (e.g. xgboost's `max_depth`, `reg_lambda`).
+
+Backend-specific knobs live as constructor args on the concrete backend dataclass. Convenience subclasses of `RieszEstimator` surface them as their own `__init__` args and forward via `_resolved_backend()`. For example: `RieszBooster(n_estimators=200, learning_rate=0.05, early_stopping_rounds=10)` builds `XGBoostBackend(n_estimators=200, learning_rate=0.05, early_stopping_rounds=10)` in `_resolved_backend()`. The orchestrator does not see `n_estimators`.
+
+`validation_fraction` is per-package, not tier-1. Backends that use a held-out slice for fit-time logic (early stopping in `XGBoostBackend` / `SklearnBackend` / `TorchBackend`, λ selection in `KernelRidgeBackend`) expose `validation_fraction` as a constructor attribute. The orchestrator reads it via `getattr(backend, "validation_fraction", 0.0)` and produces the row-level split before augmentation. Backends that don't use a holdout for fit-time logic (`ForestRieszBackend`, `AugForestRieszBackend`) don't expose it; users wanting held-out loss reporting on a forest pass `eval_set=` at fit time.
+
+### The "would-be-ignored" lint test
+
+Before adding a kwarg to a tier-1 object, ask: **"would any plausible backend ignore this kwarg?"** If yes, it is tier-2 or tier-3 and must move out. Examples the rule catches:
+
+- ❌ `RieszEstimator(n_estimators=...)` — kernel ridge and forests ignore. Tier 3 → on `XGBoostBackend`, `SklearnBackend`, `TorchBackend`.
+- ❌ `RieszEstimator(learning_rate=...)` — kernel ridge ignores; the optimizer owns it for neural backends. Tier 3.
+- ❌ `RieszEstimator(early_stopping_rounds=...)` — kernel ridge and forests ignore. Tier 3.
+- ❌ `RieszEstimator(epochs=...)` — only neural backends. Tier 3.
+- ❌ `diagnose(booster=...)` — the kwarg name claims every estimator is a booster. Use `estimator=`.
+- ❌ `RieszEstimator(validation_fraction=...)` — forest backends don't use the held-out slice for fit-time logic, only reporting. Tier 3 → on the backends that use it (XGBoost, Sklearn, KernelRidge, Torch); read by the orchestrator via `getattr` for the split.
+- ✅ `RieszEstimator(random_state=...)` — every backend seeds randomness somewhere.
+- ✅ `RieszEstimator(init=...)` — every loss has `best_constant_init(m_bar)`; every backend gets `base_score` from it.
+
+### What tier-2 utilities look like in code
+
+The orchestrator's `fit` chooses between two tier-2 services based on which Protocol the backend implements:
+
+```python
+# tier-1 dispatch logic inside RieszEstimator.fit
+if hasattr(backend, "fit_rows") and not hasattr(backend, "fit_augmented"):
+    result = backend.fit_rows(rows_train, rows_valid, self.estimand, loss, **common_kwargs)
+else:
+    aug_train = build_augmented(rows_train, self.estimand)             # tier-2 service
+    aug_valid = build_augmented(rows_valid, self.estimand) if rows_valid else None
+    result = backend.fit_augmented(aug_train, aug_valid, loss, **common_kwargs)
+```
+
+Neither `build_augmented` nor `trace` appears in `RieszEstimator.__init__`. The orchestrator selects between them internally; the user-facing surface stays uniform.
+
+### When in doubt
+
+A correct tier-1 abstraction reads cleanly under any plausible new backend you might add — Bayesian neural network, monotonic spline, deep kernel learner, transformer, anything. If imagining a hypothetical backend forces you to add a sentinel default or a `del kwarg_i_will_ignore` line in the new backend's `fit_*`, the abstraction is wrong. Move the kwarg down a tier.
+
+
+## A.3 Python module layout (`rieszreg/`)
 
 ```
 rieszreg/
@@ -55,7 +116,7 @@ rieszreg/
 
 `RieszEstimator` is the orchestrator — it takes `(estimand, loss, backend)` and implements `fit/predict/score/diagnose/save/load`. It is the *only* sklearn-compatible class in the meta-package. Implementation packages either expose it directly with their backend baked in, or provide a thin convenience subclass (`RieszBooster` in rieszboost, `KernelRieszRegressor` in krrr).
 
-## A.3 Implementation-package layout (each learner package)
+## A.4 Implementation-package layout (each learner package)
 
 ```
 <pkg>/
@@ -70,25 +131,25 @@ rieszreg/
 └── pyproject.toml         # depends on rieszreg
 ```
 
-## A.4 R-side: shared base R6 class
+## A.5 R-side: shared base R6 class
 
 - `rieszreg/r/rieszreg/R/rieszreg.R` defines `RieszEstimatorR6` as the base R6 class with `$fit/$predict/$score/$diagnose/$save/$load`, `df_to_py()` helper, and base estimand/loss factories.
 - Per-package R wrappers: `R6::R6Class("KernelRieszRegressor", inherit = rieszreg::RieszEstimatorR6, public = list(initialize = function(...) { super$initialize(backend = krrr_pkg$KernelRidgeBackend(...)) }))`.
 - A new package's R wrapper should be ~50 lines (subclass, initialize, expose backend factory) instead of ~300.
 
-## A.5 Single meta-project docs site
+## A.6 Single meta-project docs site
 
 - Quarto site at `RieszReg/docs/` (or `rieszreg/docs/`). Sklearn-style sectioning: Concepts → Estimands → Losses → Backends → [Boosting | Kernel | …] → API reference → R interface → References.
 - Backend pages either authored directly inside the meta-site or pulled from each implementation package's `docs-fragment/` directory at build time.
 - Single `.github/workflows/docs.yml` builds and deploys the unified site.
 
-## A.6 Shared `reference/` and shared CI templates
+## A.7 Shared `reference/` and shared CI templates
 
 - Move arXiv-paper index to `RieszReg/reference/` (top level). Each package's existing `reference/` is removed.
 - Shared `.github/workflows/` templates for testing and docs build live in the meta-package.
 - Shared `.githooks/pre-commit` template (living-doc rule + doc-tone rules) sourced from the meta-package.
 
-## A.7 Dependency graph
+## A.8 Dependency graph
 
 ```
 rieszreg (no deps on impl packages)
@@ -117,7 +178,7 @@ booster.fit(X)
 
 Both routes must be tested and documented. The convenience class is just `RieszEstimator` with the backend defaulted.
 
-## A.8 Migration sequencing
+## A.9 Migration sequencing
 
 1. Create `rieszreg/` skeleton: estimands, losses, augmentation, backends/base, diagnostics, RieszEstimator orchestrator, serialization, testing utilities. Re-host the shared modules currently in rieszboost.
 2. Update rieszboost to depend on rieszreg; reduce rieszboost to (a) backend implementations, (b) optional convenience class. Tests still pass.
@@ -176,8 +237,8 @@ This is the contract every implementation package must meet. Section structure f
 
 ### 2.3 Hyperparameter tuning
 - **[design rule]** Tuning uses sklearn `GridSearchCV` / `HalvingGridSearchCV` / `RandomizedSearchCV`. No bespoke `tune_riesz()`.
-- **[from rieszreg]** Early stopping with `validation_fraction` auto-split or explicit `eval_set` is provided by the orchestrator.
-- **[your package]** Expose backend-specific hyperparameters as constructor args (boosting: `n_estimators`, `learning_rate`, `max_depth`, `reg_lambda`, `subsample`; kernel: `lambda_grid`, `solver`, `n_landmarks`, `n_features`, `cg_tol`).
+- **[from rieszreg]** The orchestrator performs the row-level holdout split. With explicit `eval_set=` at fit time it uses that; otherwise it reads `validation_fraction` off the backend via `getattr` and splits before augmentation. Backends that need the holdout for fit-time logic (early stopping, λ selection) expose `validation_fraction` as a constructor attribute.
+- **[your package]** Expose backend-specific hyperparameters as constructor args (boosting: `n_estimators`, `learning_rate`, `max_depth`, `reg_lambda`, `subsample`, `early_stopping_rounds`, `validation_fraction`; kernel: `lambda_grid`, `validation_fraction`, `solver`, `n_landmarks`, `n_features`, `cg_tol`). Forest-style backends, which do not use the holdout for fit-time logic, do not expose `validation_fraction`.
 - **[your package]** If your backend has heuristic resolutions (krrr's `median`, `scott`, `silverman` length-scale), document them and accept both string and numeric forms.
 
 ### 2.4 Numerical stability
@@ -205,6 +266,7 @@ This is the contract every implementation package must meet. Section structure f
 - **[design rule]** No `feature_keys` (or any input-schema arg) on `fit()` / `predict()`. The Estimand owns its input schema. If a new estimand needs different inputs, that's a property of the estimand object.
 - **[design rule]** Cross-fitting == `cross_val_predict`. Tuning == `GridSearchCV`. Don't reinvent.
 - **[design rule]** Swappable orthogonal components: backend, loss, estimand are independent.
+- **[design rule: agnostic orchestrator]** All learner-specific knobs (`n_estimators`, `learning_rate`, `epochs`, `batch_size`, `early_stopping_rounds`, `kernel`, `lambda_grid`, `riesz_feature_fns`, …) live as constructor args on the concrete backend dataclass — never on `RieszEstimator` and never in the `Backend`/`MomentBackend` Protocol method kwargs. Convenience subclasses surface them as their own ctor args and forward via `_resolved_backend()`. See §A.2 for the layering principle and the would-be-ignored lint test that catches violations.
 - **[design rule: sklearn-first, every feature]** Before writing any procedural code with loops, splits, grids, or folds, ask *"is there an sklearn way?"*. If yes, use it (`cross_val_predict`, `cross_validate`, `KFold`, `train_test_split`, `StratifiedKFold`, `GridSearchCV`, `HalvingGridSearchCV`, `RandomizedSearchCV`, `Pipeline`, `ColumnTransformer`, `FunctionTransformer`, `make_scorer`, `n_jobs=`). Hand-rolled fold loops are a code smell. Bespoke is reserved for things sklearn genuinely doesn't cover (the `LinearForm` tracer, the custom xgboost objective, the Bregman `LossSpec`).
 
 ### 3.3 Module separation of concerns
@@ -256,7 +318,7 @@ This is the contract every implementation package must meet. Section structure f
 - **sklearn integration**: `cross_val_predict`, `Pipeline`, `get_params` round-trip.
 - **Serialization round-trip** per estimand.
 - **Backend equivalence on identical data** if your package has multiple internal modes (boosting backends, kernel solvers).
-- **Edge cases**: ndarray vs DataFrame, single-sample, validation_fraction edges.
+- **Edge cases**: ndarray vs DataFrame, single-sample, holdout-split edges (when the backend exposes `validation_fraction`).
 - **Reference parity** *(required when a prior implementation exists)*: every implementation package must include at least one test that cross-checks its predictions against a *self-contained* re-derivation of any prior implementation of the same algorithm.
 
   **What counts as a parity test**: the reference must come from a different code path or a different mathematical formulation than your wrapper's. Either is fine: an external repo's algorithm inlined in the test file, or your own re-derivation of the algorithm via a different formulation (closed-form leaf solve, dual problem, alternative basis). What does *not* count is hand-replicating the wrapper's own packing / call sequence and asserting bit-identity — that just tests the wrapper against a copy of itself.
@@ -359,6 +421,8 @@ This is the contract every implementation package must meet. Section structure f
 - Don't add a custom-`m()` R entry point.
 - Don't reinvent `cross_val_predict`, `GridSearchCV`, or any sklearn primitive.
 - Don't put `feature_keys=` (or any input-schema arg) on `fit/predict`.
+- Don't put learner-specific knobs (`n_estimators`, `learning_rate`, `epochs`, `batch_size`, `early_stopping_rounds`, `kernel`, …) on `RieszEstimator` or in the Protocol method kwargs. They live on the backend dataclass; convenience subclasses forward via `_resolved_backend()`. See §A.2.
+- Don't add backend-specific framing to tier-1 docs ("the booster does X", "the kernel matrix is Y"). Use neutral language ("the backend produces η").
 - Don't add design-decision metacommentary or AI hedging to user docs.
 - Don't host your own docs site or `reference/` directory.
 - Don't introduce a bespoke `crossfit()` or `tune_riesz()`.
