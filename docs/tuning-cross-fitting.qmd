@@ -133,21 +133,15 @@ cat(sprintf("best score (neg Riesz loss): %.4f\n",
 
 ## Cross-fit ensemble selection
 
-The pattern below selects among five learner configurations — two boosting depths, two MLP architectures, and a forest — using inner 3-fold CV inside each of five outer cross-fitting folds. The inner CV runs entirely on the training portion of each outer fold, so the model selection criterion never sees the held-out data that `cross_val_predict` predicts.
+The pattern below selects among five learner configurations — two boosting depths, two neural-network architectures, and a forest — using inner 3-fold CV inside each of five outer cross-fitting folds. The inner CV runs entirely on the training portion of each outer fold, so the model selection criterion never sees the held-out data that `cross_val_predict` predicts.
 
-```python
-# sklearn's Pipeline lets GridSearchCV replace the "riesz" step with any
-# estimator instance, so one param_grid spans completely different learner types.
-from sklearn.pipeline import Pipeline
-```
-
-This is the `Pipeline` idiom for cross-estimator-type selection: wrap the estimator in a single-step `Pipeline` named `"riesz"`, then pass a list of fully configured instances as the value for that key. `GridSearchCV` calls `pipe.set_params(riesz=candidate)`, fits, and scores each one.
+This uses the `Pipeline` idiom for cross-estimator-type selection: wrap the estimator in a single-step `Pipeline` named `"riesz"`, then pass a list of fully configured instances as the value for that key. `GridSearchCV` calls `pipe.set_params(riesz=candidate)`, fits, and scores each one.
 
 ```{python}
 from sklearn.model_selection import cross_val_predict, GridSearchCV
 from sklearn.pipeline import Pipeline
-from sklearn.neural_network import MLPRegressor
-from rieszboost import RieszBooster, SklearnBackend
+from rieszboost import RieszBooster
+from riesznet import RieszNet
 from forestriesz import ForestRieszRegressor
 
 estimand = ATE()
@@ -172,35 +166,21 @@ candidates = [
         validation_fraction=0.2,
         learning_rate=0.05,
     ),
-    # MLP (64, 32) — sklearn early stopping
-    RieszBooster(
+    # Neural net — small MLP with early stopping
+    RieszNet(
         estimand=estimand,
-        backend=SklearnBackend(
-            lambda: MLPRegressor(
-                hidden_layer_sizes=(64, 32),
-                max_iter=500,
-                early_stopping=True,
-                validation_fraction=0.2,
-                random_state=0,
-            )
-        ),
-        n_estimators=60,
-        learning_rate=0.1,
+        hidden_sizes=(64, 64),
+        epochs=500,
+        early_stopping_rounds=20,
+        validation_fraction=0.2,
     ),
-    # MLP (128, 64) — sklearn early stopping
-    RieszBooster(
+    # Neural net — larger MLP with early stopping
+    RieszNet(
         estimand=estimand,
-        backend=SklearnBackend(
-            lambda: MLPRegressor(
-                hidden_layer_sizes=(128, 64),
-                max_iter=500,
-                early_stopping=True,
-                validation_fraction=0.2,
-                random_state=0,
-            )
-        ),
-        n_estimators=60,
-        learning_rate=0.1,
+        hidden_sizes=(128, 64),
+        epochs=500,
+        early_stopping_rounds=20,
+        validation_fraction=0.2,
     ),
     # Forest Riesz
     ForestRieszRegressor(
