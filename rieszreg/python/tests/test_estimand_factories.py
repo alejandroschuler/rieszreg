@@ -64,7 +64,7 @@ def test_estimand_from_spec_unknown_factory_raises():
 def test_ate_traces_to_correct_pairs():
     pairs = trace(ATE(), {"a": 0.0, "x": 1.5})
     points = {tuple(sorted(p.items())): c for c, p in pairs}
-    # m(z, alpha) = alpha(a=1, x=1.5) - alpha(a=0, x=1.5)
+    # m(alpha)(z) = alpha(a=1, x=1.5) - alpha(a=0, x=1.5)
     assert points[(("a", 1), ("x", 1.5))] == pytest.approx(1.0)
     assert points[(("a", 0), ("x", 1.5))] == pytest.approx(-1.0)
 
@@ -84,8 +84,10 @@ def test_local_shift_zero_above_threshold():
 
 
 def test_custom_estimand_pickle_uses_factory_spec_when_set():
-    def m(z, alpha):
-        return alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"])
+    def m(alpha):
+        def inner(z):
+            return alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"])
+        return inner
 
     est = Estimand(feature_keys=("a", "x"), m=m, name="custom")
     # No factory_spec → falls back to default reduce; tested elsewhere.

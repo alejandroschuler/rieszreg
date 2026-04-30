@@ -31,7 +31,7 @@ def test_original_rows_have_a_one_b_zero():
     mask = (aug.features[:, 0] == 0.5) & (aug.features[:, 1] == 1.5)
     assert mask.sum() == 1  # original row distinct from counterfactual
     # On the original row, a=1, b=-2*coef where coef is from m at this point.
-    # m(z, alpha) = alpha(a + delta, x) - alpha(a, x). At a=0.5: coef on
+    # m(alpha)(z) = alpha(a + delta, x) - alpha(a, x). At a=0.5: coef on
     # alpha(a=0.5, x=1.5) is -1, so b = +2. Plus the natural a=1 contribution.
     assert aug.a[mask].item() == 1.0
     assert aug.b[mask].item() == 2.0

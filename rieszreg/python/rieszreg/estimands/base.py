@@ -3,7 +3,11 @@
 An `Estimand` carries (1) the column names alpha is indexed by (`feature_keys`),
 (2) per-row payload columns that aren't fit-time inputs but are referenced by
 m (`extra_keys`, e.g. "shift_samples" for stochastic interventions), and (3)
-the opaque m(z, alpha) callable itself.
+the opaque `m(alpha)(z)` operator itself.
+
+`m` is an operator: it takes a candidate function `alpha` and returns a function
+of the row `z`. The orchestrator calls `m(alpha)(z)` row-by-row, passing a
+`Tracer` for `alpha` to extract the linear-form structure.
 
 The orchestrator estimator reads `feature_keys` and `extra_keys` off the
 estimand at fit time — no need for the user to pass these as separate arguments.
@@ -30,8 +34,8 @@ class Estimand:
     # None and rely on the user's m being picklable on its own.
     factory_spec: dict | None = None
 
-    def __call__(self, z, alpha):
-        return self.m(z, alpha)
+    def __call__(self, alpha):
+        return self.m(alpha)
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Estimand):
@@ -86,9 +90,11 @@ def ATE(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Estimand:
     """Average treatment effect: m(α)(z) = α(1, x) − α(0, x)."""
     cov = tuple(covariates)
 
-    def m(z, alpha):
-        x_kwargs = {k: z[k] for k in cov}
-        return alpha(**{treatment: 1, **x_kwargs}) - alpha(**{treatment: 0, **x_kwargs})
+    def m(alpha):
+        def inner(z):
+            x_kwargs = {k: z[k] for k in cov}
+            return alpha(**{treatment: 1, **x_kwargs}) - alpha(**{treatment: 0, **x_kwargs})
+        return inner
 
     return Estimand(
         feature_keys=(treatment, *cov), m=m, name="ATE",
@@ -104,12 +110,14 @@ def ATT(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Estimand:
     """
     cov = tuple(covariates)
 
-    def m(z, alpha):
-        a = z[treatment]
-        x_kwargs = {k: z[k] for k in cov}
-        return a * (
-            alpha(**{treatment: 1, **x_kwargs}) - alpha(**{treatment: 0, **x_kwargs})
-        )
+    def m(alpha):
+        def inner(z):
+            a = z[treatment]
+            x_kwargs = {k: z[k] for k in cov}
+            return a * (
+                alpha(**{treatment: 1, **x_kwargs}) - alpha(**{treatment: 0, **x_kwargs})
+            )
+        return inner
 
     return Estimand(
         feature_keys=(treatment, *cov), m=m, name="ATT",
@@ -121,9 +129,11 @@ def TSM(level, treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Esti
     """Treatment-specific mean: m(α)(z) = α(level, x)."""
     cov = tuple(covariates)
 
-    def m(z, alpha):
-        x_kwargs = {k: z[k] for k in cov}
-        return alpha(**{treatment: level, **x_kwargs})
+    def m(alpha):
+        def inner(z):
+            x_kwargs = {k: z[k] for k in cov}
+            return alpha(**{treatment: level, **x_kwargs})
+        return inner
 
     return Estimand(
         feature_keys=(treatment, *cov), m=m, name=f"TSM(level={level!r})",
@@ -137,12 +147,14 @@ def AdditiveShift(
     """Additive shift effect: m(α)(z) = α(a + δ, x) − α(a, x)."""
     cov = tuple(covariates)
 
-    def m(z, alpha):
-        a = z[treatment]
-        x_kwargs = {k: z[k] for k in cov}
-        return alpha(**{treatment: a + delta, **x_kwargs}) - alpha(
-            **{treatment: a, **x_kwargs}
-        )
+    def m(alpha):
+        def inner(z):
+            a = z[treatment]
+            x_kwargs = {k: z[k] for k in cov}
+            return alpha(**{treatment: a + delta, **x_kwargs}) - alpha(
+                **{treatment: a, **x_kwargs}
+            )
+        return inner
 
     return Estimand(
         feature_keys=(treatment, *cov), m=m, name=f"AdditiveShift(delta={delta})",
@@ -162,14 +174,16 @@ def LocalShift(
     """
     cov = tuple(covariates)
 
-    def m(z, alpha):
-        a = z[treatment]
-        if a >= threshold:
-            return 0
-        x_kwargs = {k: z[k] for k in cov}
-        return alpha(**{treatment: a + delta, **x_kwargs}) - alpha(
-            **{treatment: a, **x_kwargs}
-        )
+    def m(alpha):
+        def inner(z):
+            a = z[treatment]
+            if a >= threshold:
+                return 0
+            x_kwargs = {k: z[k] for k in cov}
+            return alpha(**{treatment: a + delta, **x_kwargs}) - alpha(
+                **{treatment: a, **x_kwargs}
+            )
+        return inner
 
     return Estimand(
         feature_keys=(treatment, *cov),
@@ -196,15 +210,17 @@ def StochasticIntervention(
     """
     cov = tuple(covariates)
 
-    def m(z, alpha):
-        x_kwargs = {k: z[k] for k in cov}
-        samples = z[samples_key]
-        K = len(samples)
-        if K == 0:
-            return 0
-        return sum(
-            alpha(**{treatment: float(s), **x_kwargs}) for s in samples
-        ) / K
+    def m(alpha):
+        def inner(z):
+            x_kwargs = {k: z[k] for k in cov}
+            samples = z[samples_key]
+            K = len(samples)
+            if K == 0:
+                return 0
+            return sum(
+                alpha(**{treatment: float(s), **x_kwargs}) for s in samples
+            ) / K
+        return inner
 
     return Estimand(
         feature_keys=(treatment, *cov),
