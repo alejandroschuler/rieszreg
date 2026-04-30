@@ -5,8 +5,18 @@ title: "Estimands"
 {{< include _setup.qmd >}}
 
 An `Estimand` describes the linear functional you want to fit. It holds three pieces of information: the column names $\alpha$ is indexed by (`feature_keys`), any per-row payload columns $m$ needs such as pre-sampled treatments for stochastic interventions (`extra_keys`), and the `m(z, alpha)` callable.
+<!-- why is this still m(z, alpha)? should be m(alpha)(z). Check everything again to make sure this is consistent everywhere -->
+<!-- I don't entirely understand why we need feature_keys and extra_keys. Shouldn't the definition of m(alpha)(z) be sufficient in principle? -->
 
 This page covers the six built-in factories and how to write your own. The factories live in `rieszreg`; `rieszboost`, `krrr`, and `forestriesz` all re-export them so `from rieszboost import ATE`, `from krrr import ATE`, and `from forestriesz import ATE` resolve to the same object.
+
+<!-- 
+I think we should more clearly differentiate between m() operators that reduce to a finite linear combination of point evaluations of \mu and other kinds of linear operators. For the former class things are quite clear and it seems like data augmentation can pretty generically handle things. For estimands that don't fit this pattern, like the stochastic intervention, or an average derivative effect, we can still handle them but with more restrictions on the learner. This needs to be clear in the docs but also in the code, i.e. there needs to be a subclass of estimand that represents the finite linear combination of point eval case and the tracer only needs to handle that subclass (I think). 
+
+There may be another subclass to handle integrals, and maybe another for derivatives would make sense. The integrals can be handled with sampling in which case they sort of get replaced by / transformed to a finite evals case with more data? Derivatives may also come down to a finite evals case after a transformation that gets handled by the learner (eg autodiff). Need help thinking through this and how the Estimands and code should be structured to make this clear and to enforce the right things.
+
+Whatever conclusion/structure we come to, it will have to be documented clearly.
+-->
 
 ## Built-in factories
 
@@ -109,13 +119,14 @@ $m$ must be a finite linear combination of point evaluations of $\alpha$, built 
 Custom `m()` is Python-only. From R, define `m` in Python via `reticulate::py_run_string` and pass the resulting `Estimand` to your estimator. See the [R interface page](r-interface.qmd) for the recipe.
 :::
 
+<!-- the example below still defines m(z, alpha) which should not work since the convention is now m(alpha)(z) -->
 ```{python}
 from rieszreg import Estimand
 from rieszboost import RieszBooster
 import numpy as np, pandas as pd
 
 # A weighted contrast: 2x the ATE at level a=2 minus the level at a=1.
-def m_weighted_contrast(z, alpha):
+def m_weighted_contrast(z, alpha): 
     return 2.0 * (alpha(a=2, x=z["x"]) - alpha(a=0, x=z["x"])) \
            - alpha(a=1, x=z["x"])
 
