@@ -99,7 +99,7 @@ class RieszEstimator(BaseEstimator):
     Parameters
     ----------
     estimand : Estimand
-        Carries `feature_keys`, `extra_keys`, and the `m(z, alpha)` callable.
+        Carries `feature_keys`, `extra_keys`, and the `m(alpha)(z)` operator.
         Required.
     backend : Backend
         Concrete backend implementing the `fit_augmented` (or `fit_rows`)

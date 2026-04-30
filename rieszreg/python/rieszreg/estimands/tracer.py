@@ -1,9 +1,11 @@
 """Symbolic tracer that extracts (coefficient, point) terms from a user's m().
 
-The user writes m opaquely:
+The user writes m as an operator: it takes alpha and returns a function of z.
 
-    def m_ate(z, alpha):
-        return alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"])
+    def m_ate(alpha):
+        def inner(z):
+            return alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"])
+        return inner
 
 We pass a `Tracer` in as `alpha`. Each call records a `LinearTerm`; arithmetic
 builds a `LinearForm`. If the user's m stays inside the linear-form algebra
@@ -102,17 +104,18 @@ class LinearForm:
 
 
 class Tracer:
-    """Stand-in for `alpha` during tracing. Each call records a single-term
-    LinearForm; the user's m composes these via +/-/scalar*."""
+    """Stand-in for `alpha` during tracing. The trace step calls
+    `m(Tracer())(z)`; each `alpha(...)` call inside the user's m records a
+    single-term LinearForm, and the user's m composes these via +/-/scalar*."""
 
     def __call__(self, **kwargs) -> LinearForm:
         return LinearForm.single(_Point.from_kwargs(kwargs), 1.0)
 
 
 def trace(m, z) -> list[tuple[float, dict[str, Any]]]:
-    """Run the user's m on a single row z with the Tracer as alpha and return
-    the (coef, point) pair list. Raises if m leaves the linear-form algebra."""
-    result = m(z, Tracer())
+    """Run the user's m as `m(Tracer())(z)` on a single row z and return the
+    (coef, point) pair list. Raises if m leaves the linear-form algebra."""
+    result = m(Tracer())(z)
     if isinstance(result, (int, float)):
         if result == 0:
             return []

@@ -62,23 +62,29 @@ def test_constant_addition_raises():
 
 
 def test_squaring_raises():
-    def m(z, alpha):
-        return alpha(a=1, x=z["x"]) ** 2
+    def m(alpha):
+        def inner(z):
+            return alpha(a=1, x=z["x"]) ** 2
+        return inner
     est = Estimand(feature_keys=("a", "x"), m=m)
     with pytest.raises(TypeError):
         trace(est, {"a": 0, "x": 0.5})
 
 
 def test_non_linearform_return_raises():
-    def m(z, alpha):
-        return "not a linear form"
+    def m(alpha):
+        def inner(z):
+            return "not a linear form"
+        return inner
     est = Estimand(feature_keys=("a", "x"), m=m)
     with pytest.raises(TypeError, match="LinearForm"):
         trace(est, {"a": 0, "x": 0.5})
 
 
 def test_zero_scalar_return_yields_empty():
-    def m(z, alpha):
-        return 0
+    def m(alpha):
+        def inner(z):
+            return 0
+        return inner
     est = Estimand(feature_keys=("a", "x"), m=m)
     assert trace(est, {"a": 0, "x": 0.5}) == []
