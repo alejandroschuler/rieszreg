@@ -168,7 +168,7 @@ cat(booster$diagnose(df)$summary)
 
 ## Next
 
-- [scikit-learn integration](sklearn-integration.qmd) for out-of-fold predictions used in TMLE / one-step / DML.
+- [Tuning and cross-fitting](tuning-and-cross-fitting.qmd) for hyperparameter search and out-of-fold predictions used in TMLE / one-step / DML.
 - [Estimands](estimands.qmd) for the other built-ins and custom $m$.
 - [Diagnostics](diagnostics.qmd) for reading `.diagnose()`.
 - [Boosting](backends/boosting.qmd), [kernel](backends/kernel.qmd), and [forest](backends/forest.qmd) backends for hyperparameter tuning and inference options.

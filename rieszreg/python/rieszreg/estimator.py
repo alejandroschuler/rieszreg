@@ -238,9 +238,26 @@ class RieszEstimator(BaseEstimator):
         return float(np.sum(self.loss_.loss_row(aug.a, aug.b, alpha)) / aug.n_rows)
 
     def score(self, X, y=None) -> float:
-        """Return negative held-out Riesz loss — sklearn convention is
-        higher-is-better for `score`, so we flip the sign of the loss."""
-        return -self.riesz_loss(X)
+        """Return negative held-out canonical Riesz loss (squared loss).
+
+        Following sklearn convention (R² for regressors, accuracy for
+        classifiers), `score()` evaluates a fixed yardstick — squared Riesz
+        loss — independent of the loss the estimator was trained with. This
+        makes `cross_val_score` and `GridSearchCV` results comparable across
+        estimators fit with different losses (e.g. KL vs squared).
+
+        Pass `scoring=riesz_scorer(loss=...)` to sklearn CV utilities to use a
+        different yardstick. `riesz_loss(X)` remains available as the
+        own-loss diagnostic.
+        """
+        if not hasattr(self, "predictor_"):
+            raise RuntimeError(f"{type(self).__name__} is not fitted yet.")
+        rows = _rows_from_X(X, self.estimand)
+        aug = build_augmented(rows, self.estimand)
+        eta = self.predictor_.predict_eta(aug.features)
+        alpha_hat = self.loss_.link_to_alpha(eta)
+        yardstick = SquaredLoss()
+        return -float(np.sum(yardstick.loss_row(aug.a, aug.b, alpha_hat)) / aug.n_rows)
 
     def diagnose(self, X, **kwargs):
         from .diagnostics import diagnose
