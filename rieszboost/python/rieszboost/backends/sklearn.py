@@ -95,6 +95,10 @@ class SklearnBackend:
     zero-arg callable returning a fresh sklearn-compatible regressor."""
 
     base_learner_factory: Callable[[], Any]
+    n_estimators: int = 200
+    learning_rate: float = 0.05
+    early_stopping_rounds: int | None = None
+    validation_fraction: float = 0.0
 
     def fit_augmented(
         self,
@@ -102,10 +106,7 @@ class SklearnBackend:
         aug_valid: AugmentedDataset | None,
         loss: LossSpec,
         *,
-        n_estimators: int,
-        learning_rate: float,
         base_score: float,
-        early_stopping_rounds: int | None,
         random_state: int,
         hyperparams: dict[str, Any],
     ) -> FitResult:
@@ -121,7 +122,7 @@ class SklearnBackend:
         F_train = np.full(aug_train.features.shape[0], base_score)
 
         have_valid = aug_valid is not None
-        if early_stopping_rounds is not None and not have_valid:
+        if self.early_stopping_rounds is not None and not have_valid:
             raise ValueError(
                 "early_stopping_rounds requires validation data — pass "
                 "`validation_fraction>0` or `eval_set=...` to RieszBooster."
@@ -136,7 +137,7 @@ class SklearnBackend:
         best_iter: int | None = None
         no_improve = 0
 
-        for it in range(n_estimators):
+        for it in range(self.n_estimators):
             grad_train = loss.gradient(a, b, F_train)
             residual = -grad_train
 
@@ -145,7 +146,7 @@ class SklearnBackend:
             h_train = np.asarray(learner.predict(aug_train.features))
 
             gamma = _line_search(loss, a, b, F_train, h_train)
-            step = learning_rate * gamma
+            step = self.learning_rate * gamma
             F_train = F_train + step * h_train
 
             learners.append(learner)
@@ -166,7 +167,7 @@ class SklearnBackend:
                     no_improve = 0
                 else:
                     no_improve += 1
-                if early_stopping_rounds is not None and no_improve >= early_stopping_rounds:
+                if self.early_stopping_rounds is not None and no_improve >= self.early_stopping_rounds:
                     break
 
         predictor = SklearnPredictor(

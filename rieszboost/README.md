@@ -172,7 +172,7 @@ Both formats handle built-in estimands automatically; custom user-defined `Estim
 
 ## Backends
 
-The default `XGBoostBackend` uses xgboost's custom-objective interface (fast). Swap to `SklearnBackend` to use any sklearn-compatible base learner:
+The default `XGBoostBackend` uses xgboost's custom-objective interface (fast). Swap to `SklearnBackend` to use any sklearn-compatible base learner. When you supply `backend=` explicitly, boost-loop knobs (`n_estimators`, `learning_rate`, `early_stopping_rounds`, `validation_fraction`) live on the backend itself — `RieszBooster`'s matching ctor args only apply to the default-XGBoost path.
 
 ```python
 from sklearn.kernel_ridge import KernelRidge
@@ -180,8 +180,11 @@ from rieszboost import SklearnBackend
 
 booster = RieszBooster(
     estimand=ATE(),
-    backend=SklearnBackend(lambda: KernelRidge(alpha=1.0, kernel="rbf", gamma=2.0)),
-    n_estimators=80, learning_rate=0.05,
+    backend=SklearnBackend(
+        base_learner_factory=lambda: KernelRidge(alpha=1.0, kernel="rbf", gamma=2.0),
+        n_estimators=80,
+        learning_rate=0.05,
+    ),
 )
 ```
 

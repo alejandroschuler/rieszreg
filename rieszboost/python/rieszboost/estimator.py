@@ -63,19 +63,26 @@ class RieszBooster(RieszEstimator):
             estimand=estimand,
             backend=backend,
             loss=loss,
-            n_estimators=n_estimators,
-            learning_rate=learning_rate,
-            early_stopping_rounds=early_stopping_rounds,
-            validation_fraction=validation_fraction,
             init=init,
             random_state=random_state,
         )
+        self.n_estimators = n_estimators
+        self.learning_rate = learning_rate
+        self.early_stopping_rounds = early_stopping_rounds
+        self.validation_fraction = validation_fraction
         self.max_depth = max_depth
         self.reg_lambda = reg_lambda
         self.subsample = subsample
 
     def _resolved_backend(self) -> Backend:
-        return self.backend if self.backend is not None else XGBoostBackend()
+        if self.backend is not None:
+            return self.backend
+        return XGBoostBackend(
+            n_estimators=self.n_estimators,
+            learning_rate=self.learning_rate,
+            early_stopping_rounds=self.early_stopping_rounds,
+            validation_fraction=self.validation_fraction,
+        )
 
     def _backend_hyperparams(self) -> dict:
         return {
@@ -87,6 +94,10 @@ class RieszBooster(RieszEstimator):
     def _save_hyperparameters(self) -> dict:
         base = super()._save_hyperparameters()
         base.update(
+            n_estimators=self.n_estimators,
+            learning_rate=self.learning_rate,
+            early_stopping_rounds=self.early_stopping_rounds,
+            validation_fraction=self.validation_fraction,
             max_depth=self.max_depth,
             reg_lambda=self.reg_lambda,
             subsample=self.subsample,

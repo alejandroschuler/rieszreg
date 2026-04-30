@@ -81,10 +81,9 @@ def test_local_shift_all_above_threshold_returns_no_counterfactuals():
     assert float(np.max(np.abs(pred))) < 0.5
 
 
-def test_validation_fraction_zero_with_early_stopping_auto_splits():
-    """User sets early_stopping_rounds but leaves validation_fraction=0
-    (default). The booster should auto-split (default 0.2 fraction) rather
-    than crash."""
+def test_early_stopping_without_validation_fraction_raises():
+    """early_stopping_rounds without validation_fraction>0 (and no eval_set)
+    raises a clear error: the orchestrator does not auto-split."""
     df = _df(n=400, seed=2)
     booster = RieszBooster(
         estimand=ATE(),
@@ -92,9 +91,9 @@ def test_validation_fraction_zero_with_early_stopping_auto_splits():
         early_stopping_rounds=10,
         validation_fraction=0.0,  # explicit
         learning_rate=0.1, max_depth=3,
-    ).fit(df)
-    # Either ES kicked in (best_iter set) or the model trained the full way.
-    assert booster.predict(df).shape == (len(df),)
+    )
+    with pytest.raises(ValueError, match="validation"):
+        booster.fit(df)
 
 
 def test_eval_set_overrides_internal_split():

@@ -82,9 +82,13 @@ def test_kl_riesz_loss_finite():
 def test_bernoulli_predicts_in_zero_one():
     from rieszboost.losses import BernoulliLoss
     df, _ = _simulate_df(500, seed=0)
+    # For TSM, m̄ = 1, which under Bernoulli sits on the upper boundary; the
+    # loss-minimizing constant init clips to (1-ε) and saturates the sigmoid.
+    # Pass `init=0.5` explicitly so the iterative fit has room to descend.
     booster = RieszBooster(
         estimand=rieszboost.TSM(level=1),
         loss=BernoulliLoss(),
+        init=0.5,
         n_estimators=30, learning_rate=0.1, max_depth=3,
     ).fit(df)
     alpha_hat = booster.predict(df)

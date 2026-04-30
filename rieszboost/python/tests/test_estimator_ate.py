@@ -71,10 +71,12 @@ def test_ate_recovers_inverse_propensity_ndarray():
     assert rmse < 1.0
 
 
-def test_init_m1_for_ate_gives_zero_baseline():
+def test_default_init_for_ate_gives_zero_baseline():
+    """For ATE, m(z, 1) = 1 + (-1) = 0 per row, so m̄ = 0 and the
+    loss-minimizing constant init is 0 in α-space (identity link → η)."""
     x, a, _ = _simulate(100, seed=3)
     df = _df(x, a)
-    booster = RieszBooster(estimand=rieszboost.ATE(), n_estimators=1, init="m1").fit(df)
+    booster = RieszBooster(estimand=rieszboost.ATE(), n_estimators=1).fit(df)
     assert booster.base_score_ == 0.0
 
 

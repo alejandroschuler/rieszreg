@@ -46,7 +46,7 @@ def test_diagnose_with_booster_includes_riesz_loss():
     a = rng.binomial(1, pi)
     df = pd.DataFrame({"a": a.astype(float), "x": x.astype(float)})
     booster = RieszBooster(estimand=rieszboost.ATE(), n_estimators=20).fit(df)
-    d = diagnose(booster=booster, X=df)
+    d = diagnose(estimator=booster, X=df)
     assert d.riesz_loss is not None
     assert d.n == n
 

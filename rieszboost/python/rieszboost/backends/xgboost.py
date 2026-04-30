@@ -91,11 +91,17 @@ def _make_metric(
 
 @dataclass
 class XGBoostBackend:
-    """Default backend. Construct with hessian_floor / gradient_only knobs;
-    other xgboost passthrough params (max_depth, reg_lambda, subsample) come
-    via `hyperparams` from RieszBooster.
+    """Default backend. Construct with the boosting-loop knobs (n_estimators,
+    learning_rate, early_stopping_rounds) plus stability tweaks
+    (hessian_floor, gradient_only). Other xgboost passthrough params
+    (max_depth, reg_lambda, subsample) come via ``hyperparams`` from
+    RieszBooster.
     """
 
+    n_estimators: int = 200
+    learning_rate: float = 0.05
+    early_stopping_rounds: int | None = None
+    validation_fraction: float = 0.0
     hessian_floor: float = 2.0
     gradient_only: bool = False
 
@@ -105,10 +111,7 @@ class XGBoostBackend:
         aug_valid: AugmentedDataset | None,
         loss: LossSpec,
         *,
-        n_estimators: int,
-        learning_rate: float,
         base_score: float,
-        early_stopping_rounds: int | None,
         random_state: int,
         hyperparams: dict[str, Any],
     ) -> FitResult:
@@ -119,7 +122,7 @@ class XGBoostBackend:
         dtrain = xgb.DMatrix(aug_train.features)
 
         params = {
-            "learning_rate": learning_rate,
+            "learning_rate": self.learning_rate,
             "base_score": base_score,
             "seed": random_state,
             "disable_default_eval_metric": 1,
@@ -134,7 +137,7 @@ class XGBoostBackend:
             custom_metric = _make_metric(
                 aug_valid.a, aug_valid.b, aug_valid.n_rows, loss
             )
-        elif early_stopping_rounds is not None:
+        elif self.early_stopping_rounds is not None:
             raise ValueError(
                 "early_stopping_rounds was set but no validation data was "
                 "provided. Pass `validation_fraction>0` or `eval_set=...` "
@@ -144,7 +147,7 @@ class XGBoostBackend:
         booster = xgb.train(
             params,
             dtrain,
-            num_boost_round=n_estimators,
+            num_boost_round=self.n_estimators,
             obj=_make_objective(
                 aug_train.a, aug_train.b, loss,
                 hessian_floor=self.hessian_floor,
@@ -152,7 +155,7 @@ class XGBoostBackend:
             ),
             evals=evals,
             custom_metric=custom_metric,
-            early_stopping_rounds=early_stopping_rounds,
+            early_stopping_rounds=self.early_stopping_rounds,
             verbose_eval=False,
         )
         best_iteration = getattr(booster, "best_iteration", None)

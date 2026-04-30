@@ -26,11 +26,13 @@ def test_sklearn_backend_with_decision_tree():
     df, pi = _df_pi(2000, seed=0)
     booster = RieszBooster(
         estimand=rieszboost.ATE(),
-        backend=SklearnBackend(lambda: DecisionTreeRegressor(max_depth=3, random_state=0)),
-        n_estimators=400,
-        early_stopping_rounds=20,
-        validation_fraction=0.2,
-        learning_rate=0.05,
+        backend=SklearnBackend(
+            lambda: DecisionTreeRegressor(max_depth=3, random_state=0),
+            n_estimators=400,
+            learning_rate=0.05,
+            early_stopping_rounds=20,
+            validation_fraction=0.2,
+        ),
     ).fit(df)
     assert booster.best_iteration_ is not None
     a = df["a"].values
