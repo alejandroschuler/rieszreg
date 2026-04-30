@@ -4,9 +4,9 @@ title: "scikit-learn integration"
 
 {{< include _setup.qmd >}}
 
-`RieszBooster`, `KernelRieszRegressor`, `ForestRieszRegressor`, and `AugForestRieszRegressor` are all subclasses of `rieszreg.RieszEstimator`, which inherits from `sklearn.base.BaseEstimator`. They compose with `cross_val_predict`, `GridSearchCV`, `Pipeline`, `clone`, and the rest of `sklearn.model_selection`.
+`RieszBooster`, `KernelRieszRegressor`, `ForestRieszRegressor`, `AugForestRieszRegressor`, and `RieszNet` are all subclasses of `rieszreg.RieszEstimator`, which inherits from `sklearn.base.BaseEstimator`. They compose with `cross_val_predict`, `GridSearchCV`, `Pipeline`, `clone`, and the rest of `sklearn.model_selection`.
 
-This page uses `RieszBooster`; the same patterns work for the kernel and forest convenience classes with backend-specific hyperparameters.
+This page uses `RieszBooster`; the same patterns work for the kernel, forest, and neural convenience classes with backend-specific hyperparameters.
 
 ## Cross-fitting
 

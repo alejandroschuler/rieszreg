@@ -191,7 +191,7 @@ with tempfile.TemporaryDirectory() as td:
 
 Per-backend binary payload, plus `metadata.json` containing:
 
-- `predictor_kind`: `"xgboost"` (rieszboost), `"sklearn"` (rieszboost), `"krrr"` (krrr), `"forestriesz"` (forestriesz moment-style), or `"aug-forestriesz"` (forestriesz augmentation-style).
+- `predictor_kind`: `"xgboost"` (rieszboost), `"sklearn"` (rieszboost), `"krrr"` (krrr), `"forestriesz"` (forestriesz moment-style), `"aug-forestriesz"` (forestriesz augmentation-style), or `"riesznet"` (riesznet).
 - `loss`: `{"type": "SquaredLoss" | "KLLoss" | …, "args": {…}}` — re-instantiated with `loss_from_spec(...)` on load.
 - `estimand_factory_spec`: `{"factory": "ATE" | …}` for built-ins, `null` for custom.
 - `feature_keys` / `extra_keys`, `base_score`, `best_iteration`, `best_score`.

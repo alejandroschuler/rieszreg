@@ -11,6 +11,7 @@ The Bregman-Riesz loss generalizes the squared Riesz loss via a strictly convex 
 - **Kernel ridge** ([`krrr`](backends/kernel.qmd)): `SquaredLoss` only — non-quadratic losses need a Newton iteration on the kernel system.
 - **Random forest, augmentation-style** (`forestriesz.AugForestRieszRegressor`): all four losses. Tree structure from the squared MSE criterion, then a per-leaf Newton replaces each leaf's stored θ with the Bregman optimum.
 - **Random forest, moment-style** (`forestriesz.ForestRieszRegressor`): `SquaredLoss` only — the moment-style per-leaf gradient is not exposed by the loss API.
+- **Neural network** ([`riesznet`](backends/neural.qmd)): all four losses. Each loss's per-row Bregman form is implemented in autograd-friendly torch ops; gradient parity vs the analytic loss is checked at 1e-8.
 
 Pass an unsupported loss and the backend raises at fit time with a clear error.
 :::
