@@ -49,18 +49,48 @@ use_python_rieszboost <- function(python = NULL, required = TRUE) {
 #' @param hessian_floor Lower bound on per-row Hessian (default 2.0).
 #' @param gradient_only If TRUE, disable second-order Newton step (Friedman 2001 mode).
 #' @export
-XGBoostBackend <- function(hessian_floor = 2.0, gradient_only = FALSE) {
-  .module()$XGBoostBackend(hessian_floor = hessian_floor,
-                           gradient_only = gradient_only)
+XGBoostBackend <- function(n_estimators = 200L,
+                           learning_rate = 0.05,
+                           early_stopping_rounds = NULL,
+                           validation_fraction = 0.0,
+                           hessian_floor = 2.0,
+                           gradient_only = FALSE) {
+  args <- list(
+    n_estimators = as.integer(n_estimators),
+    learning_rate = learning_rate,
+    validation_fraction = validation_fraction,
+    hessian_floor = hessian_floor,
+    gradient_only = gradient_only
+  )
+  if (!is.null(early_stopping_rounds)) {
+    args$early_stopping_rounds <- as.integer(early_stopping_rounds)
+  }
+  do.call(.module()$XGBoostBackend, args)
 }
 
 #' Slow general backend: Friedman gradient boosting with arbitrary
 #' sklearn-compatible base learner.
 #' @param base_learner_factory A zero-arg R function (or Python callable)
 #'   returning a fresh sklearn estimator each round.
+#' @param n_estimators,learning_rate,early_stopping_rounds,validation_fraction
+#'   Boost-loop knobs. Live on the backend (rieszreg DESIGN §A.2 — the
+#'   agnostic-orchestrator rule).
 #' @export
-SklearnBackend <- function(base_learner_factory) {
-  .module()$SklearnBackend(base_learner_factory = base_learner_factory)
+SklearnBackend <- function(base_learner_factory,
+                           n_estimators = 200L,
+                           learning_rate = 0.05,
+                           early_stopping_rounds = NULL,
+                           validation_fraction = 0.0) {
+  args <- list(
+    base_learner_factory = base_learner_factory,
+    n_estimators = as.integer(n_estimators),
+    learning_rate = learning_rate,
+    validation_fraction = validation_fraction
+  )
+  if (!is.null(early_stopping_rounds)) {
+    args$early_stopping_rounds <- as.integer(early_stopping_rounds)
+  }
+  do.call(.module()$SklearnBackend, args)
 }
 
 
