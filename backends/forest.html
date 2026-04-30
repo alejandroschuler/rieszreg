@@ -421,11 +421,8 @@ window.Quarto = {
       </div>
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../sklearn-integration.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">scikit-learn integration</span></a>
-  </div>
-</li>
+ <span class="menu-text">sklearn-integration.qmd</span>
+  </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../diagnostics.html" class="sidebar-item-text sidebar-link">
@@ -1105,23 +1102,23 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
   background-color: var(--sklearn-color-fitted-level-3);
 }
 </style><div id="sk-container-id-1" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>AugForestRieszRegressor(estimand=Estimand(feature_keys=('a', 'x'),
-                                          m=&lt;function TSM.&lt;locals&gt;.m at 0x14c62b7e0&gt;,
+                                          m=&lt;function TSM.&lt;locals&gt;.m at 0x7f1d7f49b920&gt;,
                                           extra_keys=(),
                                           name='TSM(level=1)',
                                           factory_spec={'args': {'covariates': ['x'],
                                                                  'level': 1,
                                                                  'treatment': 'a'},
                                                         'factory': 'TSM'}),
-                        loss=&lt;rieszreg.losses.kl.KLLoss object at 0x14b4234d0&gt;,
+                        loss=&lt;rieszreg.losses.kl.KLLoss object at 0x7f1d7f49e350&gt;,
                         min_samples_leaf=10, n_estimators=200)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-1" type="checkbox" checked=""><label for="sk-estimator-id-1" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>AugForestRieszRegressor</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>AugForestRieszRegressor(estimand=Estimand(feature_keys=('a', 'x'),
-                                          m=&lt;function TSM.&lt;locals&gt;.m at 0x14c62b7e0&gt;,
+                                          m=&lt;function TSM.&lt;locals&gt;.m at 0x7f1d7f49b920&gt;,
                                           extra_keys=(),
                                           name='TSM(level=1)',
                                           factory_spec={'args': {'covariates': ['x'],
                                                                  'level': 1,
                                                                  'treatment': 'a'},
                                                         'factory': 'TSM'}),
-                        loss=&lt;rieszreg.losses.kl.KLLoss object at 0x14b4234d0&gt;,
+                        loss=&lt;rieszreg.losses.kl.KLLoss object at 0x7f1d7f49e350&gt;,
                         min_samples_leaf=10, n_estimators=200)</pre></div> </div></div></div></div>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>alpha_hat <span class="op">=</span> est.predict(df_tsm)</span>
@@ -1577,14 +1574,14 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
   background-color: var(--sklearn-color-fitted-level-3);
 }
 </style><div id="sk-container-id-2" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>ForestRieszRegressor(estimand=Estimand(feature_keys=('a', 'x'),
-                                       m=&lt;function ATE.&lt;locals&gt;.m at 0x14ecd7560&gt;,
+                                       m=&lt;function ATE.&lt;locals&gt;.m at 0x7f1d7f1aae80&gt;,
                                        extra_keys=(),
                                        name='ATE',
                                        factory_spec={'args': {'covariates': ['x'],
                                                               'treatment': 'a'},
                                                      'factory': 'ATE'}),
                      min_samples_leaf=10, n_estimators=500)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-2" type="checkbox" checked=""><label for="sk-estimator-id-2" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>ForestRieszRegressor</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>ForestRieszRegressor(estimand=Estimand(feature_keys=('a', 'x'),
-                                       m=&lt;function ATE.&lt;locals&gt;.m at 0x14ecd7560&gt;,
+                                       m=&lt;function ATE.&lt;locals&gt;.m at 0x7f1d7f1aae80&gt;,
                                        extra_keys=(),
                                        name='ATE',
                                        factory_spec={'args': {'covariates': ['x'],
@@ -2067,7 +2064,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
   background-color: var(--sklearn-color-fitted-level-3);
 }
 </style><div id="sk-container-id-3" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>AugForestRieszRegressor(estimand=Estimand(feature_keys=('a', 'x'),
-                                          m=&lt;function AdditiveShift.&lt;locals&gt;.m at 0x14c621300&gt;,
+                                          m=&lt;function AdditiveShift.&lt;locals&gt;.m at 0x7f1d7deff4c0&gt;,
                                           extra_keys=(),
                                           name='AdditiveShift(delta=0.5)',
                                           factory_spec={'args': {'covariates': ['x'],
@@ -2075,7 +2072,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                                                  'treatment': 'a'},
                                                         'factory': 'AdditiveShift'}),
                         min_samples_leaf=10, n_estimators=500)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-3" type="checkbox" checked=""><label for="sk-estimator-id-3" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>AugForestRieszRegressor</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>AugForestRieszRegressor(estimand=Estimand(feature_keys=('a', 'x'),
-                                          m=&lt;function AdditiveShift.&lt;locals&gt;.m at 0x14c621300&gt;,
+                                          m=&lt;function AdditiveShift.&lt;locals&gt;.m at 0x7f1d7deff4c0&gt;,
                                           extra_keys=(),
                                           name='AdditiveShift(delta=0.5)',
                                           factory_spec={'args': {'covariates': ['x'],
@@ -2527,7 +2524,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
   background-color: var(--sklearn-color-fitted-level-3);
 }
 </style><div id="sk-container-id-4" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>ForestRieszRegressor(estimand=Estimand(feature_keys=('a', 'x'),
-                                       m=&lt;function TSM.&lt;locals&gt;.m at 0x14c6428e0&gt;,
+                                       m=&lt;function TSM.&lt;locals&gt;.m at 0x7f1d7deee160&gt;,
                                        extra_keys=(),
                                        name='TSM(level=1)',
                                        factory_spec={'args': {'covariates': ['x'],
@@ -2535,7 +2532,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                                               'treatment': 'a'},
                                                      'factory': 'TSM'}),
                      honest=True, inference=True, n_estimators=500)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-4" type="checkbox" checked=""><label for="sk-estimator-id-4" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>ForestRieszRegressor</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>ForestRieszRegressor(estimand=Estimand(feature_keys=('a', 'x'),
-                                       m=&lt;function TSM.&lt;locals&gt;.m at 0x14c6428e0&gt;,
+                                       m=&lt;function TSM.&lt;locals&gt;.m at 0x7f1d7deee160&gt;,
                                        extra_keys=(),
                                        name='TSM(level=1)',
                                        factory_spec={'args': {'covariates': ['x'],
@@ -2658,14 +2655,14 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 <span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    pred_loaded <span class="op">=</span> loaded.predict(df)</span>
 <span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"max abs diff after round-trip: </span><span class="sc">{</span>np<span class="sc">.</span><span class="bu">max</span>(np.<span class="bu">abs</span>(pred_loaded <span class="op">-</span> alpha_hat))<span class="sc">:.2e}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>max abs diff after round-trip: 5.33e-15</code></pre>
+<pre><code>max abs diff after round-trip: 3.55e-15</code></pre>
 </div>
 </div>
 <p>For built-in estimands the sieve is auto-resolved on load. For custom sieves, repass the callables: <code>ForestRieszRegressor.load(path, riesz_feature_fns=my_basis)</code>.</p>
 </section>
 <section id="sklearn-integration" class="level2">
 <h2 class="anchored" data-anchor-id="sklearn-integration">Sklearn integration</h2>
-<p><code>ForestRieszRegressor</code> is a <code>BaseEstimator</code>, so it composes with <code>clone</code>, <code>GridSearchCV</code>, <code>cross_val_predict</code>, <code>Pipeline</code>. See <a href="../sklearn-integration.html">sklearn integration</a>.</p>
+<p><code>ForestRieszRegressor</code> is a <code>BaseEstimator</code>, so it composes with <code>clone</code>, <code>GridSearchCV</code>, <code>cross_val_predict</code>, <code>Pipeline</code>. See <a href="../tuning-cross-fitting.html">Tuning and Cross-Fitting</a>.</p>
 </section>
 <section id="when-the-constant-basis-raises" class="level2">
 <h2 class="anchored" data-anchor-id="when-the-constant-basis-raises">When the constant basis raises</h2>
