@@ -86,7 +86,7 @@ alpha_hat <- rn$predict(df)
 
 ## Quickstart — TSM with KL loss
 
-KLLoss is the right choice for density-ratio targets like TSM. The exp link keeps predictions positive without any post-hoc clipping.
+KLLoss is matched to density-ratio estimands like TSM. The exp link keeps predictions positive without any post-hoc clipping.
 
 ```{python}
 from riesznet import KLLoss, RieszNet, TSM

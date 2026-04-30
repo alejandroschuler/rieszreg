@@ -67,7 +67,7 @@ class BernoulliLoss:
             raise ValueError(
                 "BernoulliLoss requires all m-coefficients to be non-negative "
                 "(equivalently: all augmented `b` values <= 0). Same constraint "
-                "as KLLoss — it's specific to density-ratio-style targets."
+                "as KLLoss — it's specific to density-ratio-style estimands."
             )
 
     def to_spec(self) -> dict:

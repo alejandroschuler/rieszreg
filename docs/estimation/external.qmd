@@ -73,7 +73,7 @@ pi_hat   <- pmin(pmax(1 / pmax(alpha_hat[df$a == 1], 1e-6), 1e-6), 1 - 1e-6)
 
 ## EconML
 
-EconML's [`automatic_debiased_ml`](https://econml.azurewebsites.net/) module ships its own Riesz fitter (`RieszNet`, `ForestRiesz`). The `forestriesz` package in this family wraps EconML's `BaseGRF` directly, so a forest-style fit is already EconML-native. For an estimand EconML doesn't ship (e.g. a custom continuous-shift functional defined via the `LinearForm` tracer), use `rieszreg` end-to-end with the [custom-code](custom.qmd) DML/TMLE pattern — the integration there is full transparency, not chaining.
+EconML's [`automatic_debiased_ml`](https://econml.azurewebsites.net/) module ships its own Riesz learner (`RieszNet`, `ForestRiesz`). The `forestriesz` package in this family wraps EconML's `BaseGRF` directly, so a forest-style fit is already EconML-native. For an estimand EconML doesn't ship (e.g. a custom continuous-shift functional defined via the `LinearForm` tracer), use `rieszreg` end-to-end with the [custom-code](custom.qmd) DML/TMLE pattern — the integration there is full transparency, not chaining.
 
 ## tlverse (R)
 

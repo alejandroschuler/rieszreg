@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 96" role="img" aria-label="RieszReg">
+  <title>RieszReg</title>
+  <!-- multiple parallel level sets of φ at different values -->
+  <g stroke="#94a3b8" stroke-width="1.25" stroke-linecap="round" fill="none">
+    <line x1="12" y1="22" x2="84" y2="36"/>
+    <line x1="12" y1="32" x2="84" y2="46"/>
+    <line x1="12" y1="42" x2="84" y2="56"/>
+    <line x1="12" y1="52" x2="84" y2="66"/>
+    <line x1="12" y1="62" x2="84" y2="76"/>
+  </g>
+  <!-- gradient arrow normal to the foliation, with α -->
+  <g stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <line x1="42" y1="69" x2="52" y2="18"/>
+    <polyline points="46,20 52,18 56,24"/>
+  </g>
+  <text x="56" y="20" font-family="'Latin Modern Math','STIX Two Math','Cambria Math',Georgia,serif"
+        font-style="italic" font-size="20" fill="#1a1a1a">α</text>
+  <!-- wordmark in serif, mathematician's notebook feel -->
+  <text x="100" y="64"
+        font-family="Georgia,'Iowan Old Style','Palatino Linotype',Palatino,'Times New Roman',serif"
+        font-size="42" font-weight="700" letter-spacing="-0.5" fill="#1a1a1a">RieszReg</text>
+</svg>

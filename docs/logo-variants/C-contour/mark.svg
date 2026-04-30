@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="RieszReg">
+  <title>RieszReg</title>
+  <g stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" fill="none">
+    <line x1="8" y1="20" x2="88" y2="36"/>
+    <line x1="8" y1="32" x2="88" y2="48"/>
+    <line x1="8" y1="44" x2="88" y2="60"/>
+    <line x1="8" y1="56" x2="88" y2="72"/>
+    <line x1="8" y1="68" x2="88" y2="84"/>
+  </g>
+  <g stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <line x1="42" y1="76" x2="54" y2="14"/>
+    <polyline points="48,17 54,14 58,21"/>
+  </g>
+  <text x="58" y="20" font-family="'Latin Modern Math','STIX Two Math','Cambria Math',Georgia,serif"
+        font-style="italic" font-size="22" fill="#1a1a1a">α</text>
+</svg>

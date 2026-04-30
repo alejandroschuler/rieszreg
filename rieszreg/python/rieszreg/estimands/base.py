@@ -83,7 +83,7 @@ def _rebuild_custom_estimand(feature_keys, m, extra_keys, name):
 
 
 def ATE(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Estimand:
-    """Average treatment effect: m(z, α) = α(1, x) − α(0, x)."""
+    """Average treatment effect: m(α)(z) = α(1, x) − α(0, x)."""
     cov = tuple(covariates)
 
     def m(z, alpha):
@@ -97,7 +97,7 @@ def ATE(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Estimand:
 
 
 def ATT(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Estimand:
-    """ATT *partial parameter* m(z, α) = a · (α(1, x) − α(0, x)).
+    """ATT *partial-estimand* surface: m(α)(z) = a · (α(1, x) − α(0, x)).
 
     Full ATT divides by P(A=1) and is not a Riesz functional — combine
     α̂_partial with a delta-method EIF (Hubbard 2011) downstream.
@@ -118,7 +118,7 @@ def ATT(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Estimand:
 
 
 def TSM(level, treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Estimand:
-    """Treatment-specific mean: m(z, α) = α(level, x)."""
+    """Treatment-specific mean: m(α)(z) = α(level, x)."""
     cov = tuple(covariates)
 
     def m(z, alpha):
@@ -134,7 +134,7 @@ def TSM(level, treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Esti
 def AdditiveShift(
     delta: float, treatment: str = "a", covariates: Sequence[str] = ("x",)
 ) -> Estimand:
-    """Additive shift effect: m(z, α) = α(a + δ, x) − α(a, x)."""
+    """Additive shift effect: m(α)(z) = α(a + δ, x) − α(a, x)."""
     cov = tuple(covariates)
 
     def m(z, alpha):
@@ -156,7 +156,7 @@ def LocalShift(
     treatment: str = "a",
     covariates: Sequence[str] = ("x",),
 ) -> Estimand:
-    """LASE *partial parameter* m(z, α) = 1(a < threshold) · (α(a+δ, x) − α(a, x)).
+    """LASE *partial-estimand* surface: m(α)(z) = 1(a < threshold) · (α(a+δ, x) − α(a, x)).
 
     Full LASE divides by P(A < threshold) and is not a Riesz functional.
     """
@@ -187,7 +187,7 @@ def StochasticIntervention(
     """Stochastic intervention via Monte Carlo samples per row.
 
     Each row carries `z[samples_key]` = sequence of treatment values drawn
-    from the intervention density. `m(z, α) = (1/K) Σ_k α(a' = sample_k, x)`.
+    from the intervention density. `m(α)(z) = (1/K) Σ_k α(a' = sample_k, x)`.
 
     Pre-sample once before fit:
 

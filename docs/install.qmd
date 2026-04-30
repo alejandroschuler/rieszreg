@@ -4,7 +4,7 @@ title: "Install"
 
 {{< include _setup.qmd >}}
 
-`rieszreg` holds the shared abstractions; pick at least one implementation package for an actual fitter.
+`rieszreg` holds the shared abstractions; pick at least one implementation package for an actual learner.
 
 ## Python
 
@@ -35,22 +35,42 @@ Linux distributions (and GitHub Actions ubuntu-latest) ship `libgomp1`; no extra
 
 ### Verify
 
+The chunks below import each package and exercise its public entry point. Failure to import or instantiate raises immediately.
+
 ::: {.panel-tabset group="lang"}
 
 ## Python
 
 ```{python}
-import rieszreg, rieszboost
-from rieszreg import ATE, RieszEstimator
+import importlib.metadata as _md
+import rieszreg, rieszboost, krrr, forestriesz, riesznet
+from rieszreg import ATE, BoundedSquaredLoss, SquaredLoss
 from rieszboost import RieszBooster
-print("rieszreg", rieszreg.__version__ if hasattr(rieszreg, '__version__') else "OK")
-print("rieszboost", "OK")
+from krrr import KernelRieszRegressor
+from forestriesz import ForestRieszRegressor
+from riesznet import RieszNet
+
+# Construct one estimator from each backend to confirm wiring.
+estimand = ATE()
+RieszBooster(estimand=estimand, n_estimators=5)
+KernelRieszRegressor(estimand=estimand, lambda_grid=(1e-2,))
+ForestRieszRegressor(estimand=estimand, n_estimators=10)
+RieszNet(estimand=estimand, hidden_sizes=(8,), epochs=1)
+
+for pkg in ("rieszreg", "rieszboost", "krrr", "forestriesz", "riesznet"):
+    print(f"{pkg:<12} {_md.version(pkg)}")
 ```
 
 ## R
 
 ```{r}
-print("rieszboost (R wrapper) OK")
+# `_setup.qmd` already dev-loaded rieszreg + rieszboost. Reference the
+# exported symbols and instantiate one R6 wrapper to confirm reticulate
+# is wired through to the Python venv.
+stopifnot(is.function(ATE), R6::is.R6Class(RieszBooster))
+booster <- RieszBooster$new(estimand = ATE(), n_estimators = 5L)
+cat("rieszreg + rieszboost R wrappers OK (",
+    class(booster)[1], ")\n", sep = "")
 ```
 
 :::
@@ -63,7 +83,12 @@ First-time setup:
 
 1. Install the R package dependencies:
    ```r
-   install.packages(c("reticulate", "R6"))
+   install.packages(c(
+     "reticulate", "R6",          # required: Python bridge + R6 classes
+     "pkgload",                   # required for `pkgload::load_all` below
+     "rsample", "xgboost"         # optional: used in the landing-page R quickstart
+                                  # and the estimation/custom-code page
+   ))
    ```
 2. Load the R wrappers. For this guide we dev-load them from the source tree:
    ```r
@@ -86,6 +111,7 @@ The R API exposes every built-in estimand, every loss, and the full estimator in
 ## Tests
 
 ```{.bash}
+.venv/bin/python -m pytest rieszreg/python/tests -v
 .venv/bin/python -m pytest rieszboost/python/tests -v
 .venv/bin/python -m pytest krrr/python/tests -v
 .venv/bin/python -m pytest forestriesz/python/tests -v

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RieszReg banner — round 4 (warm + curve lift)</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --muted: #64748b;
+    --rule: #e2e8f0;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --shadow: 0 1px 2px rgba(15,23,42,.06), 0 1px 1px rgba(15,23,42,.04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 24px 64px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.5;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; font-weight: 600; }
+  .lede { color: var(--muted); margin: 0 0 32px; max-width: 70ch; font-size: 14px; }
+  .round-heading {
+    max-width: 1240px;
+    margin: 0 auto 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .variant {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px 24px;
+    margin: 0 auto 20px;
+    max-width: 1240px;
+  }
+  .variant h2 {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 4px;
+  }
+  .variant .feel { font-size: 14px; color: var(--ink); margin: 0 0 18px; }
+  .row {
+    display: flex;
+    align-items: flex-end;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .cell .label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .frame {
+    background: white;
+    border: 1px dashed var(--rule);
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .frame img { display: block; }
+  .banner-native img { width: 1200px; height: 280px; }
+  .banner-half img   { width: 600px;  height: 140px; }
+  .mark-96 img { width: 96px; height: 96px; }
+  .mark-48 img { width: 48px; height: 48px; }
+  .mark-32 img { width: 32px; height: 32px; }
+  .mark-16 img { width: 16px; height: 16px; }
+
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin: 14px 0 8px;
+  }
+  .archive {
+    max-width: 1240px;
+    margin: 32px auto 0;
+    padding: 16px 24px;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .archive a { color: var(--muted); margin-right: 14px; }
+</style>
+</head>
+<body>
+
+<h1>RieszReg banner — round 4</h1>
+<p class="lede">Locked the warm palette (variant I). Lifted the curve so it
+exits the right edge near 60% from the bottom — fills the empty top-right
+space. Three mark options below at varying outline + α weight; pick one.</p>
+
+<div class="round-heading">round 4 — locked palette, curve lifted, three mark weights</div>
+
+<div class="variant">
+  <h2>Banner — warm palette, curve lifted</h2>
+  <p class="feel">Same composition as I-warm but the second cubic now ascends sharply after x≈600 to exit at y≈112 (60% from bottom). Scatter dots redistributed to follow.</p>
+  <div class="section-title">Banner</div>
+  <div class="row">
+    <div class="cell"><div class="frame banner-native"><img src="K-warm/banner.svg" alt=""></div><div class="label">1200 × 280</div></div>
+    <div class="cell"><div class="frame banner-half"><img src="K-warm/banner.svg" alt=""></div><div class="label">half</div></div>
+  </div>
+</div>
+
+<div class="variant">
+  <h2>Mark option 1 — subtle</h2>
+  <p class="feel">Box stroke 4.5 (was 3.5). α at font-weight 700, no extra stroke. Smallest bump.</p>
+  <div class="row">
+    <div class="cell"><div class="frame mark-96"><img src="K-warm/mark-1-subtle.svg" alt=""></div><div class="label">96</div></div>
+    <div class="cell"><div class="frame mark-48"><img src="K-warm/mark-1-subtle.svg" alt=""></div><div class="label">48</div></div>
+    <div class="cell"><div class="frame mark-32"><img src="K-warm/mark-1-subtle.svg" alt=""></div><div class="label">32</div></div>
+    <div class="cell"><div class="frame mark-16"><img src="K-warm/mark-1-subtle.svg" alt=""></div><div class="label">16</div></div>
+  </div>
+</div>
+
+<div class="variant">
+  <h2>Mark option 2 — medium</h2>
+  <p class="feel">Box stroke 5.5. α at font-weight 700 + 1px self-color stroke (paint-order: stroke fill) to thicken without changing the glyph shape.</p>
+  <div class="row">
+    <div class="cell"><div class="frame mark-96"><img src="K-warm/mark-2-medium.svg" alt=""></div><div class="label">96</div></div>
+    <div class="cell"><div class="frame mark-48"><img src="K-warm/mark-2-medium.svg" alt=""></div><div class="label">48</div></div>
+    <div class="cell"><div class="frame mark-32"><img src="K-warm/mark-2-medium.svg" alt=""></div><div class="label">32</div></div>
+    <div class="cell"><div class="frame mark-16"><img src="K-warm/mark-2-medium.svg" alt=""></div><div class="label">16</div></div>
+  </div>
+</div>
+
+<div class="variant">
+  <h2>Mark option 3 — heavy</h2>
+  <p class="feel">Box stroke 6.5. α at font-weight 700 + 2px self-color stroke. Most assertive; reads strongest at favicon scale.</p>
+  <div class="row">
+    <div class="cell"><div class="frame mark-96"><img src="K-warm/mark-3-heavy.svg" alt=""></div><div class="label">96</div></div>
+    <div class="cell"><div class="frame mark-48"><img src="K-warm/mark-3-heavy.svg" alt=""></div><div class="label">48</div></div>
+    <div class="cell"><div class="frame mark-32"><img src="K-warm/mark-3-heavy.svg" alt=""></div><div class="label">32</div></div>
+    <div class="cell"><div class="frame mark-16"><img src="K-warm/mark-3-heavy.svg" alt=""></div><div class="label">16</div></div>
+  </div>
+</div>
+
+<div class="archive">
+  Earlier rounds still on disk:
+  Round 1 →
+  <a href="A-flat/banner.svg">A-flat</a>
+  <a href="B-container/banner.svg">B-container</a>
+  <a href="C-contour/banner.svg">C-contour</a>
+  <a href="D-letterform/banner.svg">D-letterform</a>
+  &nbsp;·&nbsp;
+  Round 2 →
+  <a href="E-marker/banner.svg">E-marker</a>
+  <a href="F-stacked/banner.svg">F-stacked</a>
+  <a href="G-side/banner.svg">G-side</a>
+  &nbsp;·&nbsp;
+  Round 3 →
+  <a href="H-cool/banner.svg">H-cool</a>
+  <a href="I-warm/banner.svg">I-warm</a>
+  <a href="J-forest/banner.svg">J-forest</a>
+</div>
+
+</body>
+</html>

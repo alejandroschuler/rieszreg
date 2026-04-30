@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 96" role="img" aria-label="RieszReg">
+  <title>RieszReg</title>
+  <!-- flat-fill rounded square container -->
+  <rect x="10" y="10" width="76" height="76" rx="16" fill="#0d9488"/>
+  <!-- white level-set line + amber gradient arrow with α -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.75">
+    <line x1="22" y1="34" x2="74" y2="60" stroke="#ffffff"/>
+    <line x1="48" y1="47" x2="62" y2="22" stroke="#fbbf24"/>
+    <polyline points="56,21 62,22 62,29" stroke="#fbbf24"/>
+  </g>
+  <text x="64" y="29" font-family="'Latin Modern Math','STIX Two Math','Cambria Math',Georgia,serif"
+        font-style="italic" font-size="16" fill="#fbbf24">α</text>
+  <!-- wordmark -->
+  <text x="100" y="64"
+        font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',system-ui,sans-serif"
+        font-size="42" font-weight="600" letter-spacing="-0.5" fill="#0f172a">RieszReg</text>
+</svg>

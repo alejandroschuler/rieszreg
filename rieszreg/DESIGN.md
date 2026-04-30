@@ -14,6 +14,8 @@ Tags used in Part B:
 - **[your package]** — implement in the learner package.
 - **[design rule]** — a philosophy the learner package must follow.
 
+**Notation.** Math, prose, and code-naming conventions for every package, doc, docstring, comment, and example in the family live in the [`rieszreg-notation` skill](../.claude/skills/rieszreg-notation/SKILL.md). Headlines: outcome regression is $\mu$, estimand is $\psi$, functional notation is $m(\mu)(Z)$, data tuple is $Z = (A, X)$, algorithms are called "learners". Read the skill before introducing or revising any of these.
+
 ---
 
 # Part A — Meta-package design: `rieszreg`

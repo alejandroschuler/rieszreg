@@ -1,30 +1,30 @@
 ---
 title: "RieszReg"
-subtitle: "Riesz regression for semiparametric inference"
+title-block-style: none
 engine: knitr
 ---
 
 {{< include _setup.qmd >}}
 
-![](banner.svg){.hero-banner fig-alt="RieszReg banner"}
+![](banner.svg){.hero-banner fig-alt="RieszReg — Riesz regression for semiparametric inference"}
 
-`rieszreg` estimates the Riesz representer $\alpha_0$ of a linear functional $\theta(P) = \mathbb{E}[m(Z, g_0)]$ — the building block of one-step, TMLE, and DML inference — with gradient boosting ([`rieszboost`](backends/boosting.qmd)), kernel ridge ([`krrr`](backends/kernel.qmd)), random forests ([`forestriesz`](backends/forest.qmd)), or neural nets ([`riesznet`](backends/neural.qmd)). It ships built-in factories for ATE, ATT, TSM, additive shifts, local shifts, stochastic interventions, and arbitrary user-defined estimands; the squared Riesz loss plus the wider Bregman family (KL, Bernoulli, bounded squared); and sklearn-native tuning, model selection, and cross-fitting. Python and R, with bitwise-identical predictions on the same input.
+`rieszreg` estimates the Riesz representer $\alpha$ of a linear estimand $\psi = \mathbb{E}[m(\mu)(Z)]$ — the building block of one-step, TMLE, and DML inference — with gradient boosting ([`rieszboost`](backends/boosting.qmd)), kernel ridge ([`krrr`](backends/kernel.qmd)), random forests ([`forestriesz`](backends/forest.qmd)), or neural nets ([`riesznet`](backends/neural.qmd)). It ships built-in factories for ATE, ATT, TSM, additive shifts, local shifts, stochastic interventions, and arbitrary user-defined estimands; the squared Riesz loss plus the wider Bregman family (KL, Bernoulli, bounded squared); and sklearn-native tuning, model selection, and cross-fitting. Python and R, with bitwise-identical predictions on the same input.
 
 ## What is Riesz regression?
 
-You want to estimate some causal or structural target — say, the average treatment effect $\theta = \mathbb{E}[g_0(1, X) - g_0(0, X)]$, where $g_0(a, x) = \mathbb{E}[Y \mid A = a, X = x]$. A regression $\hat g$ for $g_0$ is biased; the standard fix uses a weight. For ATE, the weight is the inverse-propensity score:
+You want to estimate some causal or structural estimand — say, the average treatment effect $\psi = \mathbb{E}[\mu(1, X) - \mu(0, X)]$, where $\mu(a, x) = \mathbb{E}[Y \mid A = a, X = x]$. A regression $\hat\mu$ for $\mu$ is biased; the standard fix uses a weight. For ATE, the weight is the inverse-propensity score:
 
 $$
-\alpha_0(a, x) \;=\; \frac{a}{\pi(x)} - \frac{1-a}{1-\pi(x)},
+\alpha(a, x) \;=\; \frac{a}{\pi(x)} - \frac{1-a}{1-\pi(x)},
 $$
 
-so a weighting estimator averages $\alpha_0(A_i, X_i) \cdot Y_i$ over the sample. Modern efficient estimators (one-step, TMLE, DML) instead use $\alpha_0$ to *correct* the plug-in regression:
+so a weighting estimator averages $\alpha(A_i, X_i) \cdot Y_i$ over the sample. Modern efficient estimators (one-step, TMLE, DML) instead use the "weights" $\alpha$ to *correct* the plug-in regression:
 
 $$
-\hat\theta \;=\; \frac{1}{n} \sum_i \big[\, m(Z_i, \hat g) + \hat\alpha(Z_i)\,(Y_i - \hat g(Z_i)) \,\big].
+\hat\psi \;=\; \frac{1}{n} \sum_i \Big[\, m(\hat\mu)(Z_i) \;+\; \hat\alpha(Z_i)\,\big(Y_i - \hat\mu(Z_i)\big) \,\Big].
 $$
 
-Under the [Riesz representation theorem](intro.qmd), $\alpha_0$ exists for every linear functional of $g_0$, and Chernozhukov et al. ([arXiv:2104.14737](https://arxiv.org/abs/2104.14737)) showed it is the unique minimizer of a regression loss. `rieszreg` learns $\alpha_0$ directly from data: no propensity model, no truncation, no density derivatives. The same machinery handles continuous shifts, stochastic interventions, and any custom $m$ a user can write down — for which closed-form weights typically involve density derivatives that nobody wants to estimate.
+Under the [Riesz representation theorem](intro.qmd), similar weights exist for many different estimands. `rieszreg` learns these weights directly from data: no propensity model, no truncation, etc. The same machinery handles continuous shifts, stochastic interventions, and many custom estimands a user can write down — for which closed-form weights could otherwise involve tricky or slow density estimates.
 
 For the longer derivation and a survey of the closed-form weights for each built-in estimand, see [What is Riesz regression?](intro.qmd). A general-audience introduction to representers is in [Williams, Hines & Rudolph (2025), *Riesz representers for the rest of us*](https://arxiv.org/abs/2507.19413).
 
@@ -40,8 +40,7 @@ Fit a Riesz representer for ATE on a synthetic binary-treatment dataset, select 
 #| code-fold: true
 #| code-summary: "Simulate"
 import os
-os.environ.setdefault("OMP_NUM_THREADS", "1")
-os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.update({"OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"})
 import numpy as np
 import pandas as pd
 
@@ -56,11 +55,7 @@ df = pd.DataFrame({"a": a.astype(float), "x": x, "y": y})
 true_alpha = a / pi - (1 - a) / (1 - pi)
 ```
 
-We have a data frame `df` with treatment `a`, covariate `x`, outcome `y`, and we know the closed-form $\alpha_0$ to score against.
-
-### Custom loss: bounded squared
-
-`BoundedSquaredLoss(lo, hi)` is squared-loss in $\alpha$-space with a sigmoid-scaled link that keeps $\hat\alpha$ in $(\text{lo}, \text{hi})$. Use it when you have a prior bound on the IPW magnitudes (e.g. you'd truncate propensities at $\varepsilon = 0.02$, which caps $|\alpha_0|$ at $1/\varepsilon = 50$).
+We start with a data frame `df` with treatment `a`, covariate `x`, outcome `y`. In this case, since this is simulated data, we know the true Riesz representer $\alpha_0$ to evaluate against later.
 
 ```{python}
 import torch
@@ -82,24 +77,20 @@ net   = RieszNet(
 )
 ```
 
-### Cross-validated 2-learner selection
-
-`.score(X)` returns the canonical squared Riesz loss (negated, so higher is better — sklearn convention). `cross_val_score` ranks the two learners on the same CV split.
+Wrap the candidates in a `Pipeline` and let `GridSearchCV` pick the winner via inner CV; nest that selector inside `cross_val_predict` so each outer fold runs its own inner model selection on the training portion only. The result `alpha_hat` is out-of-fold — every row was predicted by a model fit without seeing it.
 
 ```{python}
-from sklearn.model_selection import cross_val_score, cross_val_predict, KFold
+from sklearn.model_selection import GridSearchCV, KFold, cross_val_predict
+from sklearn.pipeline import Pipeline
 
 cv = KFold(n_splits=5, shuffle=True, random_state=0)
-s_boost = cross_val_score(boost, df, cv=cv).mean()
-s_net   = cross_val_score(net,   df, cv=cv).mean()
-print(f"RieszBooster CV score = {s_boost:+.4f}")
-print(f"RieszNet     CV score = {s_net:+.4f}")
-
-best = boost if s_boost >= s_net else net
-alpha_hat = cross_val_predict(best, df, cv=cv)
+selector = GridSearchCV(
+    Pipeline([("riesz", boost)]),
+    param_grid=[{"riesz": [boost, net]}],
+    cv=3, refit=True,
+)
+alpha_hat = cross_val_predict(selector, df, cv=cv)
 ```
-
-`alpha_hat` is out-of-fold — every row was predicted by a model that did not see it during training, the property a one-step / DML / TMLE plug-in needs.
 
 ### Sanity check
 
@@ -148,27 +139,108 @@ print(f"95% CI = [{ci[0]:.3f}, {ci[1]:.3f}]")
 ## R
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Load riesznet R wrapper"
+.project_root <- Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd())
+suppressMessages(pkgload::load_all(
+  file.path(.project_root, "../riesznet/r/riesznet"), quiet = TRUE))
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Simulate"
 set.seed(0)
 n     <- 2000
 x     <- runif(n)
 prop  <- 1 / (1 + exp(-(-0.02 * x - x^2 + 4 * log(x + 0.3) + 1.5)))
 a     <- rbinom(n, 1, prop)
-mu    <- 5 * x + 9 * x * a + 5 * sin(x * pi) + 25 * (a - 2)
-y     <- mu + rnorm(n, 0, 1)
+mu_dgp <- 5 * x + 9 * x * a + 5 * sin(x * pi) + 25 * (a - 2)
+y     <- mu_dgp + rnorm(n, 0, 1)
 df    <- data.frame(a = as.numeric(a), x = x, y = y)
-
-booster <- RieszBooster$new(
-  estimand = ATE(treatment = "a", covariates = "x"),
-  loss = BoundedSquaredLoss(lo = -50, hi = 50),
-  n_estimators = 200L, learning_rate = 0.05, max_depth = 3L
-)
-booster$fit(df)
-alpha_hat <- booster$predict(df)
-cat(sprintf("min alpha_hat = %.3f, max alpha_hat = %.3f\n",
-            min(alpha_hat), max(alpha_hat)))
+true_alpha <- a / prop - (1 - a) / (1 - prop)
 ```
 
-The full DML pipeline (cross-fit α̂ + cross-fit μ̂ + Wald CI) is in [Estimation → custom code](estimation/custom.qmd), with the same tabset.
+```{r}
+estimand <- ATE(treatment = "a", covariates = "x")
+loss     <- BoundedSquaredLoss(lo = -50, hi = 50)
+make_boost <- function() RieszBooster$new(
+  estimand = estimand, loss = loss,
+  n_estimators = 200L, learning_rate = 0.05, max_depth = 3L
+)
+make_net <- function() RieszNet$new(
+  estimand = estimand, loss = loss,
+  hidden_sizes = c(32L, 32L), epochs = 60L, learning_rate = 0.01
+)
+```
+
+Use [`rsample`](https://rsample.tidymodels.org/) (tidymodels) for fold splits, and a small loop for the nested cross-fit + per-fold model selection. Each outer fold runs its own inner-CV winner pick on its training portion only.
+
+```{r}
+suppressPackageStartupMessages(library(rsample))
+
+cv_outer <- vfold_cv(df, v = 5)
+alpha_hat <- numeric(nrow(df))
+for (split in cv_outer$splits) {
+  tr <- analysis(split); te <- assessment(split); te_idx <- complement(split)
+  cv_inner <- vfold_cv(tr, v = 3)
+  inner_score <- function(make) mean(vapply(cv_inner$splits, function(s) {
+    m <- make(); m$fit(analysis(s)); m$score(assessment(s))
+  }, numeric(1)))
+  best_make <- if (inner_score(make_boost) >= inner_score(make_net)) make_boost else make_net
+  best <- best_make(); best$fit(tr)
+  alpha_hat[te_idx] <- best$predict(te)
+}
+```
+
+Sanity check $\hat\alpha$ against the closed-form $\alpha_0$:
+
+```{r}
+#| echo: false
+#| fig-cap: "Out-of-fold $\\hat\\alpha$ vs the closed-form $\\alpha_0$ (R)."
+lim <- max(abs(c(true_alpha, alpha_hat)))
+plot(true_alpha, alpha_hat, pch = 16, cex = 0.4, col = adjustcolor("black", 0.4),
+     xlim = c(-lim, lim), ylim = c(-lim, lim),
+     xlab = expression(alpha[0]~"(closed-form)"),
+     ylab = expression(hat(alpha)~"(cross-fit)"))
+abline(0, 1, lty = 2)
+```
+
+Cross-fit outcome regression $\hat\mu$ via xgboost, then assemble the DML estimate and Wald CI:
+
+```{r}
+#| code-fold: true
+#| code-summary: "Cross-fit outcome regression"
+suppressPackageStartupMessages(library(xgboost))
+
+xgb_params <- list(objective = "reg:squarederror", eta = 0.05,
+                   max_depth = 3, lambda = 1, verbosity = 0)
+mu_oof <- numeric(nrow(df))
+for (split in cv_outer$splits) {
+  tr <- analysis(split); te <- assessment(split); te_idx <- complement(split)
+  bst <- xgb.train(
+    params = xgb_params,
+    data = xgb.DMatrix(as.matrix(tr[, c("a", "x")]), label = tr$y),
+    nrounds = 300
+  )
+  mu_oof[te_idx] <- predict(bst, as.matrix(te[, c("a", "x")]))
+}
+mu_full <- xgb.train(
+  params = xgb_params,
+  data = xgb.DMatrix(as.matrix(df[, c("a", "x")]), label = df$y),
+  nrounds = 300
+)
+mu1 <- predict(mu_full, cbind(a = 1, as.matrix(df[, "x", drop = FALSE])))
+mu0 <- predict(mu_full, cbind(a = 0, as.matrix(df[, "x", drop = FALSE])))
+```
+
+```{r}
+eif <- (mu1 - mu0) + alpha_hat * (df$y - mu_oof)
+psi <- mean(eif)
+se  <- sqrt(var(eif) / length(eif))
+ci  <- c(psi - 1.96 * se, psi + 1.96 * se)
+cat(sprintf("psi_ATE = %.3f\nSE      = %.3f\n95%% CI  = [%.3f, %.3f]\n",
+            psi, se, ci[1], ci[2]))
+```
 
 :::
 

@@ -2,7 +2,7 @@
 title: "Estimation"
 ---
 
-A cross-fit Riesz representer $\hat\alpha$ is the input to one-step, DML, and TMLE estimators of the target functional $\theta$. Pair it with a cross-fit outcome regression $\hat\mu$ and the influence function gives a $\sqrt n$-consistent, asymptotically normal estimator with a Wald CI.
+A cross-fit Riesz representer $\hat\alpha$ is the input to one-step, DML, and TMLE estimators of the estimand $\psi$. Pair it with a cross-fit outcome regression $\hat\mu$ and the influence function gives a $\sqrt n$-consistent, asymptotically normal estimator with a Wald CI.
 
 Two routes are documented here:
 

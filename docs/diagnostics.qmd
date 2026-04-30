@@ -94,7 +94,7 @@ The summary has three parts.
 **Warnings.** Two automatic checks:
 
 1. *"X% of rows have $|\hat\alpha| >$ threshold — possible near-positivity violation."* Either the data has genuine near-positivity (truncate `extreme_threshold` and report the loss of overlap), or the estimator is over-fitting (tune as below).
-2. *"max $|\hat\alpha|$ is >10× the 99th percentile — likely a single extrapolation outlier."* The fitter found a region with no nearby training data. Tighten model complexity, increase regularization, or stop earlier.
+2. *"max $|\hat\alpha|$ is >10× the 99th percentile — likely a single extrapolation outlier."* The learner found a region with no nearby training data. Tighten model complexity, increase regularization, or stop earlier.
 
 ## A tuned fit
 

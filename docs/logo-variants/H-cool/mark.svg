@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="RieszReg">
+  <title>RieszReg</title>
+  <rect x="8" y="8" width="80" height="80" rx="10" fill="none" stroke="#14b8a6" stroke-width="3.5"/>
+  <text x="48" y="66" text-anchor="middle"
+        font-family="'Latin Modern Math','STIX Two Math','Cambria Math',Georgia,serif"
+        font-style="italic" font-size="64" fill="#14b8a6">α</text>
+</svg>

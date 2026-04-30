@@ -2,15 +2,25 @@
 pre code { font-size: 0.85em; }
 table { font-size: 0.92em; }
 
-/* Navbar logo: keep it sklearn-sized. */
-.navbar-brand img { height: 28px; max-height: 28px; }
+/* Navbar logo. */
+.navbar-brand img { height: 44px; max-height: 44px; }
 
 /* Hero banner: only rendered on the landing page (the .hero-banner class
-   is applied via index.qmd). Sit above the title block, full content width. */
+   is applied via index.qmd). Full content width. */
 img.hero-banner {
   display: block;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto 1.25rem auto;
   border-radius: 8px;
+}
+
+/* Suppress Quarto's auto title block on pages that use the hero banner.
+   `title-block-style: none` in the YAML is ignored by Quarto 1.6.40, so we
+   hide the header in CSS, scoped to pages whose body contains the hero
+   banner. !important guards against the theme's higher-specificity rules. */
+body:has(img.hero-banner) header#title-block-header,
+body:has(img.hero-banner) #title-block-header,
+body:has(img.hero-banner) .quarto-title-block {
+  display: none !important;
 }

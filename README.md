@@ -1,6 +1,6 @@
 # RieszReg
 
-A family of packages for **Riesz regression** — direct estimation of the Riesz representer α₀ of a linear functional θ(P) = E[m(Z, g₀)], the building block of one-step, TMLE, and DML estimators in semiparametric inference.
+A family of packages for **Riesz regression** — direct estimation of the Riesz representer α of a linear estimand ψ = E[m(μ)(Z)], the building block of one-step, TMLE, and DML estimators in semiparametric inference.
 
 ## Layout
 
@@ -9,16 +9,16 @@ RieszReg/
 ├── rieszreg/         # meta-package: shared abstractions
 │   ├── python/       # Estimand, LossSpec, augmentation, RieszEstimator, testing utilities
 │   └── r/rieszreg/   # shared R6 base class, estimand + loss factories
-├── rieszboost/       # gradient-boosting backends (Lee & Schuler 2025)
+├── rieszboost/       # gradient-boosting learner (Lee & Schuler 2025)
 │   ├── python/       # XGBoostBackend, SklearnBackend, RieszBooster
 │   └── r/rieszboost/ # R6 wrapper subclassing rieszreg::RieszEstimatorR6
-├── krrr/             # kernel ridge backend (Singh 2021)
+├── krrr/             # kernel ridge learner (Singh 2021)
 │   ├── python/       # KernelRidgeBackend, kernels, solvers, KernelRieszRegressor
 │   └── r/krrr/       # R6 wrapper subclassing rieszreg::RieszEstimatorR6
-├── forestriesz/      # random-forest backend (Chernozhukov et al. ICML 2022)
+├── forestriesz/      # random-forest learner (Chernozhukov et al. ICML 2022)
 │   ├── python/       # ForestRieszBackend, ForestRieszRegressor, default_riesz_features
 │   └── r/forestriesz/ # R6 wrapper subclassing rieszreg::RieszEstimatorR6
-├── riesznet/         # neural-network backend (Chernozhukov et al. 2021, Riesz-rep only)
+├── riesznet/         # neural-network learner (Chernozhukov et al. 2021, Riesz-rep only)
 │   ├── python/       # TorchBackend, TorchPredictor, RieszNet
 │   └── r/riesznet/   # R6 wrapper subclassing rieszreg::RieszEstimatorR6
 ├── docs/             # unified Quarto user guide (sklearn-style sectioning)

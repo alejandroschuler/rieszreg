@@ -43,7 +43,7 @@ def test_att_treated_two_rows_untreated_one_row():
     """ATT (partial) skips counterfactuals for untreated subjects.
 
     Untreated rows have `a_i = 0`, so the multiplicative factor in
-    `m(z, α) = a · (α(1, x) − α(0, x))` evaluates to 0 before the tracer
+    `m(α)(z) = a · (α(1, x) − α(0, x))` evaluates to 0 before the tracer
     sees any α(...) call. The tracer returns [] for those subjects, and
     only the original observation row gets emitted by build_augmented.
 
