@@ -9,6 +9,7 @@ title: "References"
 
 ## Riesz regression background
 
+- **Williams, Hines & Rudolph (2025).** *Riesz representers for the rest of us.* [arXiv:2507.19413](https://arxiv.org/abs/2507.19413) — accessible introduction to the Riesz representation theorem and its role in semiparametric efficient estimation.
 - **Chernozhukov, Newey, Quintas-Martínez & Syrgkanis (2021).** *RieszNet and ForestRiesz: Automatic Debiased Machine Learning of Causal and Structural Effects.* [arXiv:2110.03031](https://arxiv.org/abs/2110.03031) — neural-net and random-forest Riesz regression.
 - **Chernozhukov, Newey, Quintas-Martínez & Syrgkanis (2022).** *Automatic Debiased Machine Learning via Riesz Regression.* [arXiv:2104.14737](https://arxiv.org/abs/2104.14737) — origin of the squared Riesz loss.
 

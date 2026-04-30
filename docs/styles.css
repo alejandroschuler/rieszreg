@@ -1,3 +1,16 @@
 /* Tighten code blocks and tables. */
 pre code { font-size: 0.85em; }
 table { font-size: 0.92em; }
+
+/* Navbar logo: keep it sklearn-sized. */
+.navbar-brand img { height: 28px; max-height: 28px; }
+
+/* Hero banner: only rendered on the landing page (the .hero-banner class
+   is applied via index.qmd). Sit above the title block, full content width. */
+img.hero-banner {
+  display: block;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto 1.25rem auto;
+  border-radius: 8px;
+}

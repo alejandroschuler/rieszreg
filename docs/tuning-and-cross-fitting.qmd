@@ -4,9 +4,9 @@ title: "Tuning and Cross-Fitting"
 
 {{< include _setup.qmd >}}
 
-`RieszBooster`, `KernelRieszRegressor`, `ForestRieszRegressor`, `AugForestRieszRegressor`, and `RieszNet` are all subclasses of `rieszreg.RieszEstimator`, which inherits from `sklearn.base.BaseEstimator`. They compose with `cross_val_predict`, `GridSearchCV`, `Pipeline`, `clone`, and the rest of `sklearn.model_selection`.
+`RieszBooster`, `KernelRieszRegressor`, `ForestRieszRegressor`, `AugForestRieszRegressor`, and `RieszNet` are all subclasses of `rieszreg.RieszEstimator`, which inherits from `sklearn.base.BaseEstimator`. Every sklearn tool that works on an estimator works here: `cross_val_predict`, `GridSearchCV`, `Pipeline`, `clone`, `set_params`, `RandomizedSearchCV`, `HalvingGridSearchCV`, and the rest of `sklearn.model_selection`. Hyperparameter grids, cross-fitting folds, multi-loss comparison, and multi-learner selection all use the same API.
 
-This page uses `RieszBooster`; the same patterns work for the kernel, forest, and neural convenience classes with backend-specific hyperparameters.
+This page uses `RieszBooster` for the single-learner sections and adds `RieszNet` and `ForestRieszRegressor` to the ensemble-selection example. The same patterns work for `KernelRieszRegressor` and `AugForestRieszRegressor` with backend-specific hyperparameters.
 
 ## Cross-fitting
 
@@ -137,10 +137,10 @@ Two estimators trained with different losses produce α̂ in the same units (a p
 
 ```{python}
 from sklearn.model_selection import cross_val_score
-from rieszreg import KLLoss, SquaredLoss, riesz_scorer
+from rieszreg import BoundedSquaredLoss, SquaredLoss, riesz_scorer
 
-booster_kl = RieszBooster(
-    estimand=ATE(), loss=KLLoss(max_eta=50),
+booster_bd = RieszBooster(
+    estimand=ATE(), loss=BoundedSquaredLoss(lo=-50.0, hi=50.0),
     n_estimators=300, learning_rate=0.05, max_depth=3,
 )
 booster_sq = RieszBooster(
@@ -148,10 +148,10 @@ booster_sq = RieszBooster(
     n_estimators=300, learning_rate=0.05, max_depth=3,
 )
 
-s_kl = cross_val_score(booster_kl, df, cv=3)
+s_bd = cross_val_score(booster_bd, df, cv=3)
 s_sq = cross_val_score(booster_sq, df, cv=3)
-print(f"KL-trained:      mean score = {s_kl.mean():.4f}")
-print(f"squared-trained: mean score = {s_sq.mean():.4f}")
+print(f"BoundedSquared-trained: mean score = {s_bd.mean():.4f}")
+print(f"squared-trained:        mean score = {s_sq.mean():.4f}")
 ```
 
 A single `GridSearchCV` can sweep across losses too. Each candidate is fit with its own loss; all candidates are ranked on the squared yardstick.
@@ -162,7 +162,7 @@ grid = GridSearchCV(
         estimand=ATE(),
         n_estimators=300, learning_rate=0.05, max_depth=3,
     ),
-    param_grid={"loss": [KLLoss(max_eta=50), SquaredLoss()]},
+    param_grid={"loss": [BoundedSquaredLoss(lo=-50.0, hi=50.0), SquaredLoss()]},
     cv=3,
     n_jobs=1,
 ).fit(df)
@@ -174,11 +174,11 @@ print(f"best score: {grid.best_score_:.4f}")
 To rank with a different yardstick, build it with `riesz_scorer`:
 
 ```{python}
-scorer = riesz_scorer(loss=KLLoss(max_eta=50))
-s_kl_yard = cross_val_score(booster_kl, df, cv=3, scoring=scorer)
+scorer = riesz_scorer(loss=BoundedSquaredLoss(lo=-50.0, hi=50.0))
+s_bd_yard = cross_val_score(booster_bd, df, cv=3, scoring=scorer)
 s_sq_yard = cross_val_score(booster_sq, df, cv=3, scoring=scorer)
-print(f"KL-trained on KL yardstick:      {s_kl_yard.mean():.4f}")
-print(f"squared-trained on KL yardstick: {s_sq_yard.mean():.4f}")
+print(f"BoundedSquared-trained on bounded yardstick: {s_bd_yard.mean():.4f}")
+print(f"squared-trained on bounded yardstick:        {s_sq_yard.mean():.4f}")
 ```
 
 The yardstick must accept the α the estimator predicts. The squared yardstick has unrestricted α-domain, so it works for any learner; the others have restrictions:
@@ -192,6 +192,91 @@ The yardstick must accept the α the estimator predicts. The squared yardstick h
 
 Pick a yardstick whose domain accepts every candidate's α. `SquaredLoss` is always safe.
 
+## Cross-fit ensemble selection
+
+Going further than two losses on one backend: the pattern below selects among five learner configurations — two boosting depths, two neural-net architectures, and a forest — using inner 3-fold CV inside each of five outer cross-fitting folds. The inner CV runs entirely on the training portion of each outer fold, so the model selection criterion never sees the held-out data that `cross_val_predict` predicts.
+
+This uses the `Pipeline` idiom for cross-estimator-type selection: wrap the estimator in a single-step `Pipeline` named `"riesz"`, then pass a list of fully configured instances as the value for that key. `GridSearchCV` calls `pipe.set_params(riesz=candidate)`, fits, and scores each one on the canonical squared yardstick.
+
+```{python}
+from sklearn.pipeline import Pipeline
+from riesznet import RieszNet
+from forestriesz import ForestRieszRegressor
+
+estimand = ATE()
+
+# Five fully configured candidates across three learner families.
+candidates = [
+    # Boosting — depth 3, early stopping
+    RieszBooster(
+        estimand=estimand,
+        n_estimators=2000,
+        max_depth=3,
+        early_stopping_rounds=20,
+        validation_fraction=0.2,
+        learning_rate=0.05,
+    ),
+    # Boosting — depth 5, early stopping
+    RieszBooster(
+        estimand=estimand,
+        n_estimators=2000,
+        max_depth=5,
+        early_stopping_rounds=20,
+        validation_fraction=0.2,
+        learning_rate=0.05,
+    ),
+    # Neural net — small MLP with early stopping
+    RieszNet(
+        estimand=estimand,
+        hidden_sizes=(64, 64),
+        epochs=500,
+        early_stopping_rounds=20,
+        validation_fraction=0.2,
+    ),
+    # Neural net — larger MLP with early stopping
+    RieszNet(
+        estimand=estimand,
+        hidden_sizes=(128, 64),
+        epochs=500,
+        early_stopping_rounds=20,
+        validation_fraction=0.2,
+    ),
+    # Forest Riesz
+    ForestRieszRegressor(
+        estimand=estimand,
+        n_estimators=500,
+        min_samples_leaf=10,
+        random_state=0,
+    ),
+]
+
+# Single-step Pipeline so GridSearchCV can swap in any candidate as the step.
+pipe = Pipeline([("riesz", candidates[0])])
+
+# Inner CV: 3 folds, selects the best learner+config from the five candidates.
+cv_inner = GridSearchCV(
+    pipe,
+    param_grid=[{"riesz": [c]} for c in candidates],
+    cv=3,
+    n_jobs=1,
+    refit=True,
+)
+
+# Outer CV: 5 cross-fitting folds. Each fold:
+#   1. Fits cv_inner on 4/5 of the data (inner CV happens here, on that 4/5).
+#   2. Predicts the held-out 1/5 using the winner from step 1.
+# The inner model selection never touches the held-out slice.
+alpha_oof = cross_val_predict(cv_inner, df, cv=5)
+print(f"out-of-fold alpha shape: {alpha_oof.shape}")
+print(f"first 5 values:          {alpha_oof[:5]}")
+```
+
+The call to `cross_val_predict` is identical to the single-learner case. The only addition is the `Pipeline` wrapper and the list-valued `param_grid` entry — everything else is standard sklearn.
+
+::: {.callout-note title="R users"}
+The `Pipeline` + `GridSearchCV` pattern is Python-only. From R, call into Python via `reticulate` using the same code: pass an R data frame with `reticulate::r_to_py(df)` and read the result back with `as.numeric(reticulate::py_to_r(...))`.
+:::
+
 ## Other sklearn integrations
 
 Every Riesz estimator exposes the standard `BaseEstimator` interface:
@@ -204,4 +289,4 @@ Every Riesz estimator exposes the standard `BaseEstimator` interface:
 ## See also
 
 - [`rieszboost/examples/lee_schuler/binary_dgp.py`](https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/lee_schuler/binary_dgp.py) builds an EEE estimator using `cross_val_predict` to produce out-of-fold $\hat\alpha$.
-- [Boosting](backends/boosting.qmd), [kernel](backends/kernel.qmd), and [forest](backends/forest.qmd) backend pages cover backend-specific tuning grids.
+- [Boosting](backends/boosting.qmd), [kernel](backends/kernel.qmd), [forest](backends/forest.qmd), and [neural](backends/neural.qmd) backend pages cover backend-specific tuning grids.

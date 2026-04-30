@@ -258,7 +258,7 @@ For built-in estimands the sieve is auto-resolved on load. For custom sieves, re
 
 ## Sklearn integration
 
-`ForestRieszRegressor` is a `BaseEstimator`, so it composes with `clone`, `GridSearchCV`, `cross_val_predict`, `Pipeline`. See [Tuning and Cross-Fitting](../tuning-cross-fitting.qmd).
+`ForestRieszRegressor` is a `BaseEstimator`, so it composes with `clone`, `GridSearchCV`, `cross_val_predict`, `Pipeline`. See [Tuning and Cross-Fitting](../tuning-and-cross-fitting.qmd).
 
 ## When the constant basis raises
 
