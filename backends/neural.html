@@ -68,7 +68,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../developing.html" rel="next">
+<link href="../estimation/index.html" rel="next">
 <link href="../backends/forest.html" rel="prev">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -314,6 +314,10 @@ window.Quarto = {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../logo.svg" alt="" class="navbar-logo light-content">
+    <img src="../logo.svg" alt="" class="navbar-logo dark-content">
+    </a>
     <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">RieszReg</span>
     </a>
@@ -359,21 +363,27 @@ window.Quarto = {
  <span class="menu-text">RieszReg</span></a>
   </div>
 </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">What is Riesz Regression?</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../install.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Install</span></a>
+  </div>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">Concepts</span></a>
+ <span class="menu-text">Usage</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../intro.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">What’s a Riesz representer, and why fit one?</span></a>
-  </div>
-</li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../estimands.html" class="sidebar-item-text sidebar-link">
@@ -386,43 +396,12 @@ window.Quarto = {
  <span class="menu-text">Losses</span></a>
   </div>
 </li>
-      </ul>
-  </li>
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">Get started</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../install.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Install</span></a>
+  <a href="../tuning-and-cross-fitting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tuning and Cross-Fitting</span></a>
   </div>
 </li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../quickstart.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Quickstart — ATE in 30 lines</span></a>
-  </div>
-</li>
-      </ul>
-  </li>
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Usage</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
- <span class="menu-text">sklearn-integration.qmd</span>
-  </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../diagnostics.html" class="sidebar-item-text sidebar-link">
@@ -445,13 +424,13 @@ window.Quarto = {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
  <span class="menu-text">Backends</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../backends/index.html" class="sidebar-item-text sidebar-link">
@@ -480,6 +459,35 @@ window.Quarto = {
   <div class="sidebar-item-container"> 
   <a href="../backends/neural.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Neural-network backend (riesznet)</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Estimation</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../estimation/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Estimation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../estimation/custom.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Custom code: DML and TMLE</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../estimation/external.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">External packages: DoubleML, EconML, tlverse</span></a>
   </div>
 </li>
       </ul>
@@ -1000,7 +1008,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 }
 </style><div id="sk-container-id-1" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>RieszNet(early_stopping_rounds=30, epochs=400,
          estimand=Estimand(feature_keys=('a', 'x'),
-                           m=&lt;function ATE.&lt;locals&gt;.m at 0x16ffae700&gt;,
+                           m=&lt;function ATE.&lt;locals&gt;.m at 0x137926ac0&gt;,
                            extra_keys=(),
                            name='ATE',
                            factory_spec={'args': {'covariates': ['x'],
@@ -1008,7 +1016,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                          'factory': 'ATE'}),
          learning_rate=0.005, validation_fraction=0.2)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-1" type="checkbox" checked=""><label for="sk-estimator-id-1" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>RieszNet</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>RieszNet(early_stopping_rounds=30, epochs=400,
          estimand=Estimand(feature_keys=('a', 'x'),
-                           m=&lt;function ATE.&lt;locals&gt;.m at 0x16ffae700&gt;,
+                           m=&lt;function ATE.&lt;locals&gt;.m at 0x137926ac0&gt;,
                            extra_keys=(),
                            name='ATE',
                            factory_spec={'args': {'covariates': ['x'],
@@ -1495,7 +1503,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 }
 </style><div id="sk-container-id-2" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>RieszNet(early_stopping_rounds=30, epochs=400,
          estimand=Estimand(feature_keys=('a', 'x'),
-                           m=&lt;function TSM.&lt;locals&gt;.m at 0x17010c360&gt;,
+                           m=&lt;function TSM.&lt;locals&gt;.m at 0x137a40540&gt;,
                            extra_keys=(),
                            name='TSM(level=1)',
                            factory_spec={'args': {'covariates': ['x'],
@@ -1503,10 +1511,10 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                                   'treatment': 'a'},
                                          'factory': 'TSM'}),
          learning_rate=0.005,
-         loss=&lt;rieszreg.losses.kl.KLLoss object at 0x11f656f90&gt;,
+         loss=&lt;rieszreg.losses.kl.KLLoss object at 0x137836660&gt;,
          validation_fraction=0.2)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-2" type="checkbox" checked=""><label for="sk-estimator-id-2" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>RieszNet</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>RieszNet(early_stopping_rounds=30, epochs=400,
          estimand=Estimand(feature_keys=('a', 'x'),
-                           m=&lt;function TSM.&lt;locals&gt;.m at 0x17010c360&gt;,
+                           m=&lt;function TSM.&lt;locals&gt;.m at 0x137a40540&gt;,
                            extra_keys=(),
                            name='TSM(level=1)',
                            factory_spec={'args': {'covariates': ['x'],
@@ -1514,7 +1522,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                                   'treatment': 'a'},
                                          'factory': 'TSM'}),
          learning_rate=0.005,
-         loss=&lt;rieszreg.losses.kl.KLLoss object at 0x11f656f90&gt;,
+         loss=&lt;rieszreg.losses.kl.KLLoss object at 0x137836660&gt;,
          validation_fraction=0.2)</pre></div> </div></div></div></div>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>alpha_hat  <span class="op">=</span> rn.predict(df)</span>
@@ -1984,7 +1992,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
   /* fitted */
   background-color: var(--sklearn-color-fitted-level-3);
 }
-</style><div id="sk-container-id-3" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>RieszEstimator(backend=TorchBackend(module_factory=&lt;function my_factory at 0x1739e8cc0&gt;,
+</style><div id="sk-container-id-3" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>RieszEstimator(backend=TorchBackend(module_factory=&lt;function my_factory at 0x137a10ea0&gt;,
                                     optimizer_factory=functools.partial(&lt;class 'torch.optim.adamw.AdamW'&gt;, lr=0.0003, weight_decay=0.001),
                                     scheduler_factory=None,
                                     epochs=300,
@@ -1995,12 +2003,12 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                     early_stopping_rounds=30,
                                     validation_fraction=0.2),
                estimand=Estimand(feature_keys=('a', 'x'),
-                                 m=&lt;function ATE.&lt;locals&gt;.m at 0x1739ec9a0&gt;,
+                                 m=&lt;function ATE.&lt;locals&gt;.m at 0x1379fcb80&gt;,
                                  extra_keys=(),
                                  name='ATE',
                                  factory_spec={'args': {'covariates': ['x'],
                                                         'treatment': 'a'},
-                                               'factory': 'ATE'}))</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-3" type="checkbox" checked=""><label for="sk-estimator-id-3" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>RieszEstimator</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>RieszEstimator(backend=TorchBackend(module_factory=&lt;function my_factory at 0x1739e8cc0&gt;,
+                                               'factory': 'ATE'}))</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-3" type="checkbox" checked=""><label for="sk-estimator-id-3" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>RieszEstimator</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>RieszEstimator(backend=TorchBackend(module_factory=&lt;function my_factory at 0x137a10ea0&gt;,
                                     optimizer_factory=functools.partial(&lt;class 'torch.optim.adamw.AdamW'&gt;, lr=0.0003, weight_decay=0.001),
                                     scheduler_factory=None,
                                     epochs=300,
@@ -2011,7 +2019,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                     early_stopping_rounds=30,
                                     validation_fraction=0.2),
                estimand=Estimand(feature_keys=('a', 'x'),
-                                 m=&lt;function ATE.&lt;locals&gt;.m at 0x1739ec9a0&gt;,
+                                 m=&lt;function ATE.&lt;locals&gt;.m at 0x1379fcb80&gt;,
                                  extra_keys=(),
                                  name='ATE',
                                  factory_spec={'args': {'covariates': ['x'],
@@ -2198,7 +2206,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 </section>
 <section id="sklearn-integration" class="level2">
 <h2 class="anchored" data-anchor-id="sklearn-integration">Sklearn integration</h2>
-<p><code>RieszNet</code> is a <code>BaseEstimator</code>, so it composes with <code>clone</code>, <code>GridSearchCV</code>, <code>cross_val_predict</code>, <code>Pipeline</code>. See <a href="../sklearn-integration.qmd">sklearn integration</a>.</p>
+<p><code>RieszNet</code> is a <code>BaseEstimator</code>, so it composes with <code>clone</code>, <code>GridSearchCV</code>, <code>cross_val_predict</code>, <code>Pipeline</code>. See <a href="../tuning-and-cross-fitting.html">Tuning and cross-fitting</a>.</p>
 </section>
 <section id="loss-support" class="level2">
 <h2 class="anchored" data-anchor-id="loss-support">Loss support</h2>
@@ -2675,8 +2683,8 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../developing.html" class="pagination-link" aria-label="Developing">
-        <span class="nav-page-text">Developing</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../estimation/index.html" class="pagination-link" aria-label="Estimation">
+        <span class="nav-page-text">Estimation</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

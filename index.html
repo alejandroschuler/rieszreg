@@ -313,6 +313,10 @@ window.Quarto = {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
+    <a href="./index.html" class="navbar-brand navbar-brand-logo">
+    <img src="./logo.svg" alt="" class="navbar-logo light-content">
+    <img src="./logo.svg" alt="" class="navbar-logo dark-content">
+    </a>
     <a class="navbar-brand" href="./index.html">
     <span class="navbar-title">RieszReg</span>
     </a>
@@ -358,21 +362,27 @@ window.Quarto = {
  <span class="menu-text">RieszReg</span></a>
   </div>
 </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">What is Riesz Regression?</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./install.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Install</span></a>
+  </div>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">Concepts</span></a>
+ <span class="menu-text">Usage</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./intro.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">What’s a Riesz representer, and why fit one?</span></a>
-  </div>
-</li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./estimands.html" class="sidebar-item-text sidebar-link">
@@ -385,43 +395,12 @@ window.Quarto = {
  <span class="menu-text">Losses</span></a>
   </div>
 </li>
-      </ul>
-  </li>
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">Get started</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./install.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Install</span></a>
+  <a href="./tuning-and-cross-fitting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tuning and Cross-Fitting</span></a>
   </div>
 </li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./quickstart.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Quickstart — ATE in 30 lines</span></a>
-  </div>
-</li>
-      </ul>
-  </li>
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Usage</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
- <span class="menu-text">sklearn-integration.qmd</span>
-  </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./diagnostics.html" class="sidebar-item-text sidebar-link">
@@ -444,13 +423,13 @@ window.Quarto = {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
  <span class="menu-text">Backends</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./backends/index.html" class="sidebar-item-text sidebar-link">
@@ -483,6 +462,35 @@ window.Quarto = {
 </li>
       </ul>
   </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Estimation</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./estimation/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Estimation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./estimation/custom.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Custom code: DML and TMLE</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./estimation/external.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">External packages: DoubleML, EconML, tlverse</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./developing.html" class="sidebar-item-text sidebar-link">
@@ -505,8 +513,8 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#two-ways-to-compose" id="toc-two-ways-to-compose" class="nav-link active" data-scroll-target="#two-ways-to-compose">Two ways to compose</a></li>
-  <li><a href="#pages" id="toc-pages" class="nav-link" data-scroll-target="#pages">Pages</a></li>
+  <li><a href="#what-is-riesz-regression" id="toc-what-is-riesz-regression" class="nav-link active" data-scroll-target="#what-is-riesz-regression">What is Riesz regression?</a></li>
+  <li><a href="#quickstart" id="toc-quickstart" class="nav-link" data-scroll-target="#quickstart">Quickstart</a></li>
   </ul>
 </nav>
     </div>
@@ -534,40 +542,188 @@ window.Quarto = {
 </header>
 
 
-<p>The <code>rieszreg</code> family estimates the Riesz representer <span class="math inline">\(\alpha_0\)</span> of a linear functional <span class="math inline">\(\theta(P) = \mathbb{E}[m(Z, g_0)]\)</span>, the building block of one-step, TMLE, and DML estimators in semiparametric inference.</p>
-<p>The meta-package <code>rieszreg</code> holds the shared abstractions: <code>Estimand</code> factories, Bregman-Riesz <code>LossSpec</code>s, the augmentation engine, the <code>Backend</code> Protocol, and the sklearn-compatible <code>RieszEstimator</code> orchestrator. Implementation packages provide concrete backends:</p>
-<ul>
-<li><a href="./backends/boosting.html"><code>rieszboost</code></a> — gradient boosting (xgboost / sklearn) implementing <a href="https://arxiv.org/abs/2501.04871">Lee &amp; Schuler (arXiv:2501.04871)</a>.</li>
-<li><a href="./backends/kernel.html"><code>krrr</code></a> — closed-form kernel ridge regression following <a href="https://arxiv.org/abs/2102.11076">Singh (arXiv:2102.11076)</a>.</li>
-<li><a href="./backends/forest.html"><code>forestriesz</code></a> — random-forest moment estimation following <a href="https://proceedings.mlr.press/v162/chernozhukov22a/chernozhukov22a.pdf">Chernozhukov, Newey, Quintas-Martínez, Syrgkanis (ICML 2022)</a>, with honest-split confidence intervals.</li>
-<li><a href="./backends/neural.html"><code>riesznet</code></a> — neural-network estimation with PyTorch autograd, following <a href="https://arxiv.org/abs/2110.03031">Chernozhukov, Newey, Quintas-Martínez, Syrgkanis (arXiv:2110.03031)</a>. The convenience class covers MLPs; arbitrary <code>nn.Module</code> factories plug in directly.</li>
-</ul>
-<p>R and Python predictions are bitwise-identical on the same input. Most pages present every code example in both languages; pick a tab and your choice persists across the site.</p>
-<section id="two-ways-to-compose" class="level2">
-<h2 class="anchored" data-anchor-id="two-ways-to-compose">Two ways to compose</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Convenience class with sensible defaults baked in:</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszboost <span class="im">import</span> RieszBooster</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> ATE</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>booster <span class="op">=</span> RieszBooster(estimand<span class="op">=</span>ATE(), n_estimators<span class="op">=</span><span class="dv">200</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>booster.fit(X)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Or compose explicitly: pick any backend, pass it to RieszEstimator</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> RieszEstimator, ATE, SquaredLoss</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszboost.backends <span class="im">import</span> XGBoostBackend</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>est <span class="op">=</span> RieszEstimator(estimand<span class="op">=</span>ATE(), loss<span class="op">=</span>SquaredLoss(), backend<span class="op">=</span>XGBoostBackend())</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>est.fit(X)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Both routes are first-class. The convenience class is just <code>RieszEstimator</code> with the backend defaulted.</p>
+<p><img src="banner.svg" class="hero-banner img-fluid" alt="RieszReg banner"></p>
+<p><code>rieszreg</code> estimates the Riesz representer <span class="math inline">\(\alpha_0\)</span> of a linear functional <span class="math inline">\(\theta(P) = \mathbb{E}[m(Z, g_0)]\)</span> — the building block of one-step, TMLE, and DML inference — with gradient boosting (<a href="./backends/boosting.html"><code>rieszboost</code></a>), kernel ridge (<a href="./backends/kernel.html"><code>krrr</code></a>), random forests (<a href="./backends/forest.html"><code>forestriesz</code></a>), or neural nets (<a href="./backends/neural.html"><code>riesznet</code></a>). It ships built-in factories for ATE, ATT, TSM, additive shifts, local shifts, stochastic interventions, and arbitrary user-defined estimands; the squared Riesz loss plus the wider Bregman family (KL, Bernoulli, bounded squared); and sklearn-native tuning, model selection, and cross-fitting. Python and R, with bitwise-identical predictions on the same input.</p>
+<section id="what-is-riesz-regression" class="level2">
+<h2 class="anchored" data-anchor-id="what-is-riesz-regression">What is Riesz regression?</h2>
+<p>You want to estimate some causal or structural target — say, the average treatment effect <span class="math inline">\(\theta = \mathbb{E}[g_0(1, X) - g_0(0, X)]\)</span>, where <span class="math inline">\(g_0(a, x) = \mathbb{E}[Y \mid A = a, X = x]\)</span>. A regression <span class="math inline">\(\hat g\)</span> for <span class="math inline">\(g_0\)</span> is biased; the standard fix uses a weight. For ATE, the weight is the inverse-propensity score:</p>
+<p><span class="math display">\[
+\alpha_0(a, x) \;=\; \frac{a}{\pi(x)} - \frac{1-a}{1-\pi(x)},
+\]</span></p>
+<p>so a weighting estimator averages <span class="math inline">\(\alpha_0(A_i, X_i) \cdot Y_i\)</span> over the sample. Modern efficient estimators (one-step, TMLE, DML) instead use <span class="math inline">\(\alpha_0\)</span> to <em>correct</em> the plug-in regression:</p>
+<p><span class="math display">\[
+\hat\theta \;=\; \frac{1}{n} \sum_i \big[\, m(Z_i, \hat g) + \hat\alpha(Z_i)\,(Y_i - \hat g(Z_i)) \,\big].
+\]</span></p>
+<p>Under the <a href="./intro.html">Riesz representation theorem</a>, <span class="math inline">\(\alpha_0\)</span> exists for every linear functional of <span class="math inline">\(g_0\)</span>, and Chernozhukov et al.&nbsp;(<a href="https://arxiv.org/abs/2104.14737">arXiv:2104.14737</a>) showed it is the unique minimizer of a regression loss. <code>rieszreg</code> learns <span class="math inline">\(\alpha_0\)</span> directly from data: no propensity model, no truncation, no density derivatives. The same machinery handles continuous shifts, stochastic interventions, and any custom <span class="math inline">\(m\)</span> a user can write down — for which closed-form weights typically involve density derivatives that nobody wants to estimate.</p>
+<p>For the longer derivation and a survey of the closed-form weights for each built-in estimand, see <a href="./intro.html">What is Riesz regression?</a>. A general-audience introduction to representers is in <a href="https://arxiv.org/abs/2507.19413">Williams, Hines &amp; Rudolph (2025), <em>Riesz representers for the rest of us</em></a>.</p>
 </section>
-<section id="pages" class="level2">
-<h2 class="anchored" data-anchor-id="pages">Pages</h2>
-<ul>
-<li><strong>Concepts.</strong> <a href="./intro.html">What’s a Riesz representer</a> · <a href="./estimands.html">Estimands</a> · <a href="./losses.html">Losses</a>.</li>
-<li><strong>Get started.</strong> <a href="./install.html">Install</a> · <a href="./quickstart.html">Quickstart</a>.</li>
-<li><strong>Usage.</strong> <a href="./tuning-cross-fitting.html">Tuning and Cross-Fitting</a> · <a href="./diagnostics.html">Diagnostics</a> · <a href="./save-and-load.html">Save and load</a> · <a href="./r-interface.html">R interface</a>.</li>
-<li><strong>Backends.</strong> <a href="./backends/index.html">Overview</a> · <a href="./backends/boosting.html">Boosting</a> · <a href="./backends/kernel.html">Kernel</a> · <a href="./backends/forest.html">Forest</a> · <a href="./backends/neural.html">Neural</a>.</li>
-<li><a href="./developing.html">Developing</a>.</li>
-<li><a href="./references.html">References</a>.</li>
-</ul>
+<section id="quickstart" class="level2">
+<h2 class="anchored" data-anchor-id="quickstart">Quickstart</h2>
+<p>Fit a Riesz representer for ATE on a synthetic binary-treatment dataset, select between two backends with cross-validation, and use the cross-fit <span class="math inline">\(\hat\alpha\)</span> for a DML point estimate and Wald CI.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">R</a></li></ul>
+<div class="tab-content" data-group="lang">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<div class="cell">
+<details class="code-fold">
+<summary>Simulate</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>os.environ.setdefault(<span class="st">"OMP_NUM_THREADS"</span>, <span class="st">"1"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>'1'</code></pre>
+</div>
+<details class="code-fold">
+<summary>Simulate</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>os.environ.setdefault(<span class="st">"MKL_NUM_THREADS"</span>, <span class="st">"1"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>'1'</code></pre>
+</div>
+<details class="code-fold">
+<summary>Simulate</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">0</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>n <span class="op">=</span> <span class="dv">2000</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> rng.uniform(<span class="dv">0</span>, <span class="dv">1</span>, n)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>pi <span class="op">=</span> <span class="dv">1</span> <span class="op">/</span> (<span class="dv">1</span> <span class="op">+</span> np.exp(<span class="op">-</span>(<span class="op">-</span><span class="fl">0.02</span> <span class="op">*</span> x <span class="op">-</span> x<span class="op">**</span><span class="dv">2</span> <span class="op">+</span> <span class="dv">4</span> <span class="op">*</span> np.log(x <span class="op">+</span> <span class="fl">0.3</span>) <span class="op">+</span> <span class="fl">1.5</span>)))</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> rng.binomial(<span class="dv">1</span>, pi)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>mu <span class="op">=</span> <span class="dv">5</span> <span class="op">*</span> x <span class="op">+</span> <span class="dv">9</span> <span class="op">*</span> x <span class="op">*</span> a <span class="op">+</span> <span class="dv">5</span> <span class="op">*</span> np.sin(x <span class="op">*</span> np.pi) <span class="op">+</span> <span class="dv">25</span> <span class="op">*</span> (a <span class="op">-</span> <span class="dv">2</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> mu <span class="op">+</span> rng.normal(<span class="dv">0</span>, <span class="fl">1.0</span>, n)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({<span class="st">"a"</span>: a.astype(<span class="bu">float</span>), <span class="st">"x"</span>: x, <span class="st">"y"</span>: y})</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>true_alpha <span class="op">=</span> a <span class="op">/</span> pi <span class="op">-</span> (<span class="dv">1</span> <span class="op">-</span> a) <span class="op">/</span> (<span class="dv">1</span> <span class="op">-</span> pi)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>We have a data frame <code>df</code> with treatment <code>a</code>, covariate <code>x</code>, outcome <code>y</code>, and we know the closed-form <span class="math inline">\(\alpha_0\)</span> to score against.</p>
+<section id="custom-loss-bounded-squared" class="level3">
+<h3 class="anchored" data-anchor-id="custom-loss-bounded-squared">Custom loss: bounded squared</h3>
+<p><code>BoundedSquaredLoss(lo, hi)</code> is squared-loss in <span class="math inline">\(\alpha\)</span>-space with a sigmoid-scaled link that keeps <span class="math inline">\(\hat\alpha\)</span> in <span class="math inline">\((\text{lo}, \text{hi})\)</span>. Use it when you have a prior bound on the IPW magnitudes (e.g.&nbsp;you’d truncate propensities at <span class="math inline">\(\varepsilon = 0.02\)</span>, which caps <span class="math inline">\(|\alpha_0|\)</span> at <span class="math inline">\(1/\varepsilon = 50\)</span>).</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>torch.set_num_threads(<span class="dv">1</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> ATE, BoundedSquaredLoss</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszboost <span class="im">import</span> RieszBooster</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> riesznet <span class="im">import</span> RieszNet</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>estimand <span class="op">=</span> ATE(treatment<span class="op">=</span><span class="st">"a"</span>, covariates<span class="op">=</span>(<span class="st">"x"</span>,))</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>loss     <span class="op">=</span> BoundedSquaredLoss(lo<span class="op">=-</span><span class="fl">50.0</span>, hi<span class="op">=</span><span class="fl">50.0</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>boost <span class="op">=</span> RieszBooster(</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>estimand, loss<span class="op">=</span>loss,</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    n_estimators<span class="op">=</span><span class="dv">200</span>, learning_rate<span class="op">=</span><span class="fl">0.05</span>, max_depth<span class="op">=</span><span class="dv">3</span>,</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>net   <span class="op">=</span> RieszNet(</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>estimand, loss<span class="op">=</span>loss,</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    hidden_sizes<span class="op">=</span>(<span class="dv">32</span>, <span class="dv">32</span>), epochs<span class="op">=</span><span class="dv">60</span>, learning_rate<span class="op">=</span><span class="fl">1e-2</span>,</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="cross-validated-2-learner-selection" class="level3">
+<h3 class="anchored" data-anchor-id="cross-validated-2-learner-selection">Cross-validated 2-learner selection</h3>
+<p><code>.score(X)</code> returns the canonical squared Riesz loss (negated, so higher is better — sklearn convention). <code>cross_val_score</code> ranks the two learners on the same CV split.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> cross_val_score, cross_val_predict, KFold</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>cv <span class="op">=</span> KFold(n_splits<span class="op">=</span><span class="dv">5</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>s_boost <span class="op">=</span> cross_val_score(boost, df, cv<span class="op">=</span>cv).mean()</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>s_net   <span class="op">=</span> cross_val_score(net,   df, cv<span class="op">=</span>cv).mean()</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"RieszBooster CV score = </span><span class="sc">{</span>s_boost<span class="sc">:+.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>RieszBooster CV score = -11.6020</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"RieszNet     CV score = </span><span class="sc">{</span>s_net<span class="sc">:+.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>RieszNet     CV score = +4.9698</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>best <span class="op">=</span> boost <span class="cf">if</span> s_boost <span class="op">&gt;=</span> s_net <span class="cf">else</span> net</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>alpha_hat <span class="op">=</span> cross_val_predict(best, df, cv<span class="op">=</span>cv)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>alpha_hat</code> is out-of-fold — every row was predicted by a model that did not see it during training, the property a one-step / DML / TMLE plug-in needs.</p>
+</section>
+<section id="sanity-check" class="level3">
+<h3 class="anchored" data-anchor-id="sanity-check">Sanity check</h3>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
+<figcaption>Out-of-fold <span class="math inline">\(\hat\alpha\)</span> vs the closed-form <span class="math inline">\(\alpha_0\)</span> on the synthetic ATE DGP.</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="dml-point-estimate-and-ci" class="level3">
+<h3 class="anchored" data-anchor-id="dml-point-estimate-and-ci">DML point estimate and CI</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Cross-fit outcome regression</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.ensemble <span class="im">import</span> GradientBoostingRegressor</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>mu_model <span class="op">=</span> GradientBoostingRegressor(</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    n_estimators<span class="op">=</span><span class="dv">300</span>, learning_rate<span class="op">=</span><span class="fl">0.05</span>, max_depth<span class="op">=</span><span class="dv">3</span>, random_state<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>X_full <span class="op">=</span> df[[<span class="st">"a"</span>, <span class="st">"x"</span>]].to_numpy()</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>mu_oof <span class="op">=</span> cross_val_predict(mu_model, X_full, df[<span class="st">"y"</span>].to_numpy(), cv<span class="op">=</span>cv)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Counterfactual predictions need a model fit on the full data.</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>mu_full <span class="op">=</span> mu_model.fit(X_full, df[<span class="st">"y"</span>].to_numpy())</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>mu1 <span class="op">=</span> mu_full.predict(np.column_stack([np.ones(n), x]))</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>mu0 <span class="op">=</span> mu_full.predict(np.column_stack([np.zeros(n), x]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>eif  <span class="op">=</span> (mu1 <span class="op">-</span> mu0) <span class="op">+</span> alpha_hat <span class="op">*</span> (df[<span class="st">"y"</span>].to_numpy() <span class="op">-</span> mu_oof)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>psi  <span class="op">=</span> <span class="bu">float</span>(eif.mean())</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>se   <span class="op">=</span> <span class="bu">float</span>(np.sqrt(np.var(eif, ddof<span class="op">=</span><span class="dv">1</span>) <span class="op">/</span> n))</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>ci   <span class="op">=</span> (psi <span class="op">-</span> <span class="fl">1.96</span> <span class="op">*</span> se, psi <span class="op">+</span> <span class="fl">1.96</span> <span class="op">*</span> se)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"ψ̂_ATE  = </span><span class="sc">{</span>psi<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>ψ̂_ATE  = 29.459</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"SE     = </span><span class="sc">{</span>se<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>SE     = 0.097</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"95% CI = [</span><span class="sc">{</span>ci[<span class="dv">0</span>]<span class="sc">:.3f}</span><span class="ss">, </span><span class="sc">{</span>ci[<span class="dv">1</span>]<span class="sc">:.3f}</span><span class="ss">]"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>95% CI = [29.270, 29.648]</code></pre>
+</div>
+</div>
+</section>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">0</span>)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>n     <span class="ot">&lt;-</span> <span class="dv">2000</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>x     <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>prop  <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>(<span class="sc">-</span><span class="fl">0.02</span> <span class="sc">*</span> x <span class="sc">-</span> x<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> <span class="dv">4</span> <span class="sc">*</span> <span class="fu">log</span>(x <span class="sc">+</span> <span class="fl">0.3</span>) <span class="sc">+</span> <span class="fl">1.5</span>)))</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>a     <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(n, <span class="dv">1</span>, prop)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>mu    <span class="ot">&lt;-</span> <span class="dv">5</span> <span class="sc">*</span> x <span class="sc">+</span> <span class="dv">9</span> <span class="sc">*</span> x <span class="sc">*</span> a <span class="sc">+</span> <span class="dv">5</span> <span class="sc">*</span> <span class="fu">sin</span>(x <span class="sc">*</span> pi) <span class="sc">+</span> <span class="dv">25</span> <span class="sc">*</span> (a <span class="sc">-</span> <span class="dv">2</span>)</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>y     <span class="ot">&lt;-</span> mu <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>df    <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">a =</span> <span class="fu">as.numeric</span>(a), <span class="at">x =</span> x, <span class="at">y =</span> y)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> <span class="fu">ATE</span>(<span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> <span class="st">"x"</span>),</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">loss =</span> <span class="fu">BoundedSquaredLoss</span>(<span class="at">lo =</span> <span class="sc">-</span><span class="dv">50</span>, <span class="at">hi =</span> <span class="dv">50</span>),</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_estimators =</span> <span class="dv">200</span>L, <span class="at">learning_rate =</span> <span class="fl">0.05</span>, <span class="at">max_depth =</span> <span class="dv">3</span>L</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">fit</span>(df)</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>alpha_hat <span class="ot">&lt;-</span> booster<span class="sc">$</span><span class="fu">predict</span>(df)</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"min alpha_hat = %.3f, max alpha_hat = %.3f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>            <span class="fu">min</span>(alpha_hat), <span class="fu">max</span>(alpha_hat)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>min alpha_hat = -8.568, max alpha_hat = 12.734</code></pre>
+</div>
+</div>
+<p>The full DML pipeline (cross-fit α̂ + cross-fit μ̂ + Wald CI) is in <a href="./estimation/custom.html">Estimation → custom code</a>, with the same tabset.</p>
+</div>
+</div>
+</div>
+<p>For TMLE on top of these nuisances, and integration with <code>DoubleML</code> and other downstream packages, see <a href="./estimation/index.html">Estimation</a>. For backend-specific tuning, see <a href="./backends/index.html">Backends</a>.</p>
 <div class="callout callout-style-default callout-tip callout-titled" title="Code execution">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -578,7 +734,7 @@ window.Quarto = {
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Every code block in this guide ran at build time. The numbers and figures came from the version of <code>rieszreg</code>, <code>rieszboost</code>, <code>krrr</code>, <code>forestriesz</code>, and <code>riesznet</code> that produced this page.</p>
+<p>Every code block on this page ran at build time. The numbers and figures came from the version of <code>rieszreg</code>, <code>rieszboost</code>, <code>krrr</code>, <code>forestriesz</code>, and <code>riesznet</code> that produced this page.</p>
 </div>
 </div>
 
@@ -1003,8 +1159,8 @@ window.Quarto = {
   <div class="nav-page nav-page-previous">
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./intro.html" class="pagination-link" aria-label="What's a Riesz representer, and why fit one?">
-        <span class="nav-page-text">What’s a Riesz representer, and why fit one?</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./intro.html" class="pagination-link" aria-label="What is Riesz Regression?">
+        <span class="nav-page-text">What is Riesz Regression?</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

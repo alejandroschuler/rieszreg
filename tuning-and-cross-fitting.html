@@ -68,6 +68,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
+<link href="./diagnostics.html" rel="next">
+<link href="./losses.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -312,6 +314,10 @@ window.Quarto = {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
+    <a href="./index.html" class="navbar-brand navbar-brand-logo">
+    <img src="./logo.svg" alt="" class="navbar-logo light-content">
+    <img src="./logo.svg" alt="" class="navbar-logo dark-content">
+    </a>
     <a class="navbar-brand" href="./index.html">
     <span class="navbar-title">RieszReg</span>
     </a>
@@ -339,7 +345,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Tuning and Cross-Fitting</li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./estimands.html">Usage</a></li><li class="breadcrumb-item"><a href="./tuning-and-cross-fitting.html">Tuning and Cross-Fitting</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -357,21 +363,27 @@ window.Quarto = {
  <span class="menu-text">RieszReg</span></a>
   </div>
 </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">What is Riesz Regression?</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./install.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Install</span></a>
+  </div>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">Concepts</span></a>
+ <span class="menu-text">Usage</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./intro.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">What’s a Riesz representer, and why fit one?</span></a>
-  </div>
-</li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./estimands.html" class="sidebar-item-text sidebar-link">
@@ -384,43 +396,12 @@ window.Quarto = {
  <span class="menu-text">Losses</span></a>
   </div>
 </li>
-      </ul>
-  </li>
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">Get started</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./install.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Install</span></a>
+  <a href="./tuning-and-cross-fitting.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Tuning and Cross-Fitting</span></a>
   </div>
 </li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./quickstart.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Quickstart — ATE in 30 lines</span></a>
-  </div>
-</li>
-      </ul>
-  </li>
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Usage</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
- <span class="menu-text">sklearn-integration.qmd</span>
-  </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./diagnostics.html" class="sidebar-item-text sidebar-link">
@@ -443,13 +424,13 @@ window.Quarto = {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
  <span class="menu-text">Backends</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./backends/index.html" class="sidebar-item-text sidebar-link">
@@ -482,6 +463,35 @@ window.Quarto = {
 </li>
       </ul>
   </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Estimation</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./estimation/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Estimation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./estimation/custom.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Custom code: DML and TMLE</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./estimation/external.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">External packages: DoubleML, EconML, tlverse</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./developing.html" class="sidebar-item-text sidebar-link">
@@ -506,6 +516,7 @@ window.Quarto = {
   <ul>
   <li><a href="#cross-fitting" id="toc-cross-fitting" class="nav-link active" data-scroll-target="#cross-fitting">Cross-fitting</a></li>
   <li><a href="#hyperparameter-search" id="toc-hyperparameter-search" class="nav-link" data-scroll-target="#hyperparameter-search">Hyperparameter search</a></li>
+  <li><a href="#comparing-learners-with-different-losses" id="toc-comparing-learners-with-different-losses" class="nav-link" data-scroll-target="#comparing-learners-with-different-losses">Comparing learners with different losses</a></li>
   <li><a href="#cross-fit-ensemble-selection" id="toc-cross-fit-ensemble-selection" class="nav-link" data-scroll-target="#cross-fit-ensemble-selection">Cross-fit ensemble selection</a></li>
   <li><a href="#other-sklearn-integrations" id="toc-other-sklearn-integrations" class="nav-link" data-scroll-target="#other-sklearn-integrations">Other sklearn integrations</a></li>
   <li><a href="#see-also" id="toc-see-also" class="nav-link" data-scroll-target="#see-also">See also</a></li>
@@ -516,7 +527,7 @@ window.Quarto = {
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default">
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./estimands.html">Usage</a></li><li class="breadcrumb-item"><a href="./tuning-and-cross-fitting.html">Tuning and Cross-Fitting</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Tuning and Cross-Fitting</h1>
 </div>
@@ -535,8 +546,8 @@ window.Quarto = {
 </header>
 
 
-<p><code>RieszBooster</code>, <code>KernelRieszRegressor</code>, <code>ForestRieszRegressor</code>, <code>AugForestRieszRegressor</code>, and <code>RieszNet</code> are all subclasses of <code>rieszreg.RieszEstimator</code>, which itself inherits from <code>sklearn.base.BaseEstimator</code>. Every sklearn tool that works on an estimator works here: <code>cross_val_predict</code>, <code>GridSearchCV</code>, <code>Pipeline</code>, <code>clone</code>, <code>set_params</code>, <code>RandomizedSearchCV</code>, <code>HalvingGridSearchCV</code>, and the rest of <code>sklearn.model_selection</code>. Hyperparameter grids, cross-fitting folds, and multi-learner selection all use the same API you already know.</p>
-<p>This page uses <code>RieszBooster</code> and <code>ForestRieszRegressor</code>; the same patterns work for <code>KernelRieszRegressor</code>, <code>AugForestRieszRegressor</code>, and <code>RieszNet</code>.</p>
+<p><code>RieszBooster</code>, <code>KernelRieszRegressor</code>, <code>ForestRieszRegressor</code>, <code>AugForestRieszRegressor</code>, and <code>RieszNet</code> are all subclasses of <code>rieszreg.RieszEstimator</code>, which inherits from <code>sklearn.base.BaseEstimator</code>. Every sklearn tool that works on an estimator works here: <code>cross_val_predict</code>, <code>GridSearchCV</code>, <code>Pipeline</code>, <code>clone</code>, <code>set_params</code>, <code>RandomizedSearchCV</code>, <code>HalvingGridSearchCV</code>, and the rest of <code>sklearn.model_selection</code>. Hyperparameter grids, cross-fitting folds, multi-loss comparison, and multi-learner selection all use the same API.</p>
+<p>This page uses <code>RieszBooster</code> for the single-learner sections and adds <code>RieszNet</code> and <code>ForestRieszRegressor</code> to the ensemble-selection example. The same patterns work for <code>KernelRieszRegressor</code> and <code>AugForestRieszRegressor</code> with backend-specific hyperparameters.</p>
 <section id="cross-fitting" class="level2">
 <h2 class="anchored" data-anchor-id="cross-fitting">Cross-fitting</h2>
 <p>Plug-in <span class="math inline">\(\hat\alpha\)</span> in a one-step / TMLE / DML estimator must be out-of-fold. Use <code>cross_val_predict</code>:</p>
@@ -612,7 +623,7 @@ window.Quarto = {
 </section>
 <section id="hyperparameter-search" class="level2">
 <h2 class="anchored" data-anchor-id="hyperparameter-search">Hyperparameter search</h2>
-<p><code>.score(X)</code> returns negative held-out Riesz loss, so <code>GridSearchCV</code> selects the configuration with the lowest loss.</p>
+<p><code>.score(X)</code> returns the negative canonical squared Riesz loss — a fixed yardstick independent of the loss the estimator was trained with, in the spirit of R² for regressors. <code>GridSearchCV</code> selects the configuration with the highest score (lowest squared loss). To use a different yardstick, pass <code>scoring=riesz_scorer(loss=...)</code>.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -636,9 +647,9 @@ window.Quarto = {
 <div class="cell-output cell-output-stdout">
 <pre><code>best params: {'learning_rate': 0.05, 'max_depth': 3}</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"best score (neg Riesz loss): </span><span class="sc">{</span>grid<span class="sc">.</span>best_score_<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"best score (neg squared Riesz loss): </span><span class="sc">{</span>grid<span class="sc">.</span>best_score_<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>best score (neg Riesz loss): 5.8153</code></pre>
+<pre><code>best score (neg squared Riesz loss): 5.8153</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>best <span class="op">=</span> grid.best_estimator_</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>alpha_hat <span class="op">=</span> best.predict(df)</span>
@@ -672,7 +683,7 @@ window.Quarto = {
 <pre><code>GridSearchCV(cv=3,
              estimator=RieszBooster(early_stopping_rounds=20,
                                     estimand=Estimand(feature_keys=('a', 'x'),
-                                                      m=&lt;function ATE.&lt;locals&gt;.m at 0x7f7f27d254e0&gt;,
+                                                      m=&lt;function ATE.&lt;locals&gt;.m at 0x11464f380&gt;,
                                                       extra_keys=(),
                                                       name='ATE',
                                                       factory_spec={'args': {'covariates': ['x'],
@@ -694,101 +705,195 @@ window.Quarto = {
 $max_depth
 [1] 3</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"best score (neg Riesz loss): %.4f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"best score (neg squared Riesz loss): %.4f</span><span class="sc">\n</span><span class="st">"</span>,</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>            reticulate<span class="sc">::</span><span class="fu">py_to_r</span>(grid<span class="sc">$</span>best_score_)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>best score (neg Riesz loss): 6.8145</code></pre>
+<pre><code>best score (neg squared Riesz loss): 6.8145</code></pre>
 </div>
 </div>
 </div>
 </div>
 </div>
 </section>
+<section id="comparing-learners-with-different-losses" class="level2">
+<h2 class="anchored" data-anchor-id="comparing-learners-with-different-losses">Comparing learners with different losses</h2>
+<p>Two estimators trained with different losses produce α̂ in the same units (a per-row real value), so the squared yardstick scores them on the same scale. <code>cross_val_score</code> results are directly comparable.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> cross_val_score</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> BoundedSquaredLoss, SquaredLoss, riesz_scorer</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>booster_bd <span class="op">=</span> RieszBooster(</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>ATE(), loss<span class="op">=</span>BoundedSquaredLoss(lo<span class="op">=-</span><span class="fl">50.0</span>, hi<span class="op">=</span><span class="fl">50.0</span>),</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    n_estimators<span class="op">=</span><span class="dv">300</span>, learning_rate<span class="op">=</span><span class="fl">0.05</span>, max_depth<span class="op">=</span><span class="dv">3</span>,</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>booster_sq <span class="op">=</span> RieszBooster(</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>ATE(), loss<span class="op">=</span>SquaredLoss(),</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    n_estimators<span class="op">=</span><span class="dv">300</span>, learning_rate<span class="op">=</span><span class="fl">0.05</span>, max_depth<span class="op">=</span><span class="dv">3</span>,</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>s_bd <span class="op">=</span> cross_val_score(booster_bd, df, cv<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>s_sq <span class="op">=</span> cross_val_score(booster_sq, df, cv<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"BoundedSquared-trained: mean score = </span><span class="sc">{</span>s_bd<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>BoundedSquared-trained: mean score = -20.3700</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"squared-trained:        mean score = </span><span class="sc">{</span>s_sq<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>squared-trained:        mean score = 6.0809</code></pre>
+</div>
+</div>
+<p>A single <code>GridSearchCV</code> can sweep across losses too. Each candidate is fit with its own loss; all candidates are ranked on the squared yardstick.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>grid <span class="op">=</span> GridSearchCV(</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    RieszBooster(</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>        estimand<span class="op">=</span>ATE(),</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>        n_estimators<span class="op">=</span><span class="dv">300</span>, learning_rate<span class="op">=</span><span class="fl">0.05</span>, max_depth<span class="op">=</span><span class="dv">3</span>,</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    param_grid<span class="op">=</span>{<span class="st">"loss"</span>: [BoundedSquaredLoss(lo<span class="op">=-</span><span class="fl">50.0</span>, hi<span class="op">=</span><span class="fl">50.0</span>), SquaredLoss()]},</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    cv<span class="op">=</span><span class="dv">3</span>,</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    n_jobs<span class="op">=</span><span class="dv">1</span>,</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>).fit(df)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"best loss:"</span>, grid.best_params_[<span class="st">"loss"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>best loss: &lt;rieszreg.losses.squared.SquaredLoss object at 0x126d18910&gt;</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"best score: </span><span class="sc">{</span>grid<span class="sc">.</span>best_score_<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>best score: 6.0809</code></pre>
+</div>
+</div>
+<p>To rank with a different yardstick, build it with <code>riesz_scorer</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>scorer <span class="op">=</span> riesz_scorer(loss<span class="op">=</span>BoundedSquaredLoss(lo<span class="op">=-</span><span class="fl">50.0</span>, hi<span class="op">=</span><span class="fl">50.0</span>))</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>s_bd_yard <span class="op">=</span> cross_val_score(booster_bd, df, cv<span class="op">=</span><span class="dv">3</span>, scoring<span class="op">=</span>scorer)</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>s_sq_yard <span class="op">=</span> cross_val_score(booster_sq, df, cv<span class="op">=</span><span class="dv">3</span>, scoring<span class="op">=</span>scorer)</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"BoundedSquared-trained on bounded yardstick: </span><span class="sc">{</span>s_bd_yard<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>BoundedSquared-trained on bounded yardstick: -20.3700</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"squared-trained on bounded yardstick:        </span><span class="sc">{</span>s_sq_yard<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>squared-trained on bounded yardstick:        6.0809</code></pre>
+</div>
+</div>
+<p>The yardstick must accept the α the estimator predicts. The squared yardstick has unrestricted α-domain, so it works for any learner; the others have restrictions:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Yardstick</th>
+<th>α-domain</th>
+<th>Accepts α from learners trained with</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>SquaredLoss</code></td>
+<td>ℝ</td>
+<td>any loss (the default)</td>
+</tr>
+<tr class="even">
+<td><code>KLLoss</code></td>
+<td>(0, ∞)</td>
+<td>KL-trained learners</td>
+</tr>
+<tr class="odd">
+<td><code>BernoulliLoss</code></td>
+<td>(0, 1)</td>
+<td>Bernoulli-trained learners</td>
+</tr>
+<tr class="even">
+<td><code>BoundedSquaredLoss(lo, hi)</code></td>
+<td>(lo, hi)</td>
+<td>matching-bounded learners</td>
+</tr>
+</tbody>
+</table>
+<p>Pick a yardstick whose domain accepts every candidate’s α. <code>SquaredLoss</code> is always safe.</p>
+</section>
 <section id="cross-fit-ensemble-selection" class="level2">
 <h2 class="anchored" data-anchor-id="cross-fit-ensemble-selection">Cross-fit ensemble selection</h2>
-<p>The pattern below selects among five learner configurations — two boosting depths, two neural-network architectures, and a forest — using inner 3-fold CV inside each of five outer cross-fitting folds. The inner CV runs entirely on the training portion of each outer fold, so the model selection criterion never sees the held-out data that <code>cross_val_predict</code> predicts.</p>
-<p>This uses the <code>Pipeline</code> idiom for cross-estimator-type selection: wrap the estimator in a single-step <code>Pipeline</code> named <code>"riesz"</code>, then pass a list of fully configured instances as the value for that key. <code>GridSearchCV</code> calls <code>pipe.set_params(riesz=candidate)</code>, fits, and scores each one.</p>
+<p>Going further than two losses on one backend: the pattern below selects among five learner configurations — two boosting depths, two neural-net architectures, and a forest — using inner 3-fold CV inside each of five outer cross-fitting folds. The inner CV runs entirely on the training portion of each outer fold, so the model selection criterion never sees the held-out data that <code>cross_val_predict</code> predicts.</p>
+<p>This uses the <code>Pipeline</code> idiom for cross-estimator-type selection: wrap the estimator in a single-step <code>Pipeline</code> named <code>"riesz"</code>, then pass a list of fully configured instances as the value for that key. <code>GridSearchCV</code> calls <code>pipe.set_params(riesz=candidate)</code>, fits, and scores each one on the canonical squared yardstick.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> cross_val_predict, GridSearchCV</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszboost <span class="im">import</span> RieszBooster</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> riesznet <span class="im">import</span> RieszNet</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> forestriesz <span class="im">import</span> ForestRieszRegressor</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>estimand <span class="op">=</span> ATE()</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Five fully configured candidates across three learner families.</span></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>candidates <span class="op">=</span> [</span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Boosting — depth 3, early stopping</span></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    RieszBooster(</span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>        estimand<span class="op">=</span>estimand,</span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>        n_estimators<span class="op">=</span><span class="dv">2000</span>,</span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>        max_depth<span class="op">=</span><span class="dv">3</span>,</span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>        early_stopping_rounds<span class="op">=</span><span class="dv">20</span>,</span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>        validation_fraction<span class="op">=</span><span class="fl">0.2</span>,</span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>        learning_rate<span class="op">=</span><span class="fl">0.05</span>,</span>
-<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Boosting — depth 5, early stopping</span></span>
-<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>    RieszBooster(</span>
-<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>        estimand<span class="op">=</span>estimand,</span>
-<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>        n_estimators<span class="op">=</span><span class="dv">2000</span>,</span>
-<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>        max_depth<span class="op">=</span><span class="dv">5</span>,</span>
-<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>        early_stopping_rounds<span class="op">=</span><span class="dv">20</span>,</span>
-<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>        validation_fraction<span class="op">=</span><span class="fl">0.2</span>,</span>
-<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>        learning_rate<span class="op">=</span><span class="fl">0.05</span>,</span>
-<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Neural net — small MLP with early stopping</span></span>
-<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>    RieszNet(</span>
-<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>        estimand<span class="op">=</span>estimand,</span>
-<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a>        hidden_sizes<span class="op">=</span>(<span class="dv">64</span>, <span class="dv">64</span>),</span>
-<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a>        epochs<span class="op">=</span><span class="dv">500</span>,</span>
-<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>        early_stopping_rounds<span class="op">=</span><span class="dv">20</span>,</span>
-<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a>        validation_fraction<span class="op">=</span><span class="fl">0.2</span>,</span>
-<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Neural net — larger MLP with early stopping</span></span>
-<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a>    RieszNet(</span>
-<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a>        estimand<span class="op">=</span>estimand,</span>
-<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a>        hidden_sizes<span class="op">=</span>(<span class="dv">128</span>, <span class="dv">64</span>),</span>
-<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a>        epochs<span class="op">=</span><span class="dv">500</span>,</span>
-<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a>        early_stopping_rounds<span class="op">=</span><span class="dv">20</span>,</span>
-<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a>        validation_fraction<span class="op">=</span><span class="fl">0.2</span>,</span>
-<span id="cb19-44"><a href="#cb19-44" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb19-45"><a href="#cb19-45" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Forest Riesz</span></span>
-<span id="cb19-46"><a href="#cb19-46" aria-hidden="true" tabindex="-1"></a>    ForestRieszRegressor(</span>
-<span id="cb19-47"><a href="#cb19-47" aria-hidden="true" tabindex="-1"></a>        estimand<span class="op">=</span>estimand,</span>
-<span id="cb19-48"><a href="#cb19-48" aria-hidden="true" tabindex="-1"></a>        n_estimators<span class="op">=</span><span class="dv">500</span>,</span>
-<span id="cb19-49"><a href="#cb19-49" aria-hidden="true" tabindex="-1"></a>        min_samples_leaf<span class="op">=</span><span class="dv">10</span>,</span>
-<span id="cb19-50"><a href="#cb19-50" aria-hidden="true" tabindex="-1"></a>        random_state<span class="op">=</span><span class="dv">0</span>,</span>
-<span id="cb19-51"><a href="#cb19-51" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb19-52"><a href="#cb19-52" aria-hidden="true" tabindex="-1"></a>]</span>
-<span id="cb19-53"><a href="#cb19-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-54"><a href="#cb19-54" aria-hidden="true" tabindex="-1"></a><span class="co"># Single-step Pipeline so GridSearchCV can swap in any candidate as the step.</span></span>
-<span id="cb19-55"><a href="#cb19-55" aria-hidden="true" tabindex="-1"></a>pipe <span class="op">=</span> Pipeline([(<span class="st">"riesz"</span>, candidates[<span class="dv">0</span>])])</span>
-<span id="cb19-56"><a href="#cb19-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-57"><a href="#cb19-57" aria-hidden="true" tabindex="-1"></a><span class="co"># Inner CV: 3 folds, selects the best learner+config from the five candidates.</span></span>
-<span id="cb19-58"><a href="#cb19-58" aria-hidden="true" tabindex="-1"></a>cv_inner <span class="op">=</span> GridSearchCV(</span>
-<span id="cb19-59"><a href="#cb19-59" aria-hidden="true" tabindex="-1"></a>    pipe,</span>
-<span id="cb19-60"><a href="#cb19-60" aria-hidden="true" tabindex="-1"></a>    param_grid<span class="op">=</span>[{<span class="st">"riesz"</span>: [c]} <span class="cf">for</span> c <span class="kw">in</span> candidates],</span>
-<span id="cb19-61"><a href="#cb19-61" aria-hidden="true" tabindex="-1"></a>    cv<span class="op">=</span><span class="dv">3</span>,</span>
-<span id="cb19-62"><a href="#cb19-62" aria-hidden="true" tabindex="-1"></a>    n_jobs<span class="op">=</span><span class="dv">1</span>,</span>
-<span id="cb19-63"><a href="#cb19-63" aria-hidden="true" tabindex="-1"></a>    refit<span class="op">=</span><span class="va">True</span>,</span>
-<span id="cb19-64"><a href="#cb19-64" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb19-65"><a href="#cb19-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-66"><a href="#cb19-66" aria-hidden="true" tabindex="-1"></a><span class="co"># Outer CV: 5 cross-fitting folds. Each fold:</span></span>
-<span id="cb19-67"><a href="#cb19-67" aria-hidden="true" tabindex="-1"></a><span class="co">#   1. Fits cv_inner on 4/5 of the data (inner CV happens here, on that 4/5).</span></span>
-<span id="cb19-68"><a href="#cb19-68" aria-hidden="true" tabindex="-1"></a><span class="co">#   2. Predicts the held-out 1/5 using the winner from step 1.</span></span>
-<span id="cb19-69"><a href="#cb19-69" aria-hidden="true" tabindex="-1"></a><span class="co"># The inner model selection never touches the held-out slice.</span></span>
-<span id="cb19-70"><a href="#cb19-70" aria-hidden="true" tabindex="-1"></a>alpha_oof <span class="op">=</span> cross_val_predict(cv_inner, df, cv<span class="op">=</span><span class="dv">5</span>)</span>
-<span id="cb19-71"><a href="#cb19-71" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"out-of-fold alpha shape: </span><span class="sc">{</span>alpha_oof<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> riesznet <span class="im">import</span> RieszNet</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> forestriesz <span class="im">import</span> ForestRieszRegressor</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>estimand <span class="op">=</span> ATE()</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Five fully configured candidates across three learner families.</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>candidates <span class="op">=</span> [</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Boosting — depth 3, early stopping</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>    RieszBooster(</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>        estimand<span class="op">=</span>estimand,</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>        n_estimators<span class="op">=</span><span class="dv">2000</span>,</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>        max_depth<span class="op">=</span><span class="dv">3</span>,</span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>        early_stopping_rounds<span class="op">=</span><span class="dv">20</span>,</span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>        validation_fraction<span class="op">=</span><span class="fl">0.2</span>,</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>        learning_rate<span class="op">=</span><span class="fl">0.05</span>,</span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Boosting — depth 5, early stopping</span></span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a>    RieszBooster(</span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a>        estimand<span class="op">=</span>estimand,</span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a>        n_estimators<span class="op">=</span><span class="dv">2000</span>,</span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a>        max_depth<span class="op">=</span><span class="dv">5</span>,</span>
+<span id="cb31-23"><a href="#cb31-23" aria-hidden="true" tabindex="-1"></a>        early_stopping_rounds<span class="op">=</span><span class="dv">20</span>,</span>
+<span id="cb31-24"><a href="#cb31-24" aria-hidden="true" tabindex="-1"></a>        validation_fraction<span class="op">=</span><span class="fl">0.2</span>,</span>
+<span id="cb31-25"><a href="#cb31-25" aria-hidden="true" tabindex="-1"></a>        learning_rate<span class="op">=</span><span class="fl">0.05</span>,</span>
+<span id="cb31-26"><a href="#cb31-26" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb31-27"><a href="#cb31-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Neural net — small MLP with early stopping</span></span>
+<span id="cb31-28"><a href="#cb31-28" aria-hidden="true" tabindex="-1"></a>    RieszNet(</span>
+<span id="cb31-29"><a href="#cb31-29" aria-hidden="true" tabindex="-1"></a>        estimand<span class="op">=</span>estimand,</span>
+<span id="cb31-30"><a href="#cb31-30" aria-hidden="true" tabindex="-1"></a>        hidden_sizes<span class="op">=</span>(<span class="dv">64</span>, <span class="dv">64</span>),</span>
+<span id="cb31-31"><a href="#cb31-31" aria-hidden="true" tabindex="-1"></a>        epochs<span class="op">=</span><span class="dv">500</span>,</span>
+<span id="cb31-32"><a href="#cb31-32" aria-hidden="true" tabindex="-1"></a>        early_stopping_rounds<span class="op">=</span><span class="dv">20</span>,</span>
+<span id="cb31-33"><a href="#cb31-33" aria-hidden="true" tabindex="-1"></a>        validation_fraction<span class="op">=</span><span class="fl">0.2</span>,</span>
+<span id="cb31-34"><a href="#cb31-34" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb31-35"><a href="#cb31-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Neural net — larger MLP with early stopping</span></span>
+<span id="cb31-36"><a href="#cb31-36" aria-hidden="true" tabindex="-1"></a>    RieszNet(</span>
+<span id="cb31-37"><a href="#cb31-37" aria-hidden="true" tabindex="-1"></a>        estimand<span class="op">=</span>estimand,</span>
+<span id="cb31-38"><a href="#cb31-38" aria-hidden="true" tabindex="-1"></a>        hidden_sizes<span class="op">=</span>(<span class="dv">128</span>, <span class="dv">64</span>),</span>
+<span id="cb31-39"><a href="#cb31-39" aria-hidden="true" tabindex="-1"></a>        epochs<span class="op">=</span><span class="dv">500</span>,</span>
+<span id="cb31-40"><a href="#cb31-40" aria-hidden="true" tabindex="-1"></a>        early_stopping_rounds<span class="op">=</span><span class="dv">20</span>,</span>
+<span id="cb31-41"><a href="#cb31-41" aria-hidden="true" tabindex="-1"></a>        validation_fraction<span class="op">=</span><span class="fl">0.2</span>,</span>
+<span id="cb31-42"><a href="#cb31-42" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb31-43"><a href="#cb31-43" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Forest Riesz</span></span>
+<span id="cb31-44"><a href="#cb31-44" aria-hidden="true" tabindex="-1"></a>    ForestRieszRegressor(</span>
+<span id="cb31-45"><a href="#cb31-45" aria-hidden="true" tabindex="-1"></a>        estimand<span class="op">=</span>estimand,</span>
+<span id="cb31-46"><a href="#cb31-46" aria-hidden="true" tabindex="-1"></a>        n_estimators<span class="op">=</span><span class="dv">500</span>,</span>
+<span id="cb31-47"><a href="#cb31-47" aria-hidden="true" tabindex="-1"></a>        min_samples_leaf<span class="op">=</span><span class="dv">10</span>,</span>
+<span id="cb31-48"><a href="#cb31-48" aria-hidden="true" tabindex="-1"></a>        random_state<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb31-49"><a href="#cb31-49" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb31-50"><a href="#cb31-50" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb31-51"><a href="#cb31-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-52"><a href="#cb31-52" aria-hidden="true" tabindex="-1"></a><span class="co"># Single-step Pipeline so GridSearchCV can swap in any candidate as the step.</span></span>
+<span id="cb31-53"><a href="#cb31-53" aria-hidden="true" tabindex="-1"></a>pipe <span class="op">=</span> Pipeline([(<span class="st">"riesz"</span>, candidates[<span class="dv">0</span>])])</span>
+<span id="cb31-54"><a href="#cb31-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-55"><a href="#cb31-55" aria-hidden="true" tabindex="-1"></a><span class="co"># Inner CV: 3 folds, selects the best learner+config from the five candidates.</span></span>
+<span id="cb31-56"><a href="#cb31-56" aria-hidden="true" tabindex="-1"></a>cv_inner <span class="op">=</span> GridSearchCV(</span>
+<span id="cb31-57"><a href="#cb31-57" aria-hidden="true" tabindex="-1"></a>    pipe,</span>
+<span id="cb31-58"><a href="#cb31-58" aria-hidden="true" tabindex="-1"></a>    param_grid<span class="op">=</span>[{<span class="st">"riesz"</span>: [c]} <span class="cf">for</span> c <span class="kw">in</span> candidates],</span>
+<span id="cb31-59"><a href="#cb31-59" aria-hidden="true" tabindex="-1"></a>    cv<span class="op">=</span><span class="dv">3</span>,</span>
+<span id="cb31-60"><a href="#cb31-60" aria-hidden="true" tabindex="-1"></a>    n_jobs<span class="op">=</span><span class="dv">1</span>,</span>
+<span id="cb31-61"><a href="#cb31-61" aria-hidden="true" tabindex="-1"></a>    refit<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb31-62"><a href="#cb31-62" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb31-63"><a href="#cb31-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-64"><a href="#cb31-64" aria-hidden="true" tabindex="-1"></a><span class="co"># Outer CV: 5 cross-fitting folds. Each fold:</span></span>
+<span id="cb31-65"><a href="#cb31-65" aria-hidden="true" tabindex="-1"></a><span class="co">#   1. Fits cv_inner on 4/5 of the data (inner CV happens here, on that 4/5).</span></span>
+<span id="cb31-66"><a href="#cb31-66" aria-hidden="true" tabindex="-1"></a><span class="co">#   2. Predicts the held-out 1/5 using the winner from step 1.</span></span>
+<span id="cb31-67"><a href="#cb31-67" aria-hidden="true" tabindex="-1"></a><span class="co"># The inner model selection never touches the held-out slice.</span></span>
+<span id="cb31-68"><a href="#cb31-68" aria-hidden="true" tabindex="-1"></a>alpha_oof <span class="op">=</span> cross_val_predict(cv_inner, df, cv<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb31-69"><a href="#cb31-69" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"out-of-fold alpha shape: </span><span class="sc">{</span>alpha_oof<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>out-of-fold alpha shape: (2000,)</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"first 5 values:          </span><span class="sc">{</span>alpha_oof[:<span class="dv">5</span>]<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"first 5 values:          </span><span class="sc">{</span>alpha_oof[:<span class="dv">5</span>]<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>first 5 values:          [-3.49636817 -1.45712268 -0.90962332 -0.85112947  1.53748786]</code></pre>
+<pre><code>first 5 values:          [-3.49542379 -1.45612025 -0.90857583 -0.85007745  1.53809094]</code></pre>
 </div>
 </div>
-<p>The call to <code>cross_val_predict</code> is identical to the single-learner case on this page. The only addition is the <code>Pipeline</code> wrapper and the list-valued <code>param_grid</code> entry — everything else is standard sklearn.</p>
+<p>The call to <code>cross_val_predict</code> is identical to the single-learner case. The only addition is the <code>Pipeline</code> wrapper and the list-valued <code>param_grid</code> entry — everything else is standard sklearn.</p>
 <div class="callout callout-style-default callout-note callout-titled" title="R users">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -799,7 +904,7 @@ $max_depth
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>The <code>Pipeline</code> + <code>GridSearchCV</code> pattern is standard Python. In R, call into Python via <code>reticulate</code> using the same code, passing an R data frame with <code>reticulate::r_to_py(df)</code> and reading back the result with <code>as.numeric(reticulate::py_to_r(...))</code>.</p>
+<p>The <code>Pipeline</code> + <code>GridSearchCV</code> pattern is Python-only. From R, call into Python via <code>reticulate</code> using the same code: pass an R data frame with <code>reticulate::r_to_py(df)</code> and read the result back with <code>as.numeric(reticulate::py_to_r(...))</code>.</p>
 </div>
 </div>
 </section>
@@ -1237,6 +1342,18 @@ $max_depth
     }
   });
   </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./losses.html" class="pagination-link" aria-label="Losses">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Losses</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./diagnostics.html" class="pagination-link" aria-label="Diagnostics">
+        <span class="nav-page-text">Diagnostics</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
 </div> <!-- /content -->
 
 
