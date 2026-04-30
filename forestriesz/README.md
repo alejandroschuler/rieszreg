@@ -1,6 +1,6 @@
 # forestriesz
 
-Random-forest Riesz regression, in **Python** and **R**. Sister package to [krrr](https://github.com/rieszreg/krrr) and [rieszboost](https://github.com/rieszreg/rieszboost) in the [RieszReg family](https://github.com/rieszreg/rieszreg): same scope (Riesz representers for linear functionals; θ(P) = E[m(Z, g₀)]), same user-facing API, but the fitter is a generalized random forest.
+Random-forest Riesz regression, in **Python** and **R**. Sister package to [krrr](https://github.com/rieszreg/krrr) and [rieszboost](https://github.com/rieszreg/rieszboost) in the [RieszReg family](https://github.com/rieszreg/rieszreg): same scope (Riesz representers for linear estimands; ψ = E[m(μ)(Z)]), same user-facing API, but the learner is a generalized random forest.
 
 Two backends ship side-by-side, both built on EconML's `BaseGRF`:
 
@@ -224,7 +224,7 @@ Default to `ForestRieszRegressor` for ATE/ATT/TSM when you want CIs. Reach for `
 
 ## Bregman losses
 
-`AugForestRieszRegressor` supports all four built-in losses: `SquaredLoss` (default), `KLLoss` (density-ratio targets, enforces α̂ > 0 via the exp link), `BernoulliLoss` (α̂ ∈ (0, 1)), and `BoundedSquaredLoss(lo, hi)` (α̂ ∈ (lo, hi)). Tree structure is chosen by the squared MSE criterion; per-leaf θ is then replaced by the Bregman-optimal value via a Newton iteration on each leaf's augmented rows. For locally constant fits this Newton has a closed form (`α* = -B/(2A)` then apply the link); for sieves it's a small p×p Newton.
+`AugForestRieszRegressor` supports all four built-in losses: `SquaredLoss` (default), `KLLoss` (density-ratio estimands, enforces α̂ > 0 via the exp link), `BernoulliLoss` (α̂ ∈ (0, 1)), and `BoundedSquaredLoss(lo, hi)` (α̂ ∈ (lo, hi)). Tree structure is chosen by the squared MSE criterion; per-leaf θ is then replaced by the Bregman-optimal value via a Newton iteration on each leaf's augmented rows. For locally constant fits this Newton has a closed form (`α* = -B/(2A)` then apply the link); for sieves it's a small p×p Newton.
 
 ```python
 from forestriesz import AugForestRieszRegressor, TSM
