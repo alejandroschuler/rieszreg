@@ -70,6 +70,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta name="quarto:offset" content="../">
 <link href="../estimation/index.html" rel="next">
 <link href="../backends/forest.html" rel="prev">
+<link href="../logo.svg" rel="icon" type="image/svg+xml">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
@@ -318,9 +319,6 @@ window.Quarto = {
     <img src="../logo.svg" alt="" class="navbar-logo light-content">
     <img src="../logo.svg" alt="" class="navbar-logo dark-content">
     </a>
-    <a class="navbar-brand" href="../index.html">
-    <span class="navbar-title">RieszReg</span>
-    </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
@@ -496,6 +494,12 @@ window.Quarto = {
   <div class="sidebar-item-container"> 
   <a href="../developing.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Developing</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../related.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Related packages</span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -1008,7 +1012,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 }
 </style><div id="sk-container-id-1" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>RieszNet(early_stopping_rounds=30, epochs=400,
          estimand=Estimand(feature_keys=('a', 'x'),
-                           m=&lt;function ATE.&lt;locals&gt;.m at 0x137926ac0&gt;,
+                           m=&lt;function ATE.&lt;locals&gt;.m at 0x13be92ac0&gt;,
                            extra_keys=(),
                            name='ATE',
                            factory_spec={'args': {'covariates': ['x'],
@@ -1016,7 +1020,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                          'factory': 'ATE'}),
          learning_rate=0.005, validation_fraction=0.2)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-1" type="checkbox" checked=""><label for="sk-estimator-id-1" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>RieszNet</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>RieszNet(early_stopping_rounds=30, epochs=400,
          estimand=Estimand(feature_keys=('a', 'x'),
-                           m=&lt;function ATE.&lt;locals&gt;.m at 0x137926ac0&gt;,
+                           m=&lt;function ATE.&lt;locals&gt;.m at 0x13be92ac0&gt;,
                            extra_keys=(),
                            name='ATE',
                            factory_spec={'args': {'covariates': ['x'],
@@ -1070,7 +1074,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 </section>
 <section id="quickstart-tsm-with-kl-loss" class="level2">
 <h2 class="anchored" data-anchor-id="quickstart-tsm-with-kl-loss">Quickstart — TSM with KL loss</h2>
-<p>KLLoss is the right choice for density-ratio targets like TSM. The exp link keeps predictions positive without any post-hoc clipping.</p>
+<p>KLLoss is matched to density-ratio estimands like TSM. The exp link keeps predictions positive without any post-hoc clipping.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> riesznet <span class="im">import</span> KLLoss, RieszNet, TSM</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -1503,7 +1507,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 }
 </style><div id="sk-container-id-2" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>RieszNet(early_stopping_rounds=30, epochs=400,
          estimand=Estimand(feature_keys=('a', 'x'),
-                           m=&lt;function TSM.&lt;locals&gt;.m at 0x137a40540&gt;,
+                           m=&lt;function TSM.&lt;locals&gt;.m at 0x13bfd8540&gt;,
                            extra_keys=(),
                            name='TSM(level=1)',
                            factory_spec={'args': {'covariates': ['x'],
@@ -1511,10 +1515,10 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                                   'treatment': 'a'},
                                          'factory': 'TSM'}),
          learning_rate=0.005,
-         loss=&lt;rieszreg.losses.kl.KLLoss object at 0x137836660&gt;,
+         loss=&lt;rieszreg.losses.kl.KLLoss object at 0x13bda2660&gt;,
          validation_fraction=0.2)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-2" type="checkbox" checked=""><label for="sk-estimator-id-2" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>RieszNet</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>RieszNet(early_stopping_rounds=30, epochs=400,
          estimand=Estimand(feature_keys=('a', 'x'),
-                           m=&lt;function TSM.&lt;locals&gt;.m at 0x137a40540&gt;,
+                           m=&lt;function TSM.&lt;locals&gt;.m at 0x13bfd8540&gt;,
                            extra_keys=(),
                            name='TSM(level=1)',
                            factory_spec={'args': {'covariates': ['x'],
@@ -1522,7 +1526,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                                   'treatment': 'a'},
                                          'factory': 'TSM'}),
          learning_rate=0.005,
-         loss=&lt;rieszreg.losses.kl.KLLoss object at 0x137836660&gt;,
+         loss=&lt;rieszreg.losses.kl.KLLoss object at 0x13bda2660&gt;,
          validation_fraction=0.2)</pre></div> </div></div></div></div>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>alpha_hat  <span class="op">=</span> rn.predict(df)</span>
@@ -1992,7 +1996,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
   /* fitted */
   background-color: var(--sklearn-color-fitted-level-3);
 }
-</style><div id="sk-container-id-3" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>RieszEstimator(backend=TorchBackend(module_factory=&lt;function my_factory at 0x137a10ea0&gt;,
+</style><div id="sk-container-id-3" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>RieszEstimator(backend=TorchBackend(module_factory=&lt;function my_factory at 0x13bf98ea0&gt;,
                                     optimizer_factory=functools.partial(&lt;class 'torch.optim.adamw.AdamW'&gt;, lr=0.0003, weight_decay=0.001),
                                     scheduler_factory=None,
                                     epochs=300,
@@ -2003,12 +2007,12 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                     early_stopping_rounds=30,
                                     validation_fraction=0.2),
                estimand=Estimand(feature_keys=('a', 'x'),
-                                 m=&lt;function ATE.&lt;locals&gt;.m at 0x1379fcb80&gt;,
+                                 m=&lt;function ATE.&lt;locals&gt;.m at 0x13bf8cb80&gt;,
                                  extra_keys=(),
                                  name='ATE',
                                  factory_spec={'args': {'covariates': ['x'],
                                                         'treatment': 'a'},
-                                               'factory': 'ATE'}))</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-3" type="checkbox" checked=""><label for="sk-estimator-id-3" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>RieszEstimator</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>RieszEstimator(backend=TorchBackend(module_factory=&lt;function my_factory at 0x137a10ea0&gt;,
+                                               'factory': 'ATE'}))</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-3" type="checkbox" checked=""><label for="sk-estimator-id-3" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>RieszEstimator</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>RieszEstimator(backend=TorchBackend(module_factory=&lt;function my_factory at 0x13bf98ea0&gt;,
                                     optimizer_factory=functools.partial(&lt;class 'torch.optim.adamw.AdamW'&gt;, lr=0.0003, weight_decay=0.001),
                                     scheduler_factory=None,
                                     epochs=300,
@@ -2019,7 +2023,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                     early_stopping_rounds=30,
                                     validation_fraction=0.2),
                estimand=Estimand(feature_keys=('a', 'x'),
-                                 m=&lt;function ATE.&lt;locals&gt;.m at 0x1379fcb80&gt;,
+                                 m=&lt;function ATE.&lt;locals&gt;.m at 0x13bf8cb80&gt;,
                                  extra_keys=(),
                                  name='ATE',
                                  factory_spec={'args': {'covariates': ['x'],

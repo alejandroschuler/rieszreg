@@ -70,6 +70,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta name="quarto:offset" content="./">
 <link href="./diagnostics.html" rel="next">
 <link href="./losses.html" rel="prev">
+<link href="./logo.svg" rel="icon" type="image/svg+xml">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -318,9 +319,6 @@ window.Quarto = {
     <img src="./logo.svg" alt="" class="navbar-logo light-content">
     <img src="./logo.svg" alt="" class="navbar-logo dark-content">
     </a>
-    <a class="navbar-brand" href="./index.html">
-    <span class="navbar-title">RieszReg</span>
-    </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
@@ -496,6 +494,12 @@ window.Quarto = {
   <div class="sidebar-item-container"> 
   <a href="./developing.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Developing</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./related.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Related packages</span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -683,7 +687,7 @@ window.Quarto = {
 <pre><code>GridSearchCV(cv=3,
              estimator=RieszBooster(early_stopping_rounds=20,
                                     estimand=Estimand(feature_keys=('a', 'x'),
-                                                      m=&lt;function ATE.&lt;locals&gt;.m at 0x11464f380&gt;,
+                                                      m=&lt;function ATE.&lt;locals&gt;.m at 0x1154d3380&gt;,
                                                       extra_keys=(),
                                                       name='ATE',
                                                       factory_spec={'args': {'covariates': ['x'],
@@ -756,7 +760,7 @@ $max_depth
 <span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"best loss:"</span>, grid.best_params_[<span class="st">"loss"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>best loss: &lt;rieszreg.losses.squared.SquaredLoss object at 0x126d18910&gt;</code></pre>
+<pre><code>best loss: &lt;rieszreg.losses.squared.SquaredLoss object at 0x130f66260&gt;</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"best score: </span><span class="sc">{</span>grid<span class="sc">.</span>best_score_<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
@@ -894,19 +898,66 @@ $max_depth
 </div>
 </div>
 <p>The call to <code>cross_val_predict</code> is identical to the single-learner case. The only addition is the <code>Pipeline</code> wrapper and the list-valued <code>param_grid</code> entry — everything else is standard sklearn.</p>
-<div class="callout callout-style-default callout-note callout-titled" title="R users">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
+<p>The same nested cross-fit + per-fold model selection in R uses <a href="https://rsample.tidymodels.org/"><code>rsample</code></a> (tidymodels) for the fold splits and a small loop for the inner-CV winner pick. Each outer fold runs its own inner-CV on its training portion only.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Load forestriesz and riesznet R wrappers</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>.project_root <span class="ot">&lt;-</span> <span class="fu">Sys.getenv</span>(<span class="st">"QUARTO_PROJECT_DIR"</span>, <span class="at">unset =</span> <span class="fu">getwd</span>())</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressMessages</span>(pkgload<span class="sc">::</span><span class="fu">load_all</span>(</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(.project_root, <span class="st">"../forestriesz/r/forestriesz"</span>), <span class="at">quiet =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressMessages</span>(pkgload<span class="sc">::</span><span class="fu">load_all</span>(</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(.project_root, <span class="st">"../riesznet/r/riesznet"</span>),       <span class="at">quiet =</span> <span class="cn">TRUE</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>R users
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressPackageStartupMessages</span>(<span class="fu">library</span>(rsample))</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>estimand <span class="ot">&lt;-</span> <span class="fu">ATE</span>()</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>make_boost_d3 <span class="ot">&lt;-</span> <span class="cf">function</span>() RieszBooster<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> estimand, <span class="at">n_estimators =</span> <span class="dv">2000</span>L, <span class="at">max_depth =</span> <span class="dv">3</span>L,</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">early_stopping_rounds =</span> <span class="dv">20</span>L, <span class="at">validation_fraction =</span> <span class="fl">0.2</span>, <span class="at">learning_rate =</span> <span class="fl">0.05</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>make_boost_d5 <span class="ot">&lt;-</span> <span class="cf">function</span>() RieszBooster<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> estimand, <span class="at">n_estimators =</span> <span class="dv">2000</span>L, <span class="at">max_depth =</span> <span class="dv">5</span>L,</span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">early_stopping_rounds =</span> <span class="dv">20</span>L, <span class="at">validation_fraction =</span> <span class="fl">0.2</span>, <span class="at">learning_rate =</span> <span class="fl">0.05</span></span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>make_net_64  <span class="ot">&lt;-</span> <span class="cf">function</span>() RieszNet<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> estimand, <span class="at">hidden_sizes =</span> <span class="fu">c</span>(<span class="dv">64</span>L, <span class="dv">64</span>L), <span class="at">epochs =</span> <span class="dv">500</span>L,</span>
+<span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">early_stopping_rounds =</span> <span class="dv">20</span>L, <span class="at">validation_fraction =</span> <span class="fl">0.2</span></span>
+<span id="cb36-15"><a href="#cb36-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb36-16"><a href="#cb36-16" aria-hidden="true" tabindex="-1"></a>make_net_128 <span class="ot">&lt;-</span> <span class="cf">function</span>() RieszNet<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb36-17"><a href="#cb36-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> estimand, <span class="at">hidden_sizes =</span> <span class="fu">c</span>(<span class="dv">128</span>L, <span class="dv">64</span>L), <span class="at">epochs =</span> <span class="dv">500</span>L,</span>
+<span id="cb36-18"><a href="#cb36-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">early_stopping_rounds =</span> <span class="dv">20</span>L, <span class="at">validation_fraction =</span> <span class="fl">0.2</span></span>
+<span id="cb36-19"><a href="#cb36-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb36-20"><a href="#cb36-20" aria-hidden="true" tabindex="-1"></a>make_forest  <span class="ot">&lt;-</span> <span class="cf">function</span>() ForestRieszRegressor<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb36-21"><a href="#cb36-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> estimand, <span class="at">n_estimators =</span> <span class="dv">500</span>L, <span class="at">min_samples_leaf =</span> <span class="dv">10</span>L,</span>
+<span id="cb36-22"><a href="#cb36-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">random_state =</span> <span class="dv">0</span>L</span>
+<span id="cb36-23"><a href="#cb36-23" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb36-24"><a href="#cb36-24" aria-hidden="true" tabindex="-1"></a>candidates <span class="ot">&lt;-</span> <span class="fu">list</span>(make_boost_d3, make_boost_d5, make_net_64, make_net_128, make_forest)</span>
+<span id="cb36-25"><a href="#cb36-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-26"><a href="#cb36-26" aria-hidden="true" tabindex="-1"></a>cv_outer <span class="ot">&lt;-</span> <span class="fu">vfold_cv</span>(df, <span class="at">v =</span> <span class="dv">5</span>)</span>
+<span id="cb36-27"><a href="#cb36-27" aria-hidden="true" tabindex="-1"></a>alpha_oof <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(df))</span>
+<span id="cb36-28"><a href="#cb36-28" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (split <span class="cf">in</span> cv_outer<span class="sc">$</span>splits) {</span>
+<span id="cb36-29"><a href="#cb36-29" aria-hidden="true" tabindex="-1"></a>  tr <span class="ot">&lt;-</span> <span class="fu">analysis</span>(split); te <span class="ot">&lt;-</span> <span class="fu">assessment</span>(split); te_idx <span class="ot">&lt;-</span> <span class="fu">complement</span>(split)</span>
+<span id="cb36-30"><a href="#cb36-30" aria-hidden="true" tabindex="-1"></a>  cv_inner <span class="ot">&lt;-</span> <span class="fu">vfold_cv</span>(tr, <span class="at">v =</span> <span class="dv">3</span>)</span>
+<span id="cb36-31"><a href="#cb36-31" aria-hidden="true" tabindex="-1"></a>  scores <span class="ot">&lt;-</span> <span class="fu">vapply</span>(candidates, <span class="cf">function</span>(make) {</span>
+<span id="cb36-32"><a href="#cb36-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mean</span>(<span class="fu">vapply</span>(cv_inner<span class="sc">$</span>splits, <span class="cf">function</span>(s) {</span>
+<span id="cb36-33"><a href="#cb36-33" aria-hidden="true" tabindex="-1"></a>      m <span class="ot">&lt;-</span> <span class="fu">make</span>(); m<span class="sc">$</span><span class="fu">fit</span>(<span class="fu">analysis</span>(s)); m<span class="sc">$</span><span class="fu">score</span>(<span class="fu">assessment</span>(s))</span>
+<span id="cb36-34"><a href="#cb36-34" aria-hidden="true" tabindex="-1"></a>    }, <span class="fu">numeric</span>(<span class="dv">1</span>)))</span>
+<span id="cb36-35"><a href="#cb36-35" aria-hidden="true" tabindex="-1"></a>  }, <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb36-36"><a href="#cb36-36" aria-hidden="true" tabindex="-1"></a>  best_make <span class="ot">&lt;-</span> candidates[[<span class="fu">which.max</span>(scores)]]</span>
+<span id="cb36-37"><a href="#cb36-37" aria-hidden="true" tabindex="-1"></a>  best <span class="ot">&lt;-</span> <span class="fu">best_make</span>(); best<span class="sc">$</span><span class="fu">fit</span>(tr)</span>
+<span id="cb36-38"><a href="#cb36-38" aria-hidden="true" tabindex="-1"></a>  alpha_oof[te_idx] <span class="ot">&lt;-</span> best<span class="sc">$</span><span class="fu">predict</span>(te)</span>
+<span id="cb36-39"><a href="#cb36-39" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb36-40"><a href="#cb36-40" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(alpha_oof); <span class="fu">head</span>(alpha_oof, <span class="dv">5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 2000</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1]  1.177414  4.029221  2.650513 -2.946557  1.441013</code></pre>
 </div>
 </div>
-<div class="callout-body-container callout-body">
-<p>The <code>Pipeline</code> + <code>GridSearchCV</code> pattern is Python-only. From R, call into Python via <code>reticulate</code> using the same code: pass an R data frame with <code>reticulate::r_to_py(df)</code> and read the result back with <code>as.numeric(reticulate::py_to_r(...))</code>.</p>
-</div>
-</div>
+<p><code>ForestRieszRegressor</code> requires loading <code>forestriesz</code> and <code>riesznet</code> is needed for the neural candidates; load those R packages alongside <code>rieszreg</code> and <code>rieszboost</code> per the <a href="./install.html">install</a> instructions.</p>
 </section>
 <section id="other-sklearn-integrations" class="level2">
 <h2 class="anchored" data-anchor-id="other-sklearn-integrations">Other sklearn integrations</h2>

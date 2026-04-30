@@ -70,6 +70,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta name="quarto:offset" content="./">
 <link href="./save-and-load.html" rel="next">
 <link href="./tuning-and-cross-fitting.html" rel="prev">
+<link href="./logo.svg" rel="icon" type="image/svg+xml">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -318,9 +319,6 @@ window.Quarto = {
     <img src="./logo.svg" alt="" class="navbar-logo light-content">
     <img src="./logo.svg" alt="" class="navbar-logo dark-content">
     </a>
-    <a class="navbar-brand" href="./index.html">
-    <span class="navbar-title">RieszReg</span>
-    </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
@@ -500,6 +498,12 @@ window.Quarto = {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./related.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Related packages</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./references.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">References</span></a>
   </div>
@@ -659,7 +663,7 @@ window.Quarto = {
 <p><strong>Warnings.</strong> Two automatic checks:</p>
 <ol type="1">
 <li><em>“X% of rows have <span class="math inline">\(|\hat\alpha| &gt;\)</span> threshold — possible near-positivity violation.”</em> Either the data has genuine near-positivity (truncate <code>extreme_threshold</code> and report the loss of overlap), or the estimator is over-fitting (tune as below).</li>
-<li><em>“max <span class="math inline">\(|\hat\alpha|\)</span> is &gt;10× the 99th percentile — likely a single extrapolation outlier.”</em> The fitter found a region with no nearby training data. Tighten model complexity, increase regularization, or stop earlier.</li>
+<li><em>“max <span class="math inline">\(|\hat\alpha|\)</span> is &gt;10× the 99th percentile — likely a single extrapolation outlier.”</em> The learner found a region with no nearby training data. Tighten model complexity, increase regularization, or stop earlier.</li>
 </ol>
 </section>
 <section id="a-tuned-fit" class="level2">
