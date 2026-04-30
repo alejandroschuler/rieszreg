@@ -2,31 +2,34 @@
 title: "Backends"
 ---
 
-A backend fits the Riesz representer for a given estimand and loss. Three implementation packages ship today; each slots into `RieszEstimator` through one of two Protocols. `rieszboost` and `krrr` consume the augmented `(a, b)` dataset (`Backend.fit_augmented`). `forestriesz` ships *both*: a moment-style `ForestRieszRegressor` that consumes original rows + per-row moments (`MomentBackend.fit_rows`), and an augmentation-style `AugForestRieszRegressor` that consumes the augmented dataset directly (`Backend.fit_augmented`).
+A backend fits the Riesz representer for a given estimand and loss. Four implementation packages ship today; each slots into `RieszEstimator` through one of two Protocols. `rieszboost` and `krrr` consume the augmented `(a, b)` dataset (`Backend.fit_augmented`). `forestriesz` ships *both*: a moment-style `ForestRieszRegressor` that consumes original rows + per-row moments (`MomentBackend.fit_rows`), and an augmentation-style `AugForestRieszRegressor` that consumes the augmented dataset directly (`Backend.fit_augmented`). `riesznet` consumes original rows + per-row moments via `MomentBackend.fit_rows`, training a PyTorch model with autograd.
 
 ## Pick a backend
 
-| | [Boosting (`rieszboost`)](boosting.qmd) | [Kernel ridge (`krrr`)](kernel.qmd) | [Forest (`forestriesz`)](forest.qmd) |
-|---|---|---|---|
-| **Method** | Gradient boosting (xgboost or sklearn) | Closed-form solve of $(\mathrm{diag}(a) K + n\lambda I)\gamma = -b/2$ | GRF-based per-leaf moment solve |
-| **Algorithm** | Lee & Schuler ([2501.04871](https://arxiv.org/abs/2501.04871)) | Singh ([2102.11076](https://arxiv.org/abs/2102.11076)) | Chernozhukov, Newey, Quintas-Martínez, Syrgkanis ([ICML 2022](https://proceedings.mlr.press/v162/chernozhukov22a/chernozhukov22a.pdf)) |
-| **Best for** | Tabular data, $n \gtrsim 1{,}000$, mixed feature types | Smooth $\alpha_0$, small/medium $n$, low-dimensional $X$ | Many covariates, asymptotic CIs on $\alpha(x)$ |
-| **Iterative?** | Yes (rounds + early stopping) | No (closed-form per λ) | No (single forest fit) |
-| **Hyperparameters** | `n_estimators`, `learning_rate`, `max_depth`, `reg_lambda`, `subsample` | `kernel`, `lambda_grid`, `solver` | `n_estimators`, `max_depth`, `min_samples_leaf`, `honest`, `riesz_feature_fns` |
-| **Loss support** | `SquaredLoss`, `KLLoss`, `BernoulliLoss`, `BoundedSquaredLoss` | `SquaredLoss` only (today) | `SquaredLoss` only (today) |
-| **Scaling** | Linear in $n$ via xgboost | $O(n^3)$ direct; Nyström + RFF + Falkon for larger $n$ | $O(n \log n)$ per tree |
-| **Confidence intervals** | No | No | Yes (`predict_interval` on single-basis fits) |
-| **Convenience class** | `rieszboost.RieszBooster` | `krrr.KernelRieszRegressor` | `forestriesz.ForestRieszRegressor` (moment-style) and `forestriesz.AugForestRieszRegressor` (augmentation-style, fully estimand-agnostic) |
+| | [Boosting (`rieszboost`)](boosting.qmd) | [Kernel ridge (`krrr`)](kernel.qmd) | [Forest (`forestriesz`)](forest.qmd) | [Neural (`riesznet`)](neural.qmd) |
+|---|---|---|---|---|
+| **Method** | Gradient boosting (xgboost or sklearn) | Closed-form solve of $(\mathrm{diag}(a) K + n\lambda I)\gamma = -b/2$ | GRF-based per-leaf moment solve | PyTorch autograd on the per-row Bregman-Riesz loss |
+| **Algorithm** | Lee & Schuler ([2501.04871](https://arxiv.org/abs/2501.04871)) | Singh ([2102.11076](https://arxiv.org/abs/2102.11076)) | Chernozhukov, Newey, Quintas-Martínez, Syrgkanis ([ICML 2022](https://proceedings.mlr.press/v162/chernozhukov22a/chernozhukov22a.pdf)) | Chernozhukov, Newey, Quintas-Martínez, Syrgkanis ([2110.03031](https://arxiv.org/abs/2110.03031)) |
+| **Best for** | Tabular data, $n \gtrsim 1{,}000$, mixed feature types | Smooth $\alpha_0$, small/medium $n$, low-dimensional $X$ | Many covariates, asymptotic CIs on $\alpha(x)$ | High-dimensional inputs, custom architectures, image / text features |
+| **Iterative?** | Yes (rounds + early stopping) | No (closed-form per λ) | No (single forest fit) | Yes (epochs + early stopping) |
+| **Hyperparameters** | `n_estimators`, `learning_rate`, `max_depth`, `reg_lambda`, `subsample` | `kernel`, `lambda_grid`, `solver` | `n_estimators`, `max_depth`, `min_samples_leaf`, `honest`, `riesz_feature_fns` | `hidden_sizes`, `learning_rate`, `epochs`, `dropout`, or any `module_factory` / `optimizer_factory` |
+| **Loss support** | `SquaredLoss`, `KLLoss`, `BernoulliLoss`, `BoundedSquaredLoss` | `SquaredLoss` only (today) | `SquaredLoss` only (today) | `SquaredLoss`, `KLLoss`, `BernoulliLoss`, `BoundedSquaredLoss` |
+| **Scaling** | Linear in $n$ via xgboost | $O(n^3)$ direct; Nyström + RFF + Falkon for larger $n$ | $O(n \log n)$ per tree | Per-epoch cost is one forward pass over $n + \sum_i k_i$ points; scales to GPU |
+| **Confidence intervals** | No | No | Yes (`predict_interval` on single-basis fits) | No |
+| **Convenience class** | `rieszboost.RieszBooster` | `krrr.KernelRieszRegressor` | `forestriesz.ForestRieszRegressor` (moment-style) and `forestriesz.AugForestRieszRegressor` (augmentation-style, fully estimand-agnostic) | `riesznet.RieszNet` (default MLP); `riesznet.TorchBackend` for arbitrary `nn.Module` factories |
 
 ## Compose explicitly
 
 Both convenience classes are subclasses of `rieszreg.RieszEstimator` with the backend defaulted. To swap backends or build your own, compose explicitly:
 
 ```python
+import functools
 from rieszreg import RieszEstimator, ATE, SquaredLoss
 from rieszboost.backends import XGBoostBackend, SklearnBackend
 from krrr import KernelRidgeBackend, Gaussian
 from forestriesz import ForestRieszBackend
+from riesznet import TorchBackend
+from riesznet.modules import build_adam, build_mlp
 
 # Default: xgboost
 est = RieszEstimator(estimand=ATE(), backend=XGBoostBackend())
@@ -49,16 +52,26 @@ est = RieszEstimator(
     estimand=ATE(),
     backend=ForestRieszBackend(n_estimators=500),
 )
+
+# Neural network (moment-style backend; fit_rows path)
+est = RieszEstimator(
+    estimand=ATE(),
+    backend=TorchBackend(
+        module_factory=functools.partial(build_mlp, hidden_sizes=(64, 64)),
+        optimizer_factory=functools.partial(build_adam, lr=5e-3),
+        epochs=300,
+    ),
+)
 ```
 
-The convenience classes are thin subclasses that bake in the backend and surface backend-specific hyperparameters as constructor args, so that they fit cleanly into `GridSearchCV`. See the [boosting](boosting.qmd), [kernel](kernel.qmd), and [forest](forest.qmd) pages for each.
+The convenience classes are thin subclasses that bake in the backend and surface backend-specific hyperparameters as constructor args, so that they fit cleanly into `GridSearchCV`. See the [boosting](boosting.qmd), [kernel](kernel.qmd), [forest](forest.qmd), and [neural](neural.qmd) pages for each.
 
 ## Adding a backend
 
 Implement *one* of two Protocols from [`rieszreg.backends.base`](https://github.com/rieszreg/rieszreg/blob/main/rieszreg/python/rieszreg/backends/base.py):
 
 - `Backend.fit_augmented(aug_train, aug_valid, loss, …)` — for augmentation-style learners (kernel ridge, gradient boosting). Implementations: `KernelRidgeBackend`, `XGBoostBackend`, `SklearnBackend`.
-- `MomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, …)` — for moment-style learners (random forests, neural nets). Compute per-row moments via `rieszreg.trace(estimand, row)`. Implementation: `ForestRieszBackend`.
+- `MomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, …)` — for moment-style learners (random forests, neural nets). Compute per-row moments via `rieszreg.trace(estimand, row)`. Implementations: `ForestRieszBackend`, `TorchBackend`.
 
 Either way, return a `FitResult` whose `predictor` implements `predict_eta` and `predict_alpha`. Register the predictor's loader for round-trip via:
 

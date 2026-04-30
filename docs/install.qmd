@@ -8,7 +8,7 @@ title: "Install"
 
 ## Python
 
-The four packages live in sibling GitHub repos: [rieszreg](https://github.com/rieszreg/rieszreg) (meta-package + this user guide), [rieszboost](https://github.com/rieszreg/rieszboost), [krrr](https://github.com/rieszreg/krrr), [forestriesz](https://github.com/rieszreg/forestriesz). Clone them into a parent directory:
+The five packages live in sibling GitHub repos: [rieszreg](https://github.com/rieszreg/rieszreg) (meta-package + this user guide), [rieszboost](https://github.com/rieszreg/rieszboost), [krrr](https://github.com/rieszreg/krrr), [forestriesz](https://github.com/rieszreg/forestriesz), [riesznet](https://github.com/rieszreg/riesznet). Clone them into a parent directory:
 
 ```sh
 mkdir RieszReg && cd RieszReg
@@ -16,11 +16,13 @@ git clone https://github.com/rieszreg/rieszreg.git
 git clone https://github.com/rieszreg/rieszboost.git
 git clone https://github.com/rieszreg/krrr.git
 git clone https://github.com/rieszreg/forestriesz.git
+git clone https://github.com/rieszreg/riesznet.git
 python3 -m venv .venv
 .venv/bin/pip install -e rieszreg/python
 .venv/bin/pip install -e rieszboost/python      # gradient boosting backend
 .venv/bin/pip install -e krrr/python            # kernel ridge backend
 .venv/bin/pip install -e forestriesz/python     # random-forest backend
+.venv/bin/pip install -e riesznet/python        # neural-network backend
 ```
 
 `rieszboost`'s `XGBoostBackend` requires OpenMP. On macOS:
@@ -29,7 +31,7 @@ python3 -m venv .venv
 brew install libomp
 ```
 
-Linux distributions (and GitHub Actions ubuntu-latest) ship `libgomp1`; no extra step is needed. `krrr` has no system prerequisites; an optional GPU backend uses [`falkon`](https://falkonml.github.io/falkon/) (`pip install -e 'krrr/python[falkon]'`). `forestriesz` depends on `econml`, which ships prebuilt wheels for macOS arm64+x86_64 and ubuntu — no compiler required.
+Linux distributions (and GitHub Actions ubuntu-latest) ship `libgomp1`; no extra step is needed. `krrr` has no system prerequisites; an optional GPU backend uses [`falkon`](https://falkonml.github.io/falkon/) (`pip install -e 'krrr/python[falkon]'`). `forestriesz` depends on `econml`, which ships prebuilt wheels for macOS arm64+x86_64 and ubuntu — no compiler required. `riesznet` depends on `torch>=2.0`; CPU wheels are fetched automatically, GPU wheels need a `--index-url` per the PyTorch install matrix.
 
 ### Verify
 
@@ -68,6 +70,7 @@ First-time setup:
    pkgload::load_all("rieszboost/r/rieszboost")
    pkgload::load_all("krrr/r/krrr")
    pkgload::load_all("forestriesz/r/forestriesz")
+   pkgload::load_all("riesznet/r/riesznet")
    ```
 3. Point reticulate at the Python venv:
    ```r
@@ -86,6 +89,7 @@ The R API exposes every built-in estimand, every loss, and the full estimator in
 .venv/bin/python -m pytest rieszboost/python/tests -v
 .venv/bin/python -m pytest krrr/python/tests -v
 .venv/bin/python -m pytest forestriesz/python/tests -v
+.venv/bin/python -m pytest riesznet/python/tests -v
 
 Rscript -e '
   Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))
@@ -96,5 +100,7 @@ Rscript -e '
   testthat::test_dir("krrr/r/krrr/tests/testthat")
   pkgload::load_all("forestriesz/r/forestriesz")
   testthat::test_dir("forestriesz/r/forestriesz/tests/testthat")
+  pkgload::load_all("riesznet/r/riesznet")
+  testthat::test_dir("riesznet/r/riesznet/tests/testthat")
 '
 ```

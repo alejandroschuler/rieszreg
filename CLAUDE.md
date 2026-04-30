@@ -12,6 +12,7 @@ A family of packages for Riesz regression. Top-level coordinator for:
 - [`rieszboost/`](rieszboost/) — gradient-boosting backend (Lee & Schuler 2025; uses `Backend.fit_augmented`).
 - [`krrr/`](krrr/) — kernel-ridge backend (Singh 2021; uses `Backend.fit_augmented`).
 - [`forestriesz/`](forestriesz/) — random-forest backend (Chernozhukov, Newey, Quintas-Martínez, Syrgkanis ICML 2022; uses `MomentBackend.fit_rows`).
+- [`riesznet/`](riesznet/) — neural-network backend (Chernozhukov, Newey, Quintas-Martínez, Syrgkanis 2021, Riesz-rep only; uses `MomentBackend.fit_rows` with PyTorch autograd).
 
 Implementation packages depend on `rieszreg` and provide concrete backends. The design doc lives inside the meta-package itself ([`rieszreg/DESIGN.md`](rieszreg/DESIGN.md)) so every collaborator who clones rieszreg gets it.
 
@@ -33,6 +34,7 @@ rieszreg (no deps on impl packages)
    ├── rieszboost      (XGBoostBackend, SklearnBackend, RieszBooster)        [fit_augmented]
    ├── krrr            (KernelRidgeBackend, kernels, solvers, KernelRieszRegressor)  [fit_augmented]
    ├── forestriesz     (ForestRieszBackend, ForestRieszRegressor)            [fit_rows]
+   ├── riesznet        (TorchBackend, TorchPredictor, RieszNet)              [fit_rows]
    └── <future-pkg>    (its backend(s) + thin convenience class)
 ```
 
@@ -87,6 +89,7 @@ Provide a convenience class subclassing `rieszreg.RieszEstimator`. Subclass `rie
 .venv/bin/python -m pytest rieszboost/python/tests -q
 .venv/bin/python -m pytest krrr/python/tests -q
 .venv/bin/python -m pytest forestriesz/python/tests -q
+.venv/bin/python -m pytest riesznet/python/tests -q
 
 Rscript -e '
   Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))
@@ -97,6 +100,8 @@ Rscript -e '
   testthat::test_dir("krrr/r/krrr/tests/testthat")
   pkgload::load_all("forestriesz/r/forestriesz")
   testthat::test_dir("forestriesz/r/forestriesz/tests/testthat")
+  pkgload::load_all("riesznet/r/riesznet")
+  testthat::test_dir("riesznet/r/riesznet/tests/testthat")
 '
 ```
 
@@ -113,9 +118,10 @@ Before writing any procedural code with loops, splits, grids, or folds, ask *"is
 
 ## Status
 
-- rieszreg: 68 Python tests passing (unit tests for tracer, losses, estimands, augmentation, diagnostics, orchestrator with stub backends — both `Backend` and `MomentBackend` dispatch paths covered, testing utilities).
-- rieszboost: 110 Python tests + 11 R parity tests passing.
+- rieszreg: 71 Python tests passing (unit tests for tracer, losses, estimands, augmentation, diagnostics, orchestrator with stub backends — both `Backend` and `MomentBackend` dispatch paths covered, testing utilities).
+- rieszboost: 112 Python tests + 11 R parity tests passing.
 - krrr: 36 Python tests + 1 R parity test passing.
-- forestriesz: 34 Python tests + 1 R parity test passing.
-- Unified Quarto docs site renders all 16 pages (forest backend page added).
+- forestriesz: 55 Python tests + 1 R parity test passing.
+- riesznet: 41 Python tests + 1 R parity test passing.
+- Unified Quarto docs site renders all 17 pages (neural backend page added).
 - Pre-commit hook + CI workflow templates wired but not yet activated by `git config core.hooksPath` in any clone.

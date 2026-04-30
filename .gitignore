@@ -2,6 +2,7 @@
 rieszboost/
 krrr/
 forestriesz/
+riesznet/
 
 # Local virtualenvs
 .venv/

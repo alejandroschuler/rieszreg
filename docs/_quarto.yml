@@ -40,6 +40,7 @@ website:
           - backends/boosting.qmd
           - backends/kernel.qmd
           - backends/forest.qmd
+          - backends/neural.qmd
       - developing.qmd
       - references.qmd
 

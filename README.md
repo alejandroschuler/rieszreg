@@ -18,6 +18,9 @@ RieszReg/
 ├── forestriesz/      # random-forest backend (Chernozhukov et al. ICML 2022)
 │   ├── python/       # ForestRieszBackend, ForestRieszRegressor, default_riesz_features
 │   └── r/forestriesz/ # R6 wrapper subclassing rieszreg::RieszEstimatorR6
+├── riesznet/         # neural-network backend (Chernozhukov et al. 2021, Riesz-rep only)
+│   ├── python/       # TorchBackend, TorchPredictor, RieszNet
+│   └── r/riesznet/   # R6 wrapper subclassing rieszreg::RieszEstimatorR6
 ├── docs/             # unified Quarto user guide (sklearn-style sectioning)
 ├── reference/        # arXiv paper index, shared across packages
 ├── .githooks/        # canonical pre-commit hook (living-doc rule + tone lint)
@@ -29,11 +32,12 @@ The user guide is a single Quarto site at [`docs/`](docs/) — sklearn-style, no
 
 ## Install
 
-The four packages live in sibling GitHub repos:
+The five packages live in sibling GitHub repos:
 [rieszreg](https://github.com/rieszreg/rieszreg) (this repo, the meta-package + unified docs),
 [rieszboost](https://github.com/rieszreg/rieszboost),
 [krrr](https://github.com/rieszreg/krrr),
-[forestriesz](https://github.com/rieszreg/forestriesz).
+[forestriesz](https://github.com/rieszreg/forestriesz),
+[riesznet](https://github.com/rieszreg/riesznet).
 Clone them as siblings into a parent directory; the docs builds and CI assume
 that layout.
 
@@ -43,11 +47,13 @@ git clone https://github.com/rieszreg/rieszreg.git
 git clone https://github.com/rieszreg/rieszboost.git
 git clone https://github.com/rieszreg/krrr.git
 git clone https://github.com/rieszreg/forestriesz.git
+git clone https://github.com/rieszreg/riesznet.git
 python3 -m venv .venv
 .venv/bin/pip install -e rieszreg/python
 .venv/bin/pip install -e rieszboost/python      # gradient-boosting backend
 .venv/bin/pip install -e krrr/python            # kernel-ridge backend
 .venv/bin/pip install -e forestriesz/python     # random-forest backend
+.venv/bin/pip install -e riesznet/python        # neural-network backend
 ```
 
 `rieszboost`'s `XGBoostBackend` requires OpenMP; on macOS, `brew install libomp` once.
@@ -79,10 +85,11 @@ est.fit(df)
 
 ## Status
 
-- **rieszreg** v0.0.1 — feature-complete: estimand machinery, four Bregman losses, augmentation engine, both `Backend` (augmentation-style) and `MomentBackend` (moment-style) Protocols with orchestrator dispatch, RieszEstimator, base R6 class, testing utilities. 68 Python tests passing.
-- **rieszboost** v0.0.1 — sklearn-compatible `RieszBooster` with `XGBoostBackend` (default) and `SklearnBackend`; 110 Python tests + 11 R parity tests passing.
+- **rieszreg** v0.0.1 — feature-complete: estimand machinery, four Bregman losses, augmentation engine, both `Backend` (augmentation-style) and `MomentBackend` (moment-style) Protocols with orchestrator dispatch, RieszEstimator, base R6 class, testing utilities. 71 Python tests passing.
+- **rieszboost** v0.0.1 — sklearn-compatible `RieszBooster` with `XGBoostBackend` (default) and `SklearnBackend`; 112 Python tests + 11 R parity tests passing.
 - **krrr** v0.0.1 — sklearn-compatible `KernelRieszRegressor`; four solvers (direct, Nyström-CG, RFF, optional Falkon); 36 Python tests + 1 R parity test passing.
-- **forestriesz** v0.0.1 — sklearn-compatible `ForestRieszRegressor` on EconML's `BaseGRF`; locally constant + locally linear sieve fits; honest-split `predict_interval`; 34 Python tests + 1 R parity test passing.
+- **forestriesz** v0.0.1 — sklearn-compatible `ForestRieszRegressor` on EconML's `BaseGRF`; locally constant + locally linear sieve fits; honest-split `predict_interval`; 55 Python tests + 1 R parity test passing.
+- **riesznet** v0.0.1 — sklearn-compatible `RieszNet` (default-MLP) and `TorchBackend` (arbitrary `nn.Module` factories) trained with PyTorch autograd against any of the four built-in Bregman losses; 41 Python tests + 1 R parity test passing.
 
 ## Related work
 
@@ -109,6 +116,7 @@ What's distinctive here:
 .venv/bin/python -m pytest rieszboost/python/tests -q
 .venv/bin/python -m pytest krrr/python/tests -q
 .venv/bin/python -m pytest forestriesz/python/tests -q
+.venv/bin/python -m pytest riesznet/python/tests -q
 
 Rscript -e '
   RETICULATE_PYTHON <- file.path(getwd(), ".venv/bin/python")
@@ -120,6 +128,8 @@ Rscript -e '
   testthat::test_dir("krrr/r/krrr/tests/testthat")
   pkgload::load_all("forestriesz/r/forestriesz")
   testthat::test_dir("forestriesz/r/forestriesz/tests/testthat")
+  pkgload::load_all("riesznet/r/riesznet")
+  testthat::test_dir("riesznet/r/riesznet/tests/testthat")
 '
 ```
 
