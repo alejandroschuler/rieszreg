@@ -6,6 +6,14 @@
 > must satisfy. Anything in this CLAUDE.md is operational notes; anything in
 > DESIGN.md is contract.
 
+> **Notation conventions** (math, prose, code naming) for everything across
+> this family — docs, READMEs, docstrings, comments, examples — live in the
+> [`rieszreg-notation` skill](.claude/skills/rieszreg-notation/SKILL.md).
+> Read it before editing any user-facing prose or docstring that mentions
+> $\mu$ / $\alpha$ / $\psi$ / $m$, the data tuple $Z = (A, X)$, or the term
+> "learner". Update touched paragraphs to the canonical convention; defer
+> bulk sweeps to a dedicated notation-pass PR.
+
 A family of packages for Riesz regression. Top-level coordinator for:
 
 - [`rieszreg/`](rieszreg/) — meta-package: shared abstractions (`Estimand`, `LossSpec`, `RieszEstimator`, augmentation, diagnostics, `Backend` and `MomentBackend` Protocols, testing utilities, R6 base class).

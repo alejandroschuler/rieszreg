@@ -21,15 +21,15 @@ Pass an unsupported loss and the backend raises at fit time with a clear error.
 | Loss | Potential $\phi$ | Link $\eta \to \alpha$ | Domain | Use for |
 |---|---|---|---|---|
 | `SquaredLoss` | $t^2$ | identity | $\mathbb{R}$ | Default. |
-| `KLLoss` | $t \log t$ | exp | $(0, \infty)$ | Density-ratio targets (TSM, IPSI). Guarantees $\hat\alpha > 0$. Requires non-negative $m$-coefficients. |
+| `KLLoss` | $t \log t$ | exp | $(0, \infty)$ | Density-ratio estimands (TSM, IPSI). Guarantees $\hat\alpha > 0$. Requires non-negative $m$-coefficients. |
 | `BernoulliLoss` | $t \log t + (1-t)\log(1-t)$ | sigmoid | $(0, 1)$ | $\alpha_0$ known to lie in $(0, 1)$. Same coefficient-sign restriction as `KLLoss`. |
 | `BoundedSquaredLoss(lo, hi)` | $t^2$ + sigmoid-scaled link | $\mathrm{lo} + (\mathrm{hi}-\mathrm{lo}) \cdot \sigma$ | $(\mathrm{lo}, \mathrm{hi})$ | Squared-loss fit with prior bounds (e.g. trimmed-propensity ratios). |
 
 `SquaredLoss` is the standard Lee-Schuler / Chernozhukov objective. Per-row loss in $\alpha$-space: $a \cdot \alpha^2 + b \cdot \alpha$.
 
-## `KLLoss` for density-ratio targets
+## `KLLoss` for density-ratio estimands
 
-`KLLoss` ($\phi = t \log t$, exp link) targets density ratios. The exponential link keeps $\hat\alpha > 0$.
+`KLLoss` ($\phi = t \log t$, exp link) is matched to density-ratio estimands. The exponential link keeps $\hat\alpha > 0$.
 
 ::: {.panel-tabset group="lang"}
 

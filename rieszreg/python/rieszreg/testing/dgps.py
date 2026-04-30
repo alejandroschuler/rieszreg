@@ -49,7 +49,7 @@ def linear_gaussian_ate(
         logit = 0.5 * x
         pi = 1.0 / (1.0 + np.exp(-logit))
         a = (rng.uniform(0, 1, size=n) < pi).astype(float)
-        # Outcome (not used by Riesz fitter; included for downstream EIF tests).
+        # Outcome (not used by Riesz learner; included for downstream EIF tests).
         y = treatment_effect * a + 0.5 * x + rng.normal(0.0, 1.0, size=n)
         return pd.DataFrame({"a": a, "x": x, "y": y})
 
@@ -73,7 +73,7 @@ def linear_gaussian_ate(
 def logistic_tsm(level: float = 1.0, sigma_x: float = 1.0) -> DGP:
     """Treatment-specific mean DGP. Riesz representer α₀(a, x) = 1[a=level] / π(x|level).
 
-    Useful as a density-ratio target: α₀ ≥ 0 everywhere, so KLLoss applies.
+    Useful as a density-ratio estimand: α₀ ≥ 0 everywhere, so KLLoss applies.
     """
     feature_keys = ("a", "x")
 

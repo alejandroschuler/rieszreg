@@ -69,7 +69,7 @@ df_to_py <- function(data) {
 
 # ---- Estimand factories (return opaque Python Estimand instances) ----
 
-#' Average treatment effect estimand: m(z, alpha) = alpha(1, x) - alpha(0, x).
+#' Average treatment effect estimand: m(alpha)(z) = alpha(1, x) - alpha(0, x).
 #' @param treatment Name of the treatment column.
 #' @param covariates Character vector of covariate column names.
 #' @return A Python `Estimand` object, suitable to pass to any RieszReg
@@ -80,7 +80,7 @@ ATE <- function(treatment = "a", covariates = "x") {
 }
 
 
-#' ATT *partial parameter* estimand: m(z, alpha) = a*(alpha(1,x) - alpha(0,x)).
+#' ATT *partial-estimand* surface: m(alpha)(z) = a*(alpha(1,x) - alpha(0,x)).
 #'
 #' Full ATT divides by P(A=1) and is not a Riesz functional — combine
 #' alpha_partial with a delta-method EIF (Hubbard 2011) downstream.
@@ -91,7 +91,7 @@ ATT <- function(treatment = "a", covariates = "x") {
 }
 
 
-#' Treatment-specific mean: m(z, alpha) = alpha(level, x).
+#' Treatment-specific mean: m(alpha)(z) = alpha(level, x).
 #' @param level Fixed treatment value.
 #' @inheritParams ATE
 #' @export
@@ -101,7 +101,7 @@ TSM <- function(level, treatment = "a", covariates = "x") {
 }
 
 
-#' Additive shift effect: m(z, alpha) = alpha(a + delta, x) - alpha(a, x).
+#' Additive shift effect: m(alpha)(z) = alpha(a + delta, x) - alpha(a, x).
 #' @param delta Shift magnitude.
 #' @inheritParams ATE
 #' @export
@@ -111,7 +111,7 @@ AdditiveShift <- function(delta, treatment = "a", covariates = "x") {
 }
 
 
-#' LASE *partial parameter* estimand. Full LASE divides by P(A < threshold)
+#' LASE *partial-estimand* surface. Full LASE divides by P(A < threshold)
 #' and is not a Riesz functional.
 #' @param delta Shift magnitude.
 #' @param threshold Cutoff; only rows with `a < threshold` get shifted.
@@ -146,7 +146,7 @@ SquaredLoss <- function() {
 }
 
 #' KL-Bregman loss (phi = t log t with exp link). Suitable for density-ratio
-#' targets like TSM / IPSI; requires non-negative m-coefficients.
+#' estimands like TSM / IPSI; requires non-negative m-coefficients.
 #' @param max_eta Clip on η before applying the exponential link (numerical safety).
 #' @export
 KLLoss <- function(max_eta = 50.0) {

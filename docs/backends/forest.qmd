@@ -74,8 +74,8 @@ pi = 1 / (1 + np.exp(-(0.5 * x - 0.3)))
 a = rng.binomial(1, pi).astype(float)
 df_tsm = pd.DataFrame({"a": a, "x": x})
 
-# KLLoss enforces α̂ > 0 via the exp link — the right choice for density-
-# ratio targets like TSM and IPSI. Requires non-negative m-coefficients.
+# KLLoss enforces α̂ > 0 via the exp link — matched to density-ratio
+# estimands like TSM and IPSI. Requires non-negative m-coefficients.
 est = AugForestRieszRegressor(
     estimand=TSM(level=1, treatment="a", covariates=("x",)),
     loss=KLLoss(),

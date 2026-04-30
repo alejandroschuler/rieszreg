@@ -9,6 +9,7 @@ project:
 website:
   title: "RieszReg"
   description: "Riesz regression for semiparametric inference — user guide."
+  favicon: logo.svg
   search: true
   page-navigation: true
   navbar:
@@ -45,6 +46,7 @@ website:
           - estimation/custom.qmd
           - estimation/external.qmd
       - developing.qmd
+      - related.qmd
       - references.qmd
 
 format:

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="RieszReg">
+  <title>RieszReg</title>
+  <text x="48" y="82" text-anchor="middle"
+        font-family="'Latin Modern Math','STIX Two Math','Cambria Math',Georgia,serif"
+        font-style="italic" font-size="80" fill="#1a1a1a">α</text>
+  <g stroke="#1a1a1a" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <line x1="14" y1="18" x2="82" y2="18"/>
+    <polyline points="76,12 82,18 76,24"/>
+  </g>
+</svg>

@@ -273,9 +273,62 @@ print(f"first 5 values:          {alpha_oof[:5]}")
 
 The call to `cross_val_predict` is identical to the single-learner case. The only addition is the `Pipeline` wrapper and the list-valued `param_grid` entry — everything else is standard sklearn.
 
-::: {.callout-note title="R users"}
-The `Pipeline` + `GridSearchCV` pattern is Python-only. From R, call into Python via `reticulate` using the same code: pass an R data frame with `reticulate::r_to_py(df)` and read the result back with `as.numeric(reticulate::py_to_r(...))`.
-:::
+The same nested cross-fit + per-fold model selection in R uses [`rsample`](https://rsample.tidymodels.org/) (tidymodels) for the fold splits and a small loop for the inner-CV winner pick. Each outer fold runs its own inner-CV on its training portion only.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Load forestriesz and riesznet R wrappers"
+.project_root <- Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd())
+suppressMessages(pkgload::load_all(
+  file.path(.project_root, "../forestriesz/r/forestriesz"), quiet = TRUE))
+suppressMessages(pkgload::load_all(
+  file.path(.project_root, "../riesznet/r/riesznet"),       quiet = TRUE))
+```
+
+```{r}
+suppressPackageStartupMessages(library(rsample))
+
+estimand <- ATE()
+make_boost_d3 <- function() RieszBooster$new(
+  estimand = estimand, n_estimators = 2000L, max_depth = 3L,
+  early_stopping_rounds = 20L, validation_fraction = 0.2, learning_rate = 0.05
+)
+make_boost_d5 <- function() RieszBooster$new(
+  estimand = estimand, n_estimators = 2000L, max_depth = 5L,
+  early_stopping_rounds = 20L, validation_fraction = 0.2, learning_rate = 0.05
+)
+make_net_64  <- function() RieszNet$new(
+  estimand = estimand, hidden_sizes = c(64L, 64L), epochs = 500L,
+  early_stopping_rounds = 20L, validation_fraction = 0.2
+)
+make_net_128 <- function() RieszNet$new(
+  estimand = estimand, hidden_sizes = c(128L, 64L), epochs = 500L,
+  early_stopping_rounds = 20L, validation_fraction = 0.2
+)
+make_forest  <- function() ForestRieszRegressor$new(
+  estimand = estimand, n_estimators = 500L, min_samples_leaf = 10L,
+  random_state = 0L
+)
+candidates <- list(make_boost_d3, make_boost_d5, make_net_64, make_net_128, make_forest)
+
+cv_outer <- vfold_cv(df, v = 5)
+alpha_oof <- numeric(nrow(df))
+for (split in cv_outer$splits) {
+  tr <- analysis(split); te <- assessment(split); te_idx <- complement(split)
+  cv_inner <- vfold_cv(tr, v = 3)
+  scores <- vapply(candidates, function(make) {
+    mean(vapply(cv_inner$splits, function(s) {
+      m <- make(); m$fit(analysis(s)); m$score(assessment(s))
+    }, numeric(1)))
+  }, numeric(1))
+  best_make <- candidates[[which.max(scores)]]
+  best <- best_make(); best$fit(tr)
+  alpha_oof[te_idx] <- best$predict(te)
+}
+length(alpha_oof); head(alpha_oof, 5)
+```
+
+`ForestRieszRegressor` requires loading `forestriesz` and `riesznet` is needed for the neural candidates; load those R packages alongside `rieszreg` and `rieszboost` per the [install](install.qmd) instructions.
 
 ## Other sklearn integrations
 

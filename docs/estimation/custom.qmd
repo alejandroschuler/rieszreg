@@ -4,7 +4,7 @@ title: "Custom code: DML and TMLE"
 
 {{< include ../_setup.qmd >}}
 
-Cross-fit $\hat\alpha$ from `rieszreg` plus a cross-fit outcome regression $\hat\mu$ are the two ingredients of a one-step / DML / TMLE estimator for any linear-functional target. This page builds both estimators on the Lalonde NSW dataset in ~50 lines.
+Cross-fit $\hat\alpha$ from `rieszreg` plus a cross-fit outcome regression $\hat\mu$ are the two ingredients of a one-step / DML / TMLE estimator for any linear-functional estimand. This page builds both estimators on the Lalonde NSW dataset in ~50 lines.
 
 ## Data: Lalonde NSW (treated) + CPS (controls)
 
@@ -146,8 +146,8 @@ mu0 <- predict(mu_full, X0)
 ## DML / one-step
 
 The efficient influence function for ATE is
-$\mathrm{IF}(O) = m(Z, \hat g) + \hat\alpha(Z)\,(Y - \hat\mu(Z))$,
-with $m(Z, \hat g) = \hat\mu(1, X) - \hat\mu(0, X)$. Average it for $\hat\theta$; its sample variance gives the SE.
+$\mathrm{IF}(O) = m(\hat\mu)(Z) + \hat\alpha(Z)\,(Y - \hat\mu(Z))$,
+with $m(\hat\mu)(Z) = \hat\mu(1, X) - \hat\mu(0, X)$. Average it for $\hat\psi$; its sample variance gives the SE.
 
 ::: {.panel-tabset group="lang"}
 
@@ -180,7 +180,7 @@ The experimental NSW-only ATE benchmark is roughly \$1,794 (Dehejia-Wahba 1999);
 
 ## TMLE
 
-TMLE solves the same EIF=0 estimating equation as one-step but does it by *targeting* $\hat\mu$: fit a one-parameter fluctuation $\mu^\star(\cdot) = \hat\mu(\cdot) + \epsilon \hat\alpha(\cdot)$ on a "clever covariate" $\hat\alpha$ to drive the empirical mean of $\hat\alpha(O)(Y - \mu^\star(O))$ to zero, then take the plug-in $\hat\theta = (1/n) \sum \mu^\star(1, X) - \mu^\star(0, X)$. For continuous $Y$ the targeting is a single linear regression of the outcome residual on $\hat\alpha$.
+TMLE solves the same EIF=0 estimating equation as one-step but does it by *targeting* $\hat\mu$: fit a one-parameter fluctuation $\mu^\star(\cdot) = \hat\mu(\cdot) + \epsilon \hat\alpha(\cdot)$ on a "clever covariate" $\hat\alpha$ to drive the empirical mean of $\hat\alpha(O)(Y - \mu^\star(O))$ to zero, then take the plug-in $\hat\psi = (1/n) \sum \mu^\star(1, X) - \mu^\star(0, X)$. For continuous $Y$ the targeting is a single linear regression of the outcome residual on $\hat\alpha$.
 
 To target the counterfactual predictions we also need $\hat\alpha$ at $A=1$ and $A=0$. Refit the booster on the full sample and predict at the two counterfactual treatment levels.
 
@@ -240,14 +240,14 @@ For continuous $Y$, one-step and TMLE point estimates coincide to $O_p(n^{-1})$.
 
 ## Other estimands
 
-The pattern generalizes verbatim. Swap the estimand factory and the $m(Z, \hat g)$ formula:
+The pattern generalizes verbatim. Swap the estimand factory and the $m(\hat\mu)(Z)$ formula:
 
-| Estimand | $m(Z, \hat g)$ | Riesz factory |
+| Estimand | $m(\hat\mu)(Z)$ | Riesz factory |
 |---|---|---|
-| ATT | $A(\hat g(1, X) - \hat g(0, X))$, then divide by $\hat P(A=1)$ | `ATT(...)` |
-| TSM at $a^\star$ | $\hat g(a^\star, X)$ | `TSM(level=a_star)` |
-| Additive shift $\delta$ | $\hat g(A + \delta, X) - \hat g(A, X)$ | `AdditiveShift(delta)` |
-| Stochastic intervention | $\int \hat g(a', X)\,h(a' \mid X)\,da'$ | `StochasticIntervention(...)` |
+| ATT | $A(\hat\mu(1, X) - \hat\mu(0, X))$, then divide by $\hat{P}(A=1)$ | `ATT(...)` |
+| TSM at $a^\star$ | $\hat\mu(a^\star, X)$ | `TSM(level=a_star)` |
+| Additive shift $\delta$ | $\hat\mu(A + \delta, X) - \hat\mu(A, X)$ | `AdditiveShift(delta)` |
+| Stochastic intervention | $\int \hat\mu(a', X)\,h(a' \mid X)\,da'$ | `StochasticIntervention(...)` |
 
 Worked examples for each: [`rieszboost/examples/`](https://github.com/rieszreg/rieszboost/tree/main/examples) (`tsm.py`, `stochastic_intervention.py`, `lee_schuler/binary_dgp.py`).
 

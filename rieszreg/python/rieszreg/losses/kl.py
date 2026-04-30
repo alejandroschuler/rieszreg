@@ -1,4 +1,4 @@
-"""KL Bregman-Riesz loss: φ(t) = t·log(t), exp link, density-ratio targets."""
+"""KL Bregman-Riesz loss: φ(t) = t·log(t), exp link, density-ratio estimands."""
 
 from __future__ import annotations
 

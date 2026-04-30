@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 96" role="img" aria-label="RieszReg">
+  <title>RieszReg</title>
+  <!-- α as the mark, with a vector-hat arrow above (math notation for "α as a vector") -->
+  <text x="48" y="78" text-anchor="middle"
+        font-family="'Latin Modern Math','STIX Two Math','Cambria Math',Georgia,serif"
+        font-style="italic" font-size="68" fill="#1a1a1a">α</text>
+  <g stroke="#1a1a1a" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <line x1="22" y1="22" x2="74" y2="22"/>
+    <polyline points="68,17 74,22 68,27"/>
+  </g>
+  <!-- wordmark -->
+  <text x="100" y="64"
+        font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',system-ui,sans-serif"
+        font-size="42" font-weight="600" letter-spacing="-0.5" fill="#1a1a1a">RieszReg</text>
+</svg>
