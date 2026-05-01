@@ -72,3 +72,7 @@ Concretely:
 ## 10. Drift handling
 
 A non-trivial fraction of existing files still uses the old notation ($g$, $\theta$, $m(z, g)$). When you edit a paragraph that uses old notation, update that paragraph fully to the new convention. Do not bulk-rewrite untouched files — drift gets fixed on touch. The exceptions are user guide pages explicitly being polished in a notation-pass PR.
+
+## 11. Riesz representable Estimand
+
+The estimand is $\mathbb E[m(\mu)(Z,Y)]$. Note the $Y$. That is, $m$ maps from whatever space $\mu$ lives in (functions of $Z$) to a space of functions that *can* depend on $Y$ as well. This is important for supporting estimands that depend on the joint distribution of $(Z, Y)$

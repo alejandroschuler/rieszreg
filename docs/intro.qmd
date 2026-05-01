@@ -8,9 +8,9 @@ title: "What is Riesz Regression?"
 
 In semiparametric inference you are often interested in an estimand (a.k.a. target parameter) of the form
 $$
-\psi \;=\; \mathbb{E}\!\left[\,m(\mu)(Z)\,\right]
+\psi \;=\; \mathbb{E}\!\left[\,m(\mu)(Z,Y)\,\right]
 $$
-where $Z = (A, X)$ are the observed predictors ($A$ is treatment or any other intervention; $X$ are covariates), $Y$ is the outcome, and $\mu(z) = \mathbb{E}[Y \mid Z = z]$ is the unknown outcome regression. The **operator** $m$ takes the function $\mu$ as input and produces another function $m(\mu)$, evaluated at $Z$ inside the expectation. "Operator" is just a fancy word for a function that takes functions as input and produces functions as output.
+where $Z = (A, X)$ are the observed predictors ($A$ is treatment or any other intervention; $X$ are covariates), $Y$ is the outcome, and $\mu(a,x) = \mathbb{E}[Y \mid A = a, X = x]$ is the unknown outcome regression. The operator $m$ takes the function $\mu$ as input and produces another function $m(\mu)$, evaluated at $Z,Y$ inside the expectation. "Operator" is just a fancy word for a function that takes functions as input and produces functions as output.
 
 Take the average treatment effect (ATE) as an example:
 $$
@@ -19,7 +19,7 @@ $$
    &=\; \mathbb{E}\!\left[\,\mu(1, X) - \mu(0, X)\,\right].
 \end{aligned}
 $$
-To match $\psi = \mathbb{E}[m(\mu)(Z)]$, $m$ has to be the operator that takes $\mu(A, X)$ and returns the function $(A, X) \mapsto \mu(1, X) - \mu(0, X)$. That is, $m(\mu)$ is a function (just like $\mu$ is), and we evaluate it at $Z = (A, X)$ inside the expectation.
+To match $\psi = \mathbb{E}[m(\mu)(Z,Y)]$, $m$ has to be the operator that takes $\mu(A, X)$ and returns the function $(A, X) \mapsto \mu(1, X) - \mu(0, X)$. That is, $m(\mu)$ is a function (just like $\mu$ is), and we evaluate it at $Z = (A, X)$ inside the expectation.
 
 In code:
 
@@ -35,7 +35,7 @@ def mu(a, x):
 def m(mu):
     # An operator: takes a function mu and returns another function.
     # In this case, the ATE operator.
-    def m_of_mu(a, x):
+    def m_of_mu(a, x, y=None):
         return mu(1, x) - mu(0, x)
     return m_of_mu
 
@@ -53,7 +53,7 @@ mu <- function(a, x) {
 m <- function(mu) {
   # An operator: takes a function mu and returns another function.
   # In this case, the ATE operator.
-  function(a, x) mu(1, x) - mu(0, x)
+  function(a, x, y=NULL) mu(1, x) - mu(0, x)
 }
 
 m(mu)(a = 1, x = 3)
@@ -63,25 +63,27 @@ m(mu)(a = 1, x = 3)
 
 A few standard examples — each is a different choice of $m$:
 
-| Estimand | $m(\mu)(Z)$ | Reference |
+| Estimand | $m(\mu)(Z,Y)$ | Reference |
 |---|---|---|
 | Average treatment effect (ATE) | $\mu(1, X) - \mu(0, X)$ | Hahn (1998) |
 | Treatment-specific mean (TSM) at $a^\star$ | $\mu(a^\star, X)$ | Robins (1986) |
 | Additive shift $a \mapsto a + \delta$ | $\mu(A + \delta, X) - \mu(A, X)$ | Haneuse & Rotnitzky (2013) |
 | Stochastic intervention $a \sim h(\cdot \mid X)$ | $\int \mu(a', X)\,h(a' \mid X)\,da'$ | Muñoz & van der Laan (2012) |
 
+<!-- claude, could you add links to the above references -->
+
 ## Riesz representation
 
-The **Riesz representation theorem** says: for any estimand $\psi = \mathbb{E}[m(\mu)(Z)]$ that is *linear and continuous* in $\mu$ (we'll unpack both words below), there exists a function $\alpha$ (the **Riesz representer**) such that
+The **Riesz representation theorem** says: for any estimand $\psi = \mathbb{E}[m(\mu)(Z,Y)]$ that is *linear and continuous* in $\mu$ (we'll unpack both words below), there exists a function $\alpha$ (the **Riesz representer**) such that
 $$
-\mathbb{E}\!\left[\,m(\mu)(Z)\,\right] \;=\; \mathbb{E}\!\left[\,\alpha(Z)\,Y\,\right]
+\mathbb{E}\!\left[\,m(\mu)(Z,Y)\,\right] \;=\; \mathbb{E}\!\left[\,\alpha(Z)\,Y\,\right]
 \qquad \text{for every plausible } \mu.
 $$
 This is just an outcome-weighted average — the weights are $\alpha(Z)$. For the ATE, $\alpha(A, X) = A/\pi(X) - (1 - A)/(1 - \pi(X))$ is the inverse-propensity weight. For the treatment-specific mean, $\alpha(A, X) = \mathbb{1}\{A = a^\star\} / \pi(a^\star \mid X)$ is a density ratio. In general $\alpha$ has a closed form involving something like a propensity score. You can think of $\alpha$ as the right weight for an outcome-weighted estimator of $\psi$ — though strictly speaking it's the theorem that *motivates* the weighting estimator, not the other way around.
 
 ### What does "linear in $\mu$" mean?
 
-The estimand $\psi$ depends on the outcome regression $\mu$. Linear means that this dependence behaves like a calculus-style linear function: scale $\mu$ by a constant and $\psi$ scales by the same constant; add two regressions $\mu_1$ and $\mu_2$ and $\psi$ becomes the sum $\psi_1 + \psi_2$. There is no curvature in how $\psi$ depends on $\mu$.
+The estimand $\psi$ depends on the outcome regression $\mu$. Linear means that this dependence behaves like a linear function: scale the input $\mu$ by a constant and $\psi$ scales by the same constant; add two regressions $\mu_1$ and $\mu_2$ and $\psi$ becomes the sum $\psi_1 + \psi_2$. There is no curvature in how $\psi$ depends on $\mu$.
 
 Take the ATE as a worked example. Suppose two researchers have hypothesized different outcome regressions $\mu_1$ and $\mu_2$, and they each compute an ATE estimate $\psi_1$ and $\psi_2$. A third researcher decides to average them and uses $\mu = \tfrac{1}{2}\mu_1 + \tfrac{1}{2}\mu_2$. What is the resulting ATE? Plug into the formula:
 $$
@@ -91,7 +93,7 @@ The estimand at the averaged regression equals the average of the two estimands.
 
 You can check linearity directly from the operator $m$. Plug $c_1 \mu_1 + c_2 \mu_2$ into $m$ and verify that
 $$
-m\!\big(c_1 \mu_1 + c_2 \mu_2\big)(Z) \;=\; c_1\,m(\mu_1)(Z) + c_2\,m(\mu_2)(Z)
+m\!\big(c_1 \mu_1 + c_2 \mu_2\big)(Z,Y) \;=\; c_1\,m(\mu_1)(Z) + c_2\,m(\mu_2)(Z,Y)
 $$
 holds for all constants $c_1, c_2$ and all input regressions $\mu_1, \mu_2$. Every estimand in the [estimands page](estimands.qmd) — averages, differences, integrals against fixed densities — is built from operations that preserve sums and constants, so they all pass this check.
 
@@ -115,9 +117,9 @@ Then for any linear, continuous $\psi = \mathbb{E}[m(\mu)(Z)]$, exactly the same
 
 ## Estimation
 
-The natural way to estimate $\psi = \mathbb{E}[m(\mu)(Z)]$ is to plug in: train an outcome regression $\hat\mu$ on the data, then average,
+The natural way to estimate $\psi = \mathbb{E}[m(\mu)(Z,Y)]$ is to plug in: train an outcome regression $\hat\mu$ on the data, then average,
 $$
-\hat\psi_{\text{plug-in}} \;=\; \frac{1}{n} \sum_i m(\hat\mu)(Z_i).
+\hat\psi_{\text{plug-in}} \;=\; \frac{1}{n} \sum_i m(\hat\mu)(Z_i,Y_i).
 $$
 This is biased: $\hat\mu$ is itself estimated and converges slowly toward the true $\mu$ when the underlying class is flexible (random forests, gradient boosting, neural nets), and the plug-in inherits that slow convergence.
 
@@ -150,12 +152,12 @@ $$
 \begin{aligned}
 \mathbb{E}\!\left[\,(\alpha(Z) - \alpha_0(Z))^2\,\right]
 &= \mathbb{E}[\alpha(Z)^2] \;-\; 2\,\mathbb{E}[\alpha(Z)\,\alpha_0(Z)] \;+\; \mathbb{E}[\alpha_0(Z)^2] \\
-&= \mathbb{E}[\alpha(Z)^2] \;-\; 2\,\mathbb{E}\!\left[m(\alpha)(Z)\right] \;+\; \text{const}
+&= \mathbb{E}[\alpha(Z)^2] \;-\; 2\,\mathbb{E}\!\left[m(\alpha)(Z,Y)\right] \;+\; \text{const}
 \end{aligned}
 $$
-The middle term simplifies via the Riesz identity $\mathbb{E}[\alpha(Z)\,\alpha_0(Z)] = \mathbb{E}[m(\alpha)(Z)]$ — apply the representation theorem with $\mu = \alpha$, treating $\alpha$ now as a hypothetical outcome regression. The last term doesn't depend on $\alpha$, so we can drop it. What's left is the **Riesz loss**,
+The middle term simplifies via the Riesz identity $\mathbb{E}[\alpha(Z)\,\alpha_0(Z)] = \mathbb{E}[m(\alpha)(Z,Y)]$ — apply the representation theorem with $\mu = \alpha$, treating $\alpha$ now as a hypothetical outcome regression. The last term doesn't depend on $\alpha$, so we can drop it. What's left is the **Riesz loss**,
 $$
-L(\alpha) \;=\; \mathbb{E}\!\left[\,\alpha(Z)^2 \;-\; 2\,m(\alpha)(Z)\,\right],
+L(\alpha) \;=\; \mathbb{E}\!\left[\,\alpha(Z)^2 \;-\; 2\,m(\alpha)(Z,Y)\,\right],
 $$
 and crucially, **every term is computable from data** — you only need $m$ (which you supplied as part of defining the estimand) and the candidate $\alpha$. The unobserved $\alpha_0$ has dropped out. Minimizing $L$ over a flexible function class gives $\hat\alpha$. Chernozhukov et al. ([2021](https://arxiv.org/abs/2104.14737)) introduced this construction.
 <!-- give 1/2 sentences explaining prior history of idea and connection to direct estimation of balancing weights -->

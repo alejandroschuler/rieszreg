@@ -16,6 +16,21 @@ The Bregman-Riesz loss generalizes the squared Riesz loss via a strictly convex 
 Pass an unsupported loss and the backend raises at fit time with a clear error.
 :::
 
+## Bregman-Riesz Losses
+<!-- claude, replace hines et al and kato and chernozhukov below with actual links to papers -->
+Hines et al. [year] show that for a convex, differentiable function $h: \mathbb R \to \mathbb R$ (called $F$ in their paper), the minimizer of a population loss based on $h$ (the average Bregman divergence between $\alpha$ and $\alpha_0$ with potential $h$) can be expressed in a form that does not involve the true Riesz representer $\alpha_0$. 
+$$
+\begin{aligned}
+\arg\min_\alpha \mathcal L_g(\alpha) 
+&= \arg\min_\alpha \mathbb E[h(\alpha_0(Z)) - h(\alpha(Z)) - h'(\alpha(Z))(\alpha_0)(Z) - \alpha(Z))] \\
+&= \arg\min_\alpha \mathbb E[\tilde h(\alpha(Z)) - m(h' \circ \alpha)(Z,Y)] \\
+\end{aligned}
+$$
+
+where $\tilde h(t) = t h'(t) - h(t)$. Kato {year} and Hines [year] both give some intuition for why this loss makes sense and what sensible choices of $h$ are in different cases. When $h(t) = t^2$ this reduces to the standard Riesz loss of Chernozhukov et al [year]. `rieszreg` implements several Bregman-Riesz losses and also allows users to define their own by defining the function $h$.
+
+<!-- add what you can distill from this to your notation skill -->
+
 ## Loss table
 
 | Loss | Potential $\phi$ | Link $\eta \to \alpha$ | Domain | Use for |
@@ -30,6 +45,7 @@ Pass an unsupported loss and the backend raises at fit time with a clear error.
 ## `KLLoss` for density-ratio estimands
 
 `KLLoss` ($\phi = t \log t$, exp link) is matched to density-ratio estimands. The exponential link keeps $\hat\alpha > 0$.
+<!-- I don't understand what we gain from the link, can't it always be composed with h()? So shouldn't we just define the composition directly instead of leaving more params for the user to try to make sense of? the link doesn't add any generality, right? -->
 
 ::: {.panel-tabset group="lang"}
 
@@ -88,9 +104,7 @@ cat(sprintf("mean alpha_hat on treated rows = %.3f\n",
 
 `KLLoss` requires all augmented `b` coefficients $\le 0$, equivalent to all $m$-coefficients being non-negative. The check happens at fit time and raises with a clear error if violated.
 
-::: {.callout-warning title="When KLLoss can be unstable"}
-Pure-counterfactual rows ($a=0$, $b<0$) have no minimum in $\eta$ under KL — leaf weights at low-overlap points can extrapolate. Use `SquaredLoss` unless the positivity guarantee is needed.
-:::
+<!-- I don't think we want to be talking about coefficients yet, right now we haven't restricted the estimands yet so that this makes sense at all -->
 
 ## `BoundedSquaredLoss` for hard prior bounds
 
@@ -166,6 +180,8 @@ booster = RieszBooster(estimand=TSM(level=1), init=2.5) # informed prior
 For `BernoulliLoss` + `TSM` (or any density-ratio estimand with $\bar m = 1$) the loss-minimizing constant sits on the upper boundary, and the projection clips to $1 - \varepsilon$. The sigmoid is saturated at that init and gradients are tiny, so iterative training may stall. Pass `init=0.5` (or another interior value) when this matters. The `KLLoss` / `BoundedSquaredLoss` boundaries can hit the same issue when $\bar m$ lands exactly on a bound.
 :::
 
+<!-- I think we need to move this section to its own page or in estimands page-->
+
 ## Custom losses
 
 ::: {.callout-note title="Python-only"}
@@ -193,6 +209,12 @@ class LossSpec(Protocol):
     def validate_coefficients(self, b: np.ndarray) -> None:
         """Raise if (a, b) violate this loss's domain."""
 ```
+
+<!-- 
+1.can you give an example of what this would mean? "implement this protocol" is a bit abstract for users who aren't used to thinking in terms of protocols. maybe a simple example of a custom loss that implements this protocol, and then how to pass it to a learner?
+2. this seems like way too many methods to have to implement. In principle, the loss just depends on a function h: R->R (link is redundant unless you can convince me otherwise). I'd like custom losses to work with just an h() function. Derivatives are needed always but if not defined by the user the should be computable with autodiff. Same for hessian, which I assume we need for some methods. 
+3. There should be *nothing* in the loss about "coefficients" or anything like that. Those only apply when we start talking about esitmands that depend only on a finite number of evaluations of alpha, and even then they are just a property of the estimand, not the loss. The loss should just be a function of alpha and the user shouldn't have to worry about how it interacts with the estimand. Those "coefficients" should be computed once the loss is combined with an estimand of the appropraite type. I hope this also clarifies the difference between the data augmentation and moment backends which seems like it might be conceptually misplaced to me
+-->
 
 [`SquaredLoss`](https://github.com/rieszreg/rieszreg/blob/main/rieszreg/python/rieszreg/losses/squared.py) and [`KLLoss`](https://github.com/rieszreg/rieszreg/blob/main/rieszreg/python/rieszreg/losses/kl.py) are short reference implementations.
 

@@ -8,7 +8,7 @@ engine: knitr
 
 ![](banner.svg){.hero-banner fig-alt="RieszReg — Riesz regression for semiparametric inference"}
 
-`rieszreg` estimates the Riesz representer $\alpha$ of a linear estimand $\psi = \mathbb{E}[m(\mu)(Z)]$ — the building block of one-step, TMLE, and DML inference — with gradient boosting ([`rieszboost`](backends/boosting.qmd)), kernel ridge ([`krrr`](backends/kernel.qmd)), random forests ([`forestriesz`](backends/forest.qmd)), or neural nets ([`riesznet`](backends/neural.qmd)). Think of it as the `sklearn`, `tidymodels` or `superlearner` for Riesz regression.
+`rieszreg` estimates the Riesz representer $\alpha$ of a linear estimand $\psi = \mathbb{E}[m(\mu)(Z,Y)]$ — the building block of one-step, TMLE, and DML inference — with gradient boosting ([`rieszboost`](backends/boosting.qmd)), kernel ridge ([`krrr`](backends/kernel.qmd)), random forests ([`forestriesz`](backends/forest.qmd)), or neural nets ([`riesznet`](backends/neural.qmd)). Think of it as the `sklearn`, `tidymodels` or `superlearner` for Riesz regression.
 
 `rieszreg` ships built-in factories for ATE, ATT, TSM, additive shifts, local shifts, stochastic interventions, and arbitrary user-defined estimands; the squared Riesz loss plus the wider Bregman family (KL, Bernoulli, bounded squared); and sklearn-native tuning, model selection, and cross-fitting. Python and R, with bitwise-identical predictions on the same input.
 

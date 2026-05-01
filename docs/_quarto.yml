@@ -27,8 +27,8 @@ website:
       - install.qmd
       - section: "Usage"
         contents:
-          - estimands.qmd
           - losses.qmd
+          - estimands.qmd
           - tuning-and-cross-fitting.qmd
           - diagnostics.qmd
           - save-and-load.qmd

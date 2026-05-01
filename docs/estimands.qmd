@@ -13,10 +13,47 @@ This page covers the six built-in factories and how to write your own. The facto
 <!-- 
 I think we should more clearly differentiate between m() operators that reduce to a finite linear combination of point evaluations of \mu and other kinds of linear operators. For the former class things are quite clear and it seems like data augmentation can pretty generically handle things. For estimands that don't fit this pattern, like the stochastic intervention, or an average derivative effect, we can still handle them but with more restrictions on the learner. This needs to be clear in the docs but also in the code, i.e. there needs to be a subclass of estimand that represents the finite linear combination of point eval case and the tracer only needs to handle that subclass (I think). 
 
-There may be another subclass to handle integrals, and maybe another for derivatives would make sense. The integrals can be handled with sampling in which case they sort of get replaced by / transformed to a finite evals case with more data? Derivatives may also come down to a finite evals case after a transformation that gets handled by the learner (eg autodiff). Need help thinking through this and how the Estimands and code should be structured to make this clear and to enforce the right things.
+There may be another subclass to handle integrals, and maybe another for derivatives would make sense. The integrals can be handled with sampling in which case they sort of get replaced by / transformed to a finite evals case with more data? Derivatives may also come down to a finite evals case after a transformation that gets handled by the learner (eg autodiff). Need help thinking through this (are there other classes? What else is a linear operator besides finite linear combination, integration, and differentiation?) and how the Estimands and code should be structured to make this clear and to enforce the right things.
 
 Whatever conclusion/structure we come to, it will have to be documented clearly.
 -->
+
+## Estimands that evaluate $\hat\mu$ at finite points
+
+While the Riesz representer theorem applies to any linear functional, the estimands that are easiest to support computationally are those that reduce to a finite linear combination of point evaluations of $\mu$. For example, the ATE is $\mathbb{E}[\mu(1, X) - \mu(0, X)]$, which reduces to the two point evaluations $\mu(1, x)$ and $\mu(0, x)$ for each row's covariates $x$. Many of our built-in estimands fit this pattern. `rieszreg` can work with other estimands as well, but since they are more rarely of interest and come at a computational cost or are only supported by some backends, we first focus on the finite-evaluation class.
+
+We say an estimand $\psi = E[m(\mu)(Z,Y)]$ is of finite-evaluation type if there exist fixed functions $b: \mathbb R^k \times \mathcal Z \times \mathcal Y \to \mathbb R$ and $c: (\mathcal Z \times \mathcal Y) \to \mathcal Z^k$ such that
+
+$$
+m(\mu)(z, y) = b(\vec\mu(a(z,y)), z, y)
+$$
+
+Where $\vec\mu$ denotes elementwise application of $\mu$ to its vector-valued input. The function $a$ selects $k$ points at which to evaluate $\mu$, based on the values of $z$ and $y$. For example, for the ATE, $k=2$ and $a(z,y) = ((1, z_x), (0, z_x))$ selects the treated and control potential-covariate pairs. The function $b$ then forms the contrast $b(\mu_1, \mu_0, z, y) = \mu_1 - \mu_0$. 
+
+The first observation we can make is that if an estimand is of this type (and $m$ is a linear operator, which we already must assume), it can be written as 
+
+$$
+m(\mu)(z, y) = c(z,y)^\top \vec\mu(a(z,y))
+$$
+
+for some function $c: (\mathcal Z \times \mathcal Y) \to \mathbb R^k$ by the linearity of $m$. In other words, $m$ must be a finite *linear combination* of point evaluations of $\mu$. In the ATE example, $c(z,y) = (1, -1)$ gives the contrast weights for the treated and control evaluations of $\mu$. 
+
+<!-- claude: write a rigorous proof of this and put it in a collapsilbe section here -->
+
+Therefore for these estimands we can rewrite an empirical Bregman-Riesz loss. Define the $k$ "pseudo-datapoints" $Z_{ij} = a_j(Z_i, Y_i)$ and let $r$ enumerate the set for $\{1 \dots k+1\} \times \{1\dots n}$ such that $Z_{r=1} = Z_1$, $Z_{r=2} = Z_{i=1,j=1}$, $Z_{r=3} = Z_{i=1,j=2}$, ... $Z_{r=k+2} = Z_{i=2, j=1}$, etc. Then the empirical loss can be written as
+
+$$
+\begin{aligned}
+\mathcal L_{h,n}(\alpha) 
+&= \sum_{i=1}^n \left[\tilde h(\alpha(Z_i)) - m(h' \circ \alpha)(Z_i,Y_i) \right] \\
+&= \sum_{i=1}^n \left[\tilde h(\alpha(Z_i)) - \sum_j^k c_j(Z_i,Y_i)  \cdot (h' \circ \alpha)(a_j(Z_i,Y_i))  \right] \\
+&= \sum_{i=1}^n \tilde h(\alpha(Z_i)) - \sum_{i=1}^n \sum_j^k C_{ij} \cdot h'(\alpha(Z_{ij})) \\
+\end{aligned}
+$$
+
+which only depends on the values that $\alpha$ takes at the datapoints $\{Z_i: i\in \{1 \dots n\}\} \cup \{Z_{ij}: i\in \{1 \dots n\}, j\in \{1 \dots k\}\}$ of which there are, at most, $n \times (k+1)$. The "constants" $C_{ij} = c_j(Z_i, Y_i)$ depend on data but not on the value of $\alpha$ and so can be evaluated once as a pre-processing step. 
+
+<!-- claude, incorporate the notation above into your notation skill -->
 
 ## Built-in factories
 
@@ -55,6 +92,8 @@ LocalShift(delta = 0.3, threshold = 0.7)
 :::
 
 ## Stochastic intervention: pre-sample, then fit
+
+<!-- this needs to be developed/generalized in some way. It may be best to move all the StochasticIntervention stuff to a dev branch while we figure out how to formalize and implement estimands beyond the finitely-evaluable ones -->
 
 `StochasticIntervention` needs a list of treatment values drawn from the intervention density on each row. Build that column once before fitting.
 
@@ -111,9 +150,13 @@ mean(booster$predict(df))
 
 ## Custom estimands
 
+<!-- this is now only applicable to the finite evaluation estimands, whcih should consittue a subclass of the more general kind -->
+
 To fit a functional not covered by the built-ins, write `m(z, alpha)` and wrap it in an `Estimand`. The library traces $m$ to extract the linear-form structure.
 
 $m$ must be a finite linear combination of point evaluations of $\alpha$, built with `+`, `-`, scalar `*`, and calls to `alpha(...)`. Squaring, adding constants, integrals, and other non-linear operations raise.
+
+<!-- see above: user should define m using the vector valued-fns a(z,y) (point generator) and c(z,y) (weights). rest should be automatic -->
 
 ::: {.callout-note title="Python-only"}
 Custom `m()` is Python-only. From R, define `m` in Python via `reticulate::py_run_string` and pass the resulting `Estimand` to your estimator. See the [R interface page](r-interface.qmd) for the recipe.
