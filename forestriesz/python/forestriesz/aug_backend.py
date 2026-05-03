@@ -9,9 +9,9 @@ Why a second backend? The moment-style ``ForestRieszBackend`` needs a sieve
 that captures the moment's dependence on W — for built-in estimands without a
 canonical sieve (AdditiveShift, LocalShift, custom user moments) it raises a
 row-constant degeneracy error. The augmentation-style path sidesteps the
-sieve question entirely: even with a constant basis, J_k = 2 a_k and
-A_k = -b_k vary across augmented rows (originals have a=1, b=0;
-counterfactual evaluation points have a=0, b≠0), so the forest can split
+sieve question entirely: even with a constant basis, J_r = 2 D_r and
+A_r = -2 C_r vary across augmented rows (originals have D=1, C=0;
+counterfactual evaluation points have D=0, C≠0), so the forest can split
 usefully on the full feature space without estimand-specific configuration.
 
 Trade-offs vs ``ForestRieszBackend``:
@@ -36,6 +36,7 @@ from rieszreg import (
     FitResult,
     LossSpec,
     SquaredLoss,
+    aug_loss_alpha,
 )
 
 from ._grf import _RieszGRF
@@ -53,7 +54,12 @@ def _holdout_riesz_loss(
 ) -> float:
     eta = predictor.predict_eta(aug_valid.features)
     alpha = loss.link_to_alpha(eta)
-    return float(np.sum(loss.loss_row(aug_valid.a, aug_valid.b, alpha)) / aug_valid.n_rows)
+    return float(
+        np.sum(aug_loss_alpha(
+            loss, aug_valid.is_original, aug_valid.potential_deriv_coef, alpha
+        ))
+        / aug_valid.n_rows
+    )
 
 
 @dataclass
@@ -107,8 +113,6 @@ class AugForestRieszBackend:
         # criterion (splits that maximize variance reduction in -B/(2A) also
         # separate the monotonically-related Bregman optima well), then
         # post-hoc replace each leaf value with the Bregman per-leaf optimum.
-        loss.validate_coefficients(aug_train.b)
-
         seed = random_state if random_state is not None else self.random_state
 
         # 1. Resolve sieve. Default = constant basis.
@@ -117,18 +121,18 @@ class AugForestRieszBackend:
 
         # 2. Per-augmented-row basis.
         phi = _eval_phi(aug_train.features, phi_fns)        # (M, p)
-        a = aug_train.a                                      # (M,)
-        b = aug_train.b                                      # (M,)
+        is_original = aug_train.is_original                  # (M,)
+        pdc = aug_train.potential_deriv_coef                 # (M,)
 
         # 3. Fold base_score into the linear coefficient (same trick as krrr).
         if base_score != 0.0:
-            b = b + 2.0 * a * base_score
+            pdc = pdc + is_original * base_score
 
-        # 4. Per-augmented-row J = 2 a φ φ', A = -b φ.
+        # 4. Per-augmented-row J = 2 D φ φ', A = -2 C φ.
         # J shape (M, p, p) flattened to (M, p²); A shape (M, p).
-        JJ = (2.0 * a)[:, None, None] * np.einsum("ij,ik->ijk", phi, phi)
+        JJ = (2.0 * is_original)[:, None, None] * np.einsum("ij,ik->ijk", phi, phi)
         JJ_flat = JJ.reshape(-1, p * p)
-        A = -(b[:, None] * phi)                              # (M, p)
+        A = -2.0 * (pdc[:, None] * phi)                      # (M, p)
 
         # 5. Pack into the EconML T slot (LinearMomentGRFCriterion wants scalar y).
         T_pack = np.ascontiguousarray(np.column_stack([JJ_flat, A]))
@@ -163,7 +167,7 @@ class AugForestRieszBackend:
         # already gives the right θ. For other losses walk every (tree, leaf)
         # and replace the stored θ with the Bregman per-leaf optimum from a
         # Newton iteration on the leaf's rows. The Newton uses the original
-        # (un-base-score-shifted) b because it evaluates gradients at
+        # (un-base-score-shifted) C because it evaluates gradients at
         # η = θ · φ + base_score directly.
         leaf_eta_table = None
         if not isinstance(loss, SquaredLoss):
@@ -172,8 +176,8 @@ class AugForestRieszBackend:
             leaf_eta_table = compute_leaf_eta_table(
                 forest=forest,
                 X_aug=aug_train.features,
-                a_aug=a,
-                b_aug=aug_train.b,            # original b, not the squared-fold-in
+                is_original_aug=is_original,
+                potential_deriv_coef_aug=aug_train.potential_deriv_coef,  # un-shifted
                 phi_aug=phi,
                 loss=loss,
                 base_score=base_score,

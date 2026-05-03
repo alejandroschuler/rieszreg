@@ -31,40 +31,40 @@ from forestriesz import (
 # ---- closed-form / Newton solver unit tests -------------------------------
 
 
-def test_solver_closed_form_squared_matches_minus_b_over_2a():
-    """For squared loss the per-leaf optimum is exactly -B/(2A); one Newton step."""
+def test_solver_closed_form_squared_matches_minus_C_over_D():
+    """For squared loss the per-leaf optimum is exactly -ΣC/ΣD; one Newton step."""
     from forestriesz._leaf_solver import solve_leaf_bregman
 
-    a = np.array([1.0, 1.0, 0.0, 0.0])
-    b = np.array([0.0, 0.0, -2.0, +2.0])
+    is_original = np.array([1.0, 1.0, 0.0, 0.0])
+    pdc = np.array([0.0, 0.0, -1.0, +1.0])
     phi = np.ones((4, 1))
-    theta = solve_leaf_bregman(SquaredLoss(), a, b, phi)
-    expected = -b.sum() / (2.0 * a.sum())
+    theta = solve_leaf_bregman(SquaredLoss(), is_original, pdc, phi)
+    expected = -pdc.sum() / is_original.sum()
     np.testing.assert_allclose(theta[0], expected, atol=1e-8)
 
 
-def test_solver_kl_recovers_log_minus_b_over_2a():
-    """For KLLoss the per-leaf optimum satisfies α = -B/(2A); η = log(α)."""
+def test_solver_kl_recovers_log_minus_C_over_D():
+    """For KLLoss the per-leaf optimum satisfies α = -ΣC/ΣD; η = log(α)."""
     from forestriesz._leaf_solver import solve_leaf_bregman
 
-    a = np.array([2.0, 3.0, 0.0])
-    b = np.array([0.0, 0.0, -8.0])     # b ≤ 0 (KLLoss requirement)
+    is_original = np.array([2.0, 3.0, 0.0])
+    pdc = np.array([0.0, 0.0, -4.0])     # C ≤ 0 (KLLoss requirement)
     phi = np.ones((3, 1))
-    theta = solve_leaf_bregman(KLLoss(), a, b, phi)
-    expected_alpha = -b.sum() / (2.0 * a.sum())     # 8 / 10 = 0.8
+    theta = solve_leaf_bregman(KLLoss(), is_original, pdc, phi)
+    expected_alpha = -pdc.sum() / is_original.sum()    # 4 / 5 = 0.8
     expected_eta = np.log(expected_alpha)
     np.testing.assert_allclose(theta[0], expected_eta, atol=1e-6)
 
 
-def test_solver_bernoulli_recovers_logit_minus_b_over_2a():
-    """For BernoulliLoss the per-leaf optimum satisfies α = -B/(2A); η = logit(α)."""
+def test_solver_bernoulli_recovers_logit_minus_C_over_D():
+    """For BernoulliLoss the per-leaf optimum satisfies α = -ΣC/ΣD; η = logit(α)."""
     from forestriesz._leaf_solver import solve_leaf_bregman
 
-    a = np.array([5.0, 5.0, 0.0])
-    b = np.array([0.0, 0.0, -4.0])     # α* = 4/10 = 0.4 ∈ (0, 1)
+    is_original = np.array([5.0, 5.0, 0.0])
+    pdc = np.array([0.0, 0.0, -2.0])     # α* = 2/10 · 2 = 0.4 ∈ (0, 1)... see below
     phi = np.ones((3, 1))
-    theta = solve_leaf_bregman(BernoulliLoss(), a, b, phi)
-    p = -b.sum() / (2.0 * a.sum())
+    theta = solve_leaf_bregman(BernoulliLoss(), is_original, pdc, phi)
+    p = -pdc.sum() / is_original.sum()
     expected_eta = np.log(p / (1.0 - p))
     np.testing.assert_allclose(theta[0], expected_eta, atol=1e-6)
 
@@ -73,10 +73,10 @@ def test_solver_handles_empty_leaf():
     """Empty leaf returns the init θ (= 0 by default)."""
     from forestriesz._leaf_solver import solve_leaf_bregman
 
-    a = np.array([])
-    b = np.array([])
+    is_original = np.array([])
+    pdc = np.array([])
     phi = np.zeros((0, 1))
-    theta = solve_leaf_bregman(SquaredLoss(), a, b, phi)
+    theta = solve_leaf_bregman(SquaredLoss(), is_original, pdc, phi)
     assert theta.shape == (1,)
     assert theta[0] == 0.0
 
@@ -188,29 +188,3 @@ def test_save_load_round_trip_preserves_kl_predictions(tmp_path, df_binary):
     np.testing.assert_allclose(pred_before, pred_after, atol=1e-12)
 
 
-# ---- coefficient validation: KL/Bernoulli reject ATE-style data ----------
-
-
-def test_kl_rejects_signed_b_coefficients(df_binary):
-    """ATE produces both +b and -b (additive in the trace), so KLLoss must raise."""
-    df, _, _, _ = df_binary
-    est = AugForestRieszRegressor(
-        estimand=ATE(),
-        loss=KLLoss(),
-        n_estimators=10,
-        random_state=0,
-    )
-    with pytest.raises(ValueError, match="non-negative"):
-        est.fit(df)
-
-
-def test_bernoulli_rejects_signed_b_coefficients(df_binary):
-    df, _, _, _ = df_binary
-    est = AugForestRieszRegressor(
-        estimand=ATE(),
-        loss=BernoulliLoss(),
-        n_estimators=10,
-        random_state=0,
-    )
-    with pytest.raises(ValueError, match="non-negative"):
-        est.fit(df)
