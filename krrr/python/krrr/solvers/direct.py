@@ -2,28 +2,28 @@
 
 The augmented Riesz loss decomposes per-row as
 
-    L_n(α) = (1/n) Σ_k [a_k α(p_k)² + b_k α(p_k)] + λ ‖α‖²_H
+    L_n(α) = (1/n) Σ_r [D_r α(p_r)² + 2 C_r α(p_r)] + λ ‖α‖²_H
 
-with α̂ = Σ_k γ_k k(·, p_k) by the representer theorem. The first-order
+with α̂ = Σ_r γ_r k(·, p_r) by the representer theorem. The first-order
 condition gives
 
-    (diag(a) K + n λ I) γ = − b / 2
+    (diag(D) K + n λ I) γ = − C
 
-where K[k,j] = k(p_k, p_j). Build_augmented assigns a_k ∈ {0, 1} (a=1 for
-the original observation row, a=0 for counterfactual evaluation points
+where K[r,s] = k(p_r, p_s). Build_augmented assigns D_r ∈ {0, 1} (D=1 for
+the original observation row, D=0 for counterfactual evaluation points
 introduced by m). Partition the augmented index set:
 
-    o = {k : a_k > 0}  ("original" points; carry the squared term)
-    c = {k : a_k = 0}  ("counterfactual" points; carry only the linear term)
+    o = {r : D_r > 0}  ("original" points; carry the squared term)
+    c = {r : D_r = 0}  ("counterfactual" points; carry only the linear term)
 
-Row k ∈ c reduces to `n λ γ_k = − b_k / 2`, so γ_c is closed-form. Substitute
+Row r ∈ c reduces to `n λ γ_r = − C_r`, so γ_c is closed-form. Substitute
 back: γ_o solves a symmetric PSD system
 
-    (diag(a_o)^{1/2} K_oo diag(a_o)^{1/2} + n λ I) γ̃ = diag(a_o)^{-1/2} rhs
+    (diag(D_o)^{1/2} K_oo diag(D_o)^{1/2} + n λ I) γ̃ = diag(D_o)^{-1/2} rhs
 
-with rhs = − b_o / 2 + K_oc b_c / (2 n λ), and γ_o = diag(a_o)^{1/2} γ̃.
+with rhs = − C_o + K_oc C_c / (n λ), and γ_o = diag(D_o)^{1/2} γ̃.
 
-A single eigendecomposition of K̃_oo = diag(a_o)^{1/2} K_oo diag(a_o)^{1/2}
+A single eigendecomposition of K̃_oo = diag(D_o)^{1/2} K_oo diag(D_o)^{1/2}
 solves the entire λ path in O(n_o²) per λ after the O(n_o³) decomposition.
 """
 
@@ -40,7 +40,7 @@ from . import SolveResult
 
 
 def _split_oc(aug: AugmentedDataset):
-    o_mask = aug.a > 0
+    o_mask = aug.is_original > 0
     return o_mask, ~o_mask
 
 
@@ -60,16 +60,16 @@ def solve_direct(
     results : list[SolveResult]
         One per λ. Each `SolveResult.support` is the augmented feature matrix
         and `gamma` is the dual vector over all augmented points (γ_o filled
-        in for the a>0 rows; γ_c = -b_c / (2 n λ) for the a=0 rows).
+        in for the D>0 rows; γ_c = -C_c / (n λ) for the D=0 rows).
     val_losses : np.ndarray | None
         Per-λ validation Riesz loss if `aug_valid` is given, else None.
     """
     o_mask, c_mask = _split_oc(aug)
     p_o = aug.features[o_mask]
     p_c = aug.features[c_mask]
-    a_o = aug.a[o_mask]
-    b_o = aug.b[o_mask]
-    b_c = aug.b[c_mask]
+    d_o = aug.is_original[o_mask]
+    pdc_o = aug.potential_deriv_coef[o_mask]
+    pdc_c = aug.potential_deriv_coef[c_mask]
     n_rows = aug.n_rows
     n_o = p_o.shape[0]
     n_c = p_c.shape[0]
@@ -79,17 +79,17 @@ def solve_direct(
 
     # Symmetric weighted gram matrix K̃_oo = D^{1/2} K_oo D^{1/2}.
     K_oo = kernel(p_o, p_o)
-    sqrt_a = np.sqrt(a_o)
-    K_tilde = (sqrt_a[:, None] * sqrt_a[None, :]) * K_oo
+    sqrt_d = np.sqrt(d_o)
+    K_tilde = (sqrt_d[:, None] * sqrt_d[None, :]) * K_oo
     # Tiny jitter for numerical PSD-ness (eigh tolerates fp roundoff).
     K_tilde = K_tilde + jitter * np.eye(n_o)
 
     # K_oc enters the rhs at every λ; precompute once.
     if n_c > 0:
         K_oc = kernel(p_o, p_c)
-        K_oc_b_c = K_oc @ b_c  # shape (n_o,)
+        K_oc_pdc_c = K_oc @ pdc_c  # shape (n_o,)
     else:
-        K_oc_b_c = np.zeros(n_o)
+        K_oc_pdc_c = np.zeros(n_o)
 
     # Eigendecomposition once.
     eigvals, eigvecs = np.linalg.eigh(K_tilde)
@@ -110,18 +110,18 @@ def solve_direct(
 
         # γ_c closed form.
         if n_c > 0:
-            gamma_c = -b_c / (2.0 * n_lam)
+            gamma_c = -pdc_c / n_lam
         else:
             gamma_c = np.zeros(0)
 
         # rhs for the o-system.
-        rhs = -0.5 * b_o + K_oc_b_c / (2.0 * n_lam)
-        rhs_tilde = rhs / sqrt_a  # D^{-1/2} rhs
+        rhs = -pdc_o + K_oc_pdc_c / n_lam
+        rhs_tilde = rhs / sqrt_d  # D^{-1/2} rhs
 
         # Solve via eigendecomposition: (K̃ + n_lam I)^{-1} rhs_tilde
         coeffs = eigvecs.T @ rhs_tilde
         gamma_tilde = eigvecs @ (coeffs / (eigvals + n_lam))
-        gamma_o = sqrt_a * gamma_tilde
+        gamma_o = sqrt_d * gamma_tilde
 
         # Re-pack into full-augmented-length γ vector.
         gamma = np.zeros(aug.features.shape[0])
@@ -141,7 +141,10 @@ def solve_direct(
             alpha_val = K_vo @ gamma_o
             if K_vc is not None:
                 alpha_val = alpha_val + K_vc @ gamma_c
-            row_loss = aug_valid.a * alpha_val ** 2 + aug_valid.b * alpha_val
+            row_loss = (
+                aug_valid.is_original * alpha_val ** 2
+                + 2.0 * aug_valid.potential_deriv_coef * alpha_val
+            )
             val_losses.append(float(np.sum(row_loss) / aug_valid.n_rows))
 
     return results, (np.asarray(val_losses) if aug_valid is not None else None)
@@ -157,9 +160,9 @@ def gcv_score(
     """Closed-form Generalized Cross-Validation score on the o-block path.
 
     The augmented squared Riesz loss reformulates as a weighted least-squares
-    problem on the o-block: with `t_k = -b_k / (2 a_k)` and weights `w_k = a_k`,
+    problem on the o-block: with `t_r = -C_r / D_r` and weights `w_r = D_r`,
 
-        loss_row = a_k (α(p_k) - t_k)² + const
+        loss_row = D_r (α(p_r) - t_r)² + const
 
     GCV (Craven-Wahba 1978) for weighted ridge:
 
@@ -174,10 +177,10 @@ def gcv_score(
     contribution to held-out loss, so for final selection prefer
     `solve_direct(..., aug_valid=...)`.
     """
-    o_mask = aug.a > 0
+    o_mask = aug.is_original > 0
     p_o = aug.features[o_mask]
-    a_o = aug.a[o_mask]
-    b_o = aug.b[o_mask]
+    d_o = aug.is_original[o_mask]
+    pdc_o = aug.potential_deriv_coef[o_mask]
     n_rows = aug.n_rows
     n_o = p_o.shape[0]
     if n_o == 0:
@@ -185,11 +188,11 @@ def gcv_score(
 
     kernel.fit_data(aug.features)
     K_oo = kernel(p_o, p_o)
-    sqrt_a = np.sqrt(a_o)
-    K_tilde = (sqrt_a[:, None] * sqrt_a[None, :]) * K_oo + jitter * np.eye(n_o)
+    sqrt_d = np.sqrt(d_o)
+    K_tilde = (sqrt_d[:, None] * sqrt_d[None, :]) * K_oo + jitter * np.eye(n_o)
     eigvals, eigvecs = np.linalg.eigh(K_tilde)
 
-    target_tilde = -0.5 * b_o / sqrt_a  # √w · t
+    target_tilde = -pdc_o / sqrt_d  # √w · t
     coeffs = eigvecs.T @ target_tilde
     out = np.empty(len(lambdas))
     for i, lam in enumerate(lambdas):

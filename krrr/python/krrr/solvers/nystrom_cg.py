@@ -63,13 +63,13 @@ def solve_nystrom_cg(
     jitter: float = 1e-10,
 ) -> tuple[list[SolveResult], np.ndarray | None]:
     rng = np.random.default_rng(random_state)
-    o_mask = aug.a > 0
+    o_mask = aug.is_original > 0
     c_mask = ~o_mask
     p_o = aug.features[o_mask]
     p_c = aug.features[c_mask]
-    a_o = aug.a[o_mask]
-    b_o = aug.b[o_mask]
-    b_c = aug.b[c_mask]
+    d_o = aug.is_original[o_mask]
+    pdc_o = aug.potential_deriv_coef[o_mask]
+    pdc_c = aug.potential_deriv_coef[c_mask]
     n_rows = aug.n_rows
     n_o = p_o.shape[0]
     n_c = p_c.shape[0]
@@ -81,8 +81,8 @@ def solve_nystrom_cg(
     n_landmarks = min(n_landmarks, n_o)
 
     K_oo = kernel(p_o, p_o)
-    sqrt_a = np.sqrt(a_o)
-    K_tilde = (sqrt_a[:, None] * sqrt_a[None, :]) * K_oo
+    sqrt_d = np.sqrt(d_o)
+    K_tilde = (sqrt_d[:, None] * sqrt_d[None, :]) * K_oo
     K_tilde = K_tilde + jitter * np.eye(n_o)
 
     # Landmark indices and gram matrices.
@@ -97,9 +97,9 @@ def solve_nystrom_cg(
     # K_oc precomputation.
     if n_c > 0:
         K_oc = kernel(p_o, p_c)
-        K_oc_b_c = K_oc @ b_c
+        K_oc_pdc_c = K_oc @ pdc_c
     else:
-        K_oc_b_c = np.zeros(n_o)
+        K_oc_pdc_c = np.zeros(n_o)
 
     # Validation slabs.
     if aug_valid is not None:
@@ -115,9 +115,9 @@ def solve_nystrom_cg(
 
     for lam in lambdas:
         n_lam = n_rows * float(lam)
-        gamma_c = -b_c / (2.0 * n_lam) if n_c > 0 else np.zeros(0)
-        rhs = -0.5 * b_o + K_oc_b_c / (2.0 * n_lam)
-        rhs_tilde = rhs / sqrt_a
+        gamma_c = -pdc_c / n_lam if n_c > 0 else np.zeros(0)
+        rhs = -pdc_o + K_oc_pdc_c / n_lam
+        rhs_tilde = rhs / sqrt_d
 
         # Operator: (K̃ + n_lam I) v
         def matvec(v, n_lam=n_lam):
@@ -134,7 +134,7 @@ def solve_nystrom_cg(
         gamma_tilde, info = cg(
             op, rhs_tilde, M=Mop, rtol=cg_tol, maxiter=cg_max_iter
         )
-        gamma_o = sqrt_a * gamma_tilde
+        gamma_o = sqrt_d * gamma_tilde
 
         gamma = np.zeros(aug.features.shape[0])
         gamma[o_mask] = gamma_o
@@ -159,7 +159,10 @@ def solve_nystrom_cg(
             alpha_val = K_vo @ gamma_o
             if K_vc is not None:
                 alpha_val = alpha_val + K_vc @ gamma_c
-            row_loss = aug_valid.a * alpha_val ** 2 + aug_valid.b * alpha_val
+            row_loss = (
+                aug_valid.is_original * alpha_val ** 2
+                + 2.0 * aug_valid.potential_deriv_coef * alpha_val
+            )
             val_losses.append(float(np.sum(row_loss) / aug_valid.n_rows))
 
     return results, (np.asarray(val_losses) if aug_valid is not None else None)

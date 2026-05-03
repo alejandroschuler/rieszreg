@@ -72,22 +72,26 @@ class KernelRidgeBackend:
                 "on the kernel system; planned for a future release."
             )
 
-        # base_score (initial α) is folded into the targets: replace b with
-        # b + 2 a · base_score so that predicting α̂ = base_score + (kernel part)
-        # minimizes the same loss.
+        # base_score (initial α) is folded into the targets: replace
+        # potential_deriv_coef with potential_deriv_coef + is_original · base_score
+        # so that predicting α̂ = base_score + (kernel part) minimizes the same loss.
         if base_score != 0.0:
             aug_train = AugmentedDataset(
                 features=aug_train.features,
-                a=aug_train.a,
-                b=aug_train.b + 2.0 * aug_train.a * base_score,
+                is_original=aug_train.is_original,
+                potential_deriv_coef=(
+                    aug_train.potential_deriv_coef + aug_train.is_original * base_score
+                ),
                 origin_index=aug_train.origin_index,
                 n_rows=aug_train.n_rows,
             )
             if aug_valid is not None:
                 aug_valid = AugmentedDataset(
                     features=aug_valid.features,
-                    a=aug_valid.a,
-                    b=aug_valid.b + 2.0 * aug_valid.a * base_score,
+                    is_original=aug_valid.is_original,
+                    potential_deriv_coef=(
+                        aug_valid.potential_deriv_coef + aug_valid.is_original * base_score
+                    ),
                     origin_index=aug_valid.origin_index,
                     n_rows=aug_valid.n_rows,
                 )

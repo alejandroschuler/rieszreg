@@ -3,13 +3,13 @@
 For shift-invariant kernels, sample D random Fourier features so that
 φ(x) · φ(y) ≈ k(x, y), then solve KRR in primal feature space:
 
-    L_n(w) = (1/n) Σ_k [a_k (φ_k · w)² + b_k (φ_k · w)] + λ ‖w‖²
-    ⇒  (Φ̃_o^T Φ̃_o + n λ I) w = − (Φ_o^T b_o + Φ_c^T b_c) / 2
+    L_n(w) = (1/n) Σ_r [D_r (φ_r · w)² + 2 C_r (φ_r · w)] + λ ‖w‖²
+    ⇒  (Φ̃_o^T Φ̃_o + n λ I) w = − Φ^T C
 
-with Φ̃_o = diag(√a_o) Φ_o. The system is D × D, so cost is O(n D + D³)
-regardless of n_aug. Storage: just `w` (length D) and the random projection
-spec (frequencies + biases). Suitable for very large n with shift-invariant
-kernels (Gaussian out of the box).
+with Φ̃_o = diag(√D_o) Φ_o. The system is D × D (the feature dimension), so
+cost is O(n D + D³) regardless of n_aug. Storage: just `w` (length D) and the
+random projection spec (frequencies + biases). Suitable for very large n with
+shift-invariant kernels (Gaussian out of the box).
 """
 
 from __future__ import annotations
@@ -58,16 +58,16 @@ def solve_rff(
     kernel.fit_data(aug.features)
 
     Phi = kernel.random_features(aug.features, n_features, rng)   # (n_aug, D)
-    a = aug.a
-    b = aug.b
+    is_original = aug.is_original
+    pdc = aug.potential_deriv_coef
     n_rows = aug.n_rows
 
-    sqrt_a = np.sqrt(np.maximum(a, 0.0))
-    Phi_w = sqrt_a[:, None] * Phi      # weighted rows
+    sqrt_d = np.sqrt(np.maximum(is_original, 0.0))
+    Phi_w = sqrt_d[:, None] * Phi      # weighted rows
 
     # G = Phi_w^T Phi_w  (D × D, λ-independent)
     G = Phi_w.T @ Phi_w
-    rhs = -0.5 * (Phi.T @ b)            # (D,)
+    rhs = -(Phi.T @ pdc)               # (D,)
 
     # Validation features (λ-independent).
     if aug_valid is not None:
@@ -87,9 +87,9 @@ def solve_rff(
     scale = np.sqrt(2.0 / n_features)
     feat_map = RFFFeatureMap(W=W, b=bias, scale=scale)
     Phi = feat_map(aug.features)
-    Phi_w = sqrt_a[:, None] * Phi
+    Phi_w = sqrt_d[:, None] * Phi
     G = Phi_w.T @ Phi_w
-    rhs = -0.5 * (Phi.T @ b)
+    rhs = -(Phi.T @ pdc)
 
     if aug_valid is not None:
         Phi_v = feat_map(aug_valid.features)
@@ -113,7 +113,10 @@ def solve_rff(
         )
         if Phi_v is not None:
             alpha_val = Phi_v @ w
-            row_loss = aug_valid.a * alpha_val ** 2 + aug_valid.b * alpha_val
+            row_loss = (
+                aug_valid.is_original * alpha_val ** 2
+                + 2.0 * aug_valid.potential_deriv_coef * alpha_val
+            )
             val_losses.append(float(np.sum(row_loss) / aug_valid.n_rows))
 
     return results, (np.asarray(val_losses) if aug_valid is not None else None)

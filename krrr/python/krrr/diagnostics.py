@@ -66,7 +66,7 @@ def diagnose_kernel(regressor: KernelRieszRegressor, X) -> KernelDiagnostics:
 
     if result.kind == "dual" and result.support is not None and lambda_selected is not None:
         kernel = regressor.predictor_.kernel
-        # Re-derive K̃_oo on the o-block (a > 0 rows). We reproduce the
+        # Re-derive K̃_oo on the o-block (is_original > 0 rows). We reproduce the
         # construction in solvers/direct.py — a small redundant cost.
         from rieszreg import build_augmented
         from rieszreg.estimator import _rows_from_X
@@ -74,15 +74,15 @@ def diagnose_kernel(regressor: KernelRieszRegressor, X) -> KernelDiagnostics:
         rows = _rows_from_X(X, regressor.estimand)
         aug = build_augmented(rows, regressor.estimand)
         n_rows = aug.n_rows
-        o_mask = aug.a > 0
+        o_mask = aug.is_original > 0
         p_o = aug.features[o_mask]
-        a_o = aug.a[o_mask]
+        d_o = aug.is_original[o_mask]
         if p_o.shape[0] > 0:
             try:
                 kernel.fit_data(aug.features)
                 K_oo = kernel(p_o, p_o)
-                sqrt_a = np.sqrt(a_o)
-                K_tilde = (sqrt_a[:, None] * sqrt_a[None, :]) * K_oo
+                sqrt_d = np.sqrt(d_o)
+                K_tilde = (sqrt_d[:, None] * sqrt_d[None, :]) * K_oo
                 eigvals = np.linalg.eigvalsh(K_tilde)
                 n_lam = n_rows * float(lambda_selected)
                 eff_dof = _effective_dof(eigvals, n_lam)
