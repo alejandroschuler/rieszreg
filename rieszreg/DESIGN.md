@@ -201,8 +201,9 @@ This is the contract every implementation package must meet. Section structure f
 ## 1. Theoretical / statistical capabilities
 
 ### 1.1 Estimands
-- **[from rieszreg]** Import the `Estimand` dataclass and the six built-in factories (`ATE`, `ATT`, `TSM(level)`, `AdditiveShift(delta)`, `LocalShift(delta, threshold)`, `StochasticIntervention(samples_key)`). Reference: [estimand.py](rieszboost/python/rieszboost/estimand.py).
-- **[from rieszreg]** Support custom estimands via user-supplied `m(z, alpha) -> LinearForm`. Do not bypass the tracer; linearity violations must raise.
+- **[from rieszreg]** Import the abstract `Estimand` base, the concrete `LinearFormEstimand` subclass, and the six built-in factories (`ATE`, `ATT`, `TSM(level)`, `AdditiveShift(delta)`, `LocalShift(delta, threshold)`, `StochasticIntervention(samples_key)`). All factories return `LinearFormEstimand`. Reference: [base.py](rieszreg/python/rieszreg/estimands/base.py).
+- **[from rieszreg]** Support custom estimands via user-supplied `m(alpha)(z) -> LinearForm` wrapped in a `LinearFormEstimand`. Do not bypass the tracer; linearity violations must raise.
+- **[from rieszreg]** `trace()`, `build_augmented()`, and `RieszEstimator.fit()` accept only `LinearFormEstimand`. The base `Estimand` class is reserved for future subclasses outside the finite-evaluation algebra.
 - **[from rieszreg]** Honor the partial-parameter distinction (ATT and LocalShift fit partial representers; full ATT/LASE require delta-method downstream). Document this in any examples.
 - **[design rule]** If a new estimand factory belongs in the family at large, contribute it back to `rieszreg.estimands`, not to your package. A learner package never owns an `Estimand` factory.
 
@@ -228,7 +229,7 @@ This is the contract every implementation package must meet. Section structure f
 ### 2.1 Backend Protocol
 - **[your package]** Implement *at least one* of two Protocols from `rieszreg.backends.base`. Both return `FitResult(predictor, best_iteration, best_score, history)`. Pick whichever fits your learner's natural loss decomposition:
   - `Backend.fit_augmented(aug_train, aug_valid, loss, ...)` — for learners whose loss decomposes naturally over the augmented `(a, b)` evaluation points (kernel ridge, gradient boosting). Implementations: `KernelRidgeBackend` (krrr), `XGBoostBackend` / `SklearnBackend` (rieszboost).
-  - `MomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, ...)` — for learners whose loss decomposes per original sample row (random forests, neural nets). Such backends compute per-row moments via `rieszreg.trace(estimand, row)` directly, avoiding the augmentation blow-up. Implementations: `ForestRieszBackend` (forestriesz).
+  - `MomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, ...)` — for learners whose loss decomposes per original sample row (random forests, neural nets). Such backends compute per-row moments via `rieszreg.trace(estimand, row)` directly, avoiding the augmentation blow-up. The `estimand` argument is a `LinearFormEstimand`. Implementations: `ForestRieszBackend` (forestriesz).
 - **[design rule]** The orchestrator dispatches at fit time: if the backend exposes `fit_rows` and not `fit_augmented`, the moment path is used; otherwise the augmented path. Backends implementing both default to `fit_augmented` for back-compat.
 - **[your package]** Return a `Predictor` with `predict_eta()` and `predict_alpha()` (link applied). Inherit base interface from rieszreg; storage format is your choice.
 - **[your package]** `FitResult` shape must match the protocol so `RieszEstimator` can orchestrate uniformly.
@@ -418,7 +419,7 @@ This is the contract every implementation package must meet. Section structure f
 
 ## 10. What NOT to do (concise summary)
 
-- Don't redefine `Estimand`, `LossSpec`, `AugmentedDataset`, `build_augmented`, `Diagnostics`, `RieszEstimator`, `LinearForm`, `Tracer`, factory-spec registries, or testing DGPs — import from `rieszreg`.
+- Don't redefine `Estimand`, `LinearFormEstimand`, `LossSpec`, `AugmentedDataset`, `build_augmented`, `Diagnostics`, `RieszEstimator`, `LinearForm`, `Tracer`, factory-spec registries, or testing DGPs — import from `rieszreg`.
 - Don't depend on another implementation package (rieszboost, krrr) — depend on `rieszreg`.
 - Don't add a custom-`m()` R entry point.
 - Don't reinvent `cross_val_predict`, `GridSearchCV`, or any sklearn primitive.

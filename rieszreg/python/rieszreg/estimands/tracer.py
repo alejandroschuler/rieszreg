@@ -8,17 +8,18 @@ The user writes m as an operator: it takes alpha and returns a function of z.
         return inner
 
 We pass a `Tracer` in as `alpha`. Each call records a `LinearTerm`; arithmetic
-builds a `LinearForm`. If the user's m stays inside the linear-form algebra
-(only +, -, scalar *, alpha calls), the returned LinearForm gives us the exact
-finite list of (coefficient, point) pairs we need to build the augmented
-dataset for the fast engine. Anything else (integrals, derivatives, non-linear
-ops) raises and signals the dispatcher to fall back to the slow path.
+builds a `LinearForm`. The returned LinearForm gives us the exact finite list
+of (coefficient, point) pairs we need to build the augmented dataset. Anything
+outside the linear-form algebra (integrals, derivatives, non-linear ops)
+raises with a clear error pointing at the offending operation.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+
+from .base import LinearFormEstimand
 
 
 @dataclass(frozen=True)
@@ -112,10 +113,16 @@ class Tracer:
         return LinearForm.single(_Point.from_kwargs(kwargs), 1.0)
 
 
-def trace(m, z) -> list[tuple[float, dict[str, Any]]]:
-    """Run the user's m as `m(Tracer())(z)` on a single row z and return the
+def trace(estimand: LinearFormEstimand, z) -> list[tuple[float, dict[str, Any]]]:
+    """Run the estimand's m as `m(Tracer())(z)` on a single row z and return the
     (coef, point) pair list. Raises if m leaves the linear-form algebra."""
-    result = m(Tracer())(z)
+    if not isinstance(estimand, LinearFormEstimand):
+        raise TypeError(
+            f"trace() requires a LinearFormEstimand; got {type(estimand).__name__}. "
+            "Construct your estimand via a built-in factory (ATE, ATT, TSM, ...) "
+            "or wrap your m in `LinearFormEstimand(feature_keys=..., m=...)`."
+        )
+    result = estimand.m(Tracer())(z)
     if isinstance(result, (int, float)):
         if result == 0:
             return []
@@ -126,8 +133,8 @@ def trace(m, z) -> list[tuple[float, dict[str, Any]]]:
     if not isinstance(result, LinearForm):
         raise TypeError(
             f"m returned {type(result).__name__}; expected LinearForm. "
-            "If your m involves integrals or derivatives of alpha, use the slow "
-            "engine — the fast engine only supports finite linear combinations of "
-            "point evaluations."
+            "If your m involves integrals or derivatives of alpha, sample/discretize "
+            "first — the linear-form engine only supports finite linear combinations "
+            "of point evaluations."
         )
     return result.as_pairs()

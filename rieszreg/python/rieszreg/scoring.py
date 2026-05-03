@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .augmentation import build_augmented
+from .augmentation import aug_loss_alpha, build_augmented
 from .estimator import _rows_from_X
 from .losses import LossSpec, SquaredLoss
 
@@ -45,7 +45,8 @@ def riesz_scorer(loss: LossSpec | None = None):
         eta = estimator.predictor_.predict_eta(aug.features)
         alpha_hat = estimator.loss_.link_to_alpha(eta)
         return -float(
-            np.sum(yardstick.loss_row(aug.a, aug.b, alpha_hat)) / aug.n_rows
+            np.sum(aug_loss_alpha(yardstick, aug.is_original, aug.potential_deriv_coef, alpha_hat))
+            / aug.n_rows
         )
 
     return _scorer

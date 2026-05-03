@@ -14,6 +14,8 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=7", "hypothesis>=6", "pandas>=2.0"]
+autograd = ["jax>=0.4"]  # used as a default for `Loss.potential_deriv` when
+                          # the user's `potential` is jax-traceable
 
 [tool.setuptools.packages.find]
 where = ["."]

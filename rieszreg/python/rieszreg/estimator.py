@@ -17,9 +17,9 @@ import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import train_test_split
 
-from .augmentation import build_augmented
+from .augmentation import aug_loss_alpha, build_augmented
 from .backends import Backend, load_predictor
-from .estimands.base import Estimand, estimand_from_spec
+from .estimands.base import Estimand, LinearFormEstimand, estimand_from_spec
 from .estimands.tracer import trace
 from .losses import LossSpec, SquaredLoss, loss_from_spec
 
@@ -155,6 +155,13 @@ class RieszEstimator(BaseEstimator):
         loss = self._resolved_loss()
         backend = self._resolved_backend()
 
+        if not isinstance(self.estimand, LinearFormEstimand):
+            raise TypeError(
+                f"RieszEstimator.fit() requires a LinearFormEstimand; got "
+                f"{type(self.estimand).__name__}. Use a built-in factory "
+                "(ATE, ATT, TSM, ...) or `LinearFormEstimand(feature_keys=..., m=...)`."
+            )
+
         # Resolve validation slice. Backends that use a held-out slice for
         # fit-time logic (early stopping, λ selection) expose
         # `validation_fraction` as a constructor attribute; the orchestrator
@@ -235,7 +242,10 @@ class RieszEstimator(BaseEstimator):
         aug = build_augmented(rows, self.estimand)
         eta = self.predictor_.predict_eta(aug.features)
         alpha = self.loss_.link_to_alpha(eta)
-        return float(np.sum(self.loss_.loss_row(aug.a, aug.b, alpha)) / aug.n_rows)
+        return float(
+            np.sum(aug_loss_alpha(self.loss_, aug.is_original, aug.potential_deriv_coef, alpha))
+            / aug.n_rows
+        )
 
     def score(self, X, y=None) -> float:
         """Return negative held-out canonical Riesz loss (squared loss).
@@ -257,7 +267,10 @@ class RieszEstimator(BaseEstimator):
         eta = self.predictor_.predict_eta(aug.features)
         alpha_hat = self.loss_.link_to_alpha(eta)
         yardstick = SquaredLoss()
-        return -float(np.sum(yardstick.loss_row(aug.a, aug.b, alpha_hat)) / aug.n_rows)
+        return -float(
+            np.sum(aug_loss_alpha(yardstick, aug.is_original, aug.potential_deriv_coef, alpha_hat))
+            / aug.n_rows
+        )
 
     def diagnose(self, X, **kwargs):
         from .diagnostics import diagnose

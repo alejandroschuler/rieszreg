@@ -20,15 +20,9 @@ $$
 \alpha(a, x) \;=\; \frac{a}{\pi(x)} - \frac{1-a}{1-\pi(x)},
 $$
 
-so a weighting estimator averages $\alpha(A_i, X_i) \cdot Y_i$ over the sample. Modern efficient estimators (one-step, TMLE, DML) instead use the "weights" $\alpha$ to *correct* the plug-in regression:
+Under the [Riesz representation theorem](intro.qmd), similar weights exist for many different estimands. `rieszreg` learns these weights directly from data: no propensity model, no truncation, etc. The same machinery handles continuous shifts, stochastic interventions, and many custom estimands a user can write down — for which closed-form weights could otherwise involve tricky or slow density estimates. These weights are then suitable for downstream use in weighting estimators or 
 
-$$
-\hat\psi \;=\; \frac{1}{n} \sum_i \Big[\, m(\hat\mu)(Z_i) \;+\; \hat\alpha(Z_i)\,\big(Y_i - \hat\mu(Z_i)\big) \,\Big].
-$$
-
-Under the [Riesz representation theorem](intro.qmd), similar weights exist for many different estimands. `rieszreg` learns these weights directly from data: no propensity model, no truncation, etc. The same machinery handles continuous shifts, stochastic interventions, and many custom estimands a user can write down — for which closed-form weights could otherwise involve tricky or slow density estimates.
-
-For the longer derivation and a survey of the closed-form weights for each built-in estimand, see [What is Riesz regression?](intro.qmd). A general-audience introduction to representers is in [Williams, Hines & Rudolph (2025), *Riesz representers for the rest of us*](https://arxiv.org/abs/2507.19413).
+For the longer derivation and a survey of the closed-form weights for each built-in estimand, see [What is Riesz regression?](intro.qmd). 
 
 ## Quickstart
 

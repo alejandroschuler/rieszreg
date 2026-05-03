@@ -18,6 +18,7 @@ from rieszreg import (
     KLLoss,
     RieszEstimator,
     SquaredLoss,
+    TSM,
     riesz_scorer,
 )
 
@@ -74,7 +75,7 @@ def test_scorer_default_matches_score_method():
     """`riesz_scorer(loss=None)` matches `est.score(X)` (both squared yardstick)."""
     df = _df()
     est = RieszEstimator(
-        estimand=ATE(), backend=_StubBackend(), loss=KLLoss(),
+        estimand=TSM(level=1), backend=_StubBackend(), loss=KLLoss(),
     ).fit(df)
     scorer = riesz_scorer()  # default = SquaredLoss yardstick
     assert scorer(est, df) == pytest.approx(est.score(df))
@@ -84,7 +85,7 @@ def test_scorer_custom_loss_differs_from_default():
     """`riesz_scorer(loss=KLLoss())` evaluates KL on the predicted α."""
     df = _df()
     est = RieszEstimator(
-        estimand=ATE(), backend=_StubBackend(), loss=KLLoss(),
+        estimand=TSM(level=1), backend=_StubBackend(), loss=KLLoss(),
     ).fit(df)
     sq_score = riesz_scorer(loss=SquaredLoss())(est, df)
     kl_score = riesz_scorer(loss=KLLoss())(est, df)
@@ -102,7 +103,7 @@ def test_score_is_yardstick_independent_of_training_loss():
         estimand=ATE(), backend=_StubBackend(), loss=SquaredLoss(),
     ).fit(df)
     est_kl = RieszEstimator(
-        estimand=ATE(), backend=_StubBackend(), loss=KLLoss(),
+        estimand=TSM(level=1), backend=_StubBackend(), loss=KLLoss(),
     ).fit(df)
     # Both scores use SquaredLoss; predictors differ (α=0 vs α=1) so values differ.
     assert np.isfinite(est_sq.score(df))
@@ -112,7 +113,7 @@ def test_score_is_yardstick_independent_of_training_loss():
 def test_cross_val_score_default_yardstick():
     """`cross_val_score` with default scoring runs and returns 3 floats."""
     df = _df(n=60)
-    est = RieszEstimator(estimand=ATE(), backend=_StubBackend(), loss=KLLoss())
+    est = RieszEstimator(estimand=TSM(level=1), backend=_StubBackend(), loss=KLLoss())
     scores = cross_val_score(est, df, cv=3)
     assert scores.shape == (3,)
     assert np.all(np.isfinite(scores))
@@ -134,7 +135,7 @@ def test_gridsearchcv_across_losses():
     yardstick — `score()` is detached from training loss, so the ranking is
     well-defined."""
     df = _df(n=60)
-    est = RieszEstimator(estimand=ATE(), backend=_StubBackend())
+    est = RieszEstimator(estimand=TSM(level=1), backend=_StubBackend())
     grid = GridSearchCV(
         est,
         param_grid={"loss": [SquaredLoss(), KLLoss()]},

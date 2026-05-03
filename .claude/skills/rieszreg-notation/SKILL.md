@@ -75,4 +75,36 @@ A non-trivial fraction of existing files still uses the old notation ($g$, $\the
 
 ## 11. Riesz representable Estimand
 
-The estimand is $\mathbb E[m(\mu)(Z,Y)]$. Note the $Y$. That is, $m$ maps from whatever space $\mu$ lives in (functions of $Z$) to a space of functions that *can* depend on $Y$ as well. This is important for supporting estimands that depend on the joint distribution of $(Z, Y)$
+The estimand is $\mathbb E[m(\mu)(Z,Y)]$. Note the $Y$. That is, $m$ maps from whatever space $\mu$ lives in (functions of $Z$) to a space of functions that *can* depend on $Y$ as well. This is important for supporting estimands that depend on the joint distribution of $(Z, Y)$.
+
+## 12. Finite-evaluation linear forms
+
+When prose or code refers to estimands whose $m$ is a finite linear combination of point evaluations of $\mu$, use the canonical $(a, c)$ pair:
+
+- $a: \mathcal Z \times \mathcal Y \to \mathcal Z^k$ — the **point generator**. Per row, $a(z, y)$ returns the $k$ points at which $\mu$ is evaluated. For ATE: $a(z, y) = ((1, z_x), (0, z_x))$ with $k = 2$.
+- $c: \mathcal Z \times \mathcal Y \to \mathbb R^k$ — the **weight function**. Per row, $c(z, y)$ returns the linear-combination coefficients. For ATE: $c(z, y) = (1, -1)$.
+
+The canonical decomposition is $m(\mu)(z, y) = c(z, y)^\top \vec\mu(a(z, y))$, where $\vec\mu$ denotes elementwise application.
+
+Empirical pseudo-data convention (when writing the empirical loss):
+
+- $Z_{ij} = a_j(Z_i, Y_i)$ — the $j$-th pseudo-datapoint generated from row $i$.
+- $C_{ij} = c_j(Z_i, Y_i)$ — its scalar coefficient.
+
+These objects belong to a `LinearFormEstimand` (the concrete subclass of `Estimand` that the tracer and augmentation engine support). Use "linear-form estimand" or "finite-evaluation estimand" in prose; reserve plain "estimand" for the abstract concept.
+
+## 13. Bregman-Riesz potential: math vs code names
+
+In math and prose use $h$, $h'$, and $\tilde h$:
+
+- $h: \mathbb R \to \mathbb R$ — the Bregman potential (matches Hines & Miles, Kato; called $F$ in their papers).
+- $h'(t)$ — its derivative.
+- $\tilde h(t) = t h'(t) - h(t)$. Equivalently $\tilde h = h^* \circ h'$ where $h^*$ is the Legendre transform of $h$ — i.e. $\tilde h(t)$ is the value of $h^*$ at the slope $h'(t)$, *not* the Legendre transform itself. The population loss is $\mathbb E[\tilde h(\alpha(Z)) - m(h' \circ \alpha)(Z, Y)]$.
+
+In code, the same three concepts are spelled out as descriptive method names on the `Loss` class:
+
+- `potential(alpha)` ↔ $h(\alpha)$
+- `potential_deriv(alpha)` ↔ $h'(\alpha)$
+- `tilde_potential(alpha)` ↔ $\tilde h(\alpha)$
+
+Don't use Greek letters (e.g. $\phi$, $\psi$) for the potential or its derivatives anywhere — Greek letters in this codebase denote functionals of distributions ($\mu$ for the conditional mean, $\alpha$ for the Riesz representer, $\psi$ for the estimand), not arbitrary scalar functions.

@@ -17,6 +17,8 @@ from rieszreg import (
     KLLoss,
     RieszEstimator,
     SquaredLoss,
+    TSM,
+    aug_loss_alpha,
     build_augmented,
 )
 
@@ -80,7 +82,7 @@ def test_score_uses_squared_yardstick():
         estimand=ATE(), backend=_StubBackend(), loss=SquaredLoss(),
     ).fit(df)
     est_kl = RieszEstimator(
-        estimand=ATE(), backend=_StubBackend(), loss=KLLoss(),
+        estimand=TSM(level=1), backend=_StubBackend(), loss=KLLoss(),
     ).fit(df)
 
     def _expected_neg_squared(est):
@@ -92,7 +94,10 @@ def test_score_uses_squared_yardstick():
         eta = est.predictor_.predict_eta(aug.features)
         alpha = est.loss_.link_to_alpha(eta)
         sq = SquaredLoss()
-        return -float(np.sum(sq.loss_row(aug.a, aug.b, alpha)) / aug.n_rows)
+        return -float(
+            np.sum(aug_loss_alpha(sq, aug.is_original, aug.potential_deriv_coef, alpha))
+            / aug.n_rows
+        )
 
     assert est_sq.score(df) == pytest.approx(_expected_neg_squared(est_sq))
     assert est_kl.score(df) == pytest.approx(_expected_neg_squared(est_kl))

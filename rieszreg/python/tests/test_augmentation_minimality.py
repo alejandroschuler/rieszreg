@@ -68,13 +68,13 @@ def test_att_treated_two_rows_untreated_one_row():
     assert untreated_counts == {1}, f"untreated row counts: {untreated_counts}"
 
     # For untreated subjects the single row should be the original
-    # observation: a-coef = 1, b-coef = 0.
+    # observation: is_original = 1, potential_deriv_coef = 0.
     for i in range(n):
         if a[i] == 0:
             mask = aug.origin_index == i
             j = int(np.where(mask)[0][0])
-            assert aug.a[j] == 1.0
-            assert aug.b[j] == 0.0
+            assert aug.is_original[j] == 1.0
+            assert aug.potential_deriv_coef[j] == 0.0
 
 
 def test_local_shift_skips_above_threshold_subjects():
