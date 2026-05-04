@@ -19,7 +19,7 @@ from sklearn.model_selection import train_test_split
 
 from .augmentation import aug_loss_alpha, build_augmented
 from .backends import Backend, load_predictor
-from .estimands.base import Estimand, LinearFormEstimand, estimand_from_spec
+from .estimands.base import Estimand, FiniteEvalEstimand, estimand_from_spec
 from .estimands.tracer import trace
 from .losses import LossSpec, SquaredLoss, loss_from_spec
 
@@ -155,11 +155,11 @@ class RieszEstimator(BaseEstimator):
         loss = self._resolved_loss()
         backend = self._resolved_backend()
 
-        if not isinstance(self.estimand, LinearFormEstimand):
+        if not isinstance(self.estimand, FiniteEvalEstimand):
             raise TypeError(
-                f"RieszEstimator.fit() requires a LinearFormEstimand; got "
+                f"RieszEstimator.fit() requires a FiniteEvalEstimand; got "
                 f"{type(self.estimand).__name__}. Use a built-in factory "
-                "(ATE, ATT, TSM, ...) or `LinearFormEstimand(feature_keys=..., m=...)`."
+                "(ATE, ATT, TSM, ...) or `FiniteEvalEstimand(feature_keys=..., m=...)`."
             )
 
         # Resolve validation slice. Backends that use a held-out slice for

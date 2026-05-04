@@ -156,8 +156,8 @@ def m_my_thing(alpha):
         return 2.0 * (alpha(a=2, x=z['x']) - alpha(a=0, x=z['x']))
     return inner
 
-from rieszreg import LinearFormEstimand
-my_estimand = LinearFormEstimand(feature_keys=('a', 'x'), m=m_my_thing, name='MyThing')
+from rieszreg import FiniteEvalEstimand
+my_estimand = FiniteEvalEstimand(feature_keys=('a', 'x'), m=m_my_thing, name='MyThing')
 ")
 
 est <- reticulate::py$my_estimand

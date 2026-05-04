@@ -19,7 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from .base import LinearFormEstimand
+from .base import FiniteEvalEstimand
 
 
 @dataclass(frozen=True)
@@ -113,14 +113,14 @@ class Tracer:
         return LinearForm.single(_Point.from_kwargs(kwargs), 1.0)
 
 
-def trace(estimand: LinearFormEstimand, z) -> list[tuple[float, dict[str, Any]]]:
+def trace(estimand: FiniteEvalEstimand, z) -> list[tuple[float, dict[str, Any]]]:
     """Run the estimand's m as `m(Tracer())(z)` on a single row z and return the
     (coef, point) pair list. Raises if m leaves the linear-form algebra."""
-    if not isinstance(estimand, LinearFormEstimand):
+    if not isinstance(estimand, FiniteEvalEstimand):
         raise TypeError(
-            f"trace() requires a LinearFormEstimand; got {type(estimand).__name__}. "
+            f"trace() requires a FiniteEvalEstimand; got {type(estimand).__name__}. "
             "Construct your estimand via a built-in factory (ATE, ATT, TSM, ...) "
-            "or wrap your m in `LinearFormEstimand(feature_keys=..., m=...)`."
+            "or wrap your m in `FiniteEvalEstimand(feature_keys=..., m=...)`."
         )
     result = estimand.m(Tracer())(z)
     if isinstance(result, (int, float)):

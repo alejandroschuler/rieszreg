@@ -1,11 +1,11 @@
 """Estimand: a self-contained description of the linear functional to fit.
 
-`Estimand` is the abstract base. Concrete usage goes through `LinearFormEstimand`,
+`Estimand` is the abstract base. Concrete usage goes through `FiniteEvalEstimand`,
 the subclass for estimands whose `m` reduces to a finite linear combination of
 point evaluations of `alpha` (ATE, ATT, TSM, additive shifts, finite-sample
 stochastic interventions, ...). Every built-in factory returns a
-`LinearFormEstimand`; the tracer, augmentation engine, and orchestrator only
-accept `LinearFormEstimand`.
+`FiniteEvalEstimand`; the tracer, augmentation engine, and orchestrator only
+accept `FiniteEvalEstimand`.
 
 The class carries (1) the column names alpha is indexed by (`feature_keys`),
 (2) per-row payload columns that aren't fit-time inputs but are referenced by
@@ -26,7 +26,7 @@ from typing import Any, Callable, Sequence
 class Estimand:
     """Abstract base class for estimands.
 
-    Do not construct directly — use `LinearFormEstimand` for the finite-evaluation
+    Do not construct directly — use `FiniteEvalEstimand` for the finite-evaluation
     case (every estimand currently supported by `rieszreg`). Future subclasses
     may handle estimands outside the finite-evaluation algebra (integrals,
     derivatives without a finite-difference reduction, etc.).
@@ -36,7 +36,7 @@ class Estimand:
 
 
 @dataclass(eq=False)
-class LinearFormEstimand(Estimand):
+class FiniteEvalEstimand(Estimand):
     """Estimand whose `m(alpha)(z)` is a finite linear combination of point
     evaluations of `alpha`. The tracer extracts the (coefficient, point) pairs;
     the augmentation engine uses them to build the augmented dataset.
@@ -55,7 +55,7 @@ class LinearFormEstimand(Estimand):
         return self.m(alpha)
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, LinearFormEstimand):
+        if not isinstance(other, FiniteEvalEstimand):
             return NotImplemented
         # Built-in estimands compare by factory_spec — two `ATE()` calls
         # produce different `m` closures but represent the same functional.
@@ -94,7 +94,7 @@ class LinearFormEstimand(Estimand):
 
 
 def _rebuild_custom_estimand(feature_keys, m, extra_keys, name):
-    return LinearFormEstimand(
+    return FiniteEvalEstimand(
         feature_keys=feature_keys,
         m=m,
         extra_keys=extra_keys,
@@ -103,7 +103,7 @@ def _rebuild_custom_estimand(feature_keys, m, extra_keys, name):
     )
 
 
-def ATE(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> LinearFormEstimand:
+def ATE(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> FiniteEvalEstimand:
     """Average treatment effect: m(α)(z) = α(1, x) − α(0, x)."""
     cov = tuple(covariates)
 
@@ -113,13 +113,13 @@ def ATE(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> LinearFormE
             return alpha(**{treatment: 1, **x_kwargs}) - alpha(**{treatment: 0, **x_kwargs})
         return inner
 
-    return LinearFormEstimand(
+    return FiniteEvalEstimand(
         feature_keys=(treatment, *cov), m=m, name="ATE",
         factory_spec={"factory": "ATE", "args": {"treatment": treatment, "covariates": list(cov)}},
     )
 
 
-def ATT(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> LinearFormEstimand:
+def ATT(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> FiniteEvalEstimand:
     """ATT *partial-estimand* surface: m(α)(z) = a · (α(1, x) − α(0, x)).
 
     Full ATT divides by P(A=1) and is not a Riesz functional — combine
@@ -136,13 +136,13 @@ def ATT(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> LinearFormE
             )
         return inner
 
-    return LinearFormEstimand(
+    return FiniteEvalEstimand(
         feature_keys=(treatment, *cov), m=m, name="ATT",
         factory_spec={"factory": "ATT", "args": {"treatment": treatment, "covariates": list(cov)}},
     )
 
 
-def TSM(level, treatment: str = "a", covariates: Sequence[str] = ("x",)) -> LinearFormEstimand:
+def TSM(level, treatment: str = "a", covariates: Sequence[str] = ("x",)) -> FiniteEvalEstimand:
     """Treatment-specific mean: m(α)(z) = α(level, x)."""
     cov = tuple(covariates)
 
@@ -152,7 +152,7 @@ def TSM(level, treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Line
             return alpha(**{treatment: level, **x_kwargs})
         return inner
 
-    return LinearFormEstimand(
+    return FiniteEvalEstimand(
         feature_keys=(treatment, *cov), m=m, name=f"TSM(level={level!r})",
         factory_spec={"factory": "TSM", "args": {"level": level, "treatment": treatment, "covariates": list(cov)}},
     )
@@ -160,7 +160,7 @@ def TSM(level, treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Line
 
 def AdditiveShift(
     delta: float, treatment: str = "a", covariates: Sequence[str] = ("x",)
-) -> LinearFormEstimand:
+) -> FiniteEvalEstimand:
     """Additive shift effect: m(α)(z) = α(a + δ, x) − α(a, x)."""
     cov = tuple(covariates)
 
@@ -173,7 +173,7 @@ def AdditiveShift(
             )
         return inner
 
-    return LinearFormEstimand(
+    return FiniteEvalEstimand(
         feature_keys=(treatment, *cov), m=m, name=f"AdditiveShift(delta={delta})",
         factory_spec={"factory": "AdditiveShift", "args": {"delta": delta, "treatment": treatment, "covariates": list(cov)}},
     )
@@ -184,7 +184,7 @@ def LocalShift(
     threshold: float,
     treatment: str = "a",
     covariates: Sequence[str] = ("x",),
-) -> LinearFormEstimand:
+) -> FiniteEvalEstimand:
     """LASE *partial-estimand* surface: m(α)(z) = 1(a < threshold) · (α(a+δ, x) − α(a, x)).
 
     Full LASE divides by P(A < threshold) and is not a Riesz functional.
@@ -202,7 +202,7 @@ def LocalShift(
             )
         return inner
 
-    return LinearFormEstimand(
+    return FiniteEvalEstimand(
         feature_keys=(treatment, *cov),
         m=m,
         name=f"LocalShift(delta={delta}, threshold={threshold})",
@@ -214,13 +214,13 @@ def StochasticIntervention(
     samples_key: str = "shift_samples",
     treatment: str = "a",
     covariates: Sequence[str] = ("x",),
-) -> LinearFormEstimand:
+) -> FiniteEvalEstimand:
     """Stochastic intervention via Monte Carlo samples per row.
 
     Each row carries `z[samples_key]` = sequence of treatment values drawn
     from the intervention density. `m(α)(z) = (1/K) Σ_k α(a' = sample_k, x)`.
     Once the per-row samples are fixed, this is a finite linear combination
-    of K point evaluations of α, so the estimand is a `LinearFormEstimand`.
+    of K point evaluations of α, so the estimand is a `FiniteEvalEstimand`.
 
     Pre-sample once before fit:
 
@@ -241,7 +241,7 @@ def StochasticIntervention(
             ) / K
         return inner
 
-    return LinearFormEstimand(
+    return FiniteEvalEstimand(
         feature_keys=(treatment, *cov),
         m=m,
         extra_keys=(samples_key,),
@@ -261,8 +261,8 @@ _FACTORY_REGISTRY = {
 }
 
 
-def estimand_from_spec(spec: dict) -> LinearFormEstimand:
-    """Reconstruct a LinearFormEstimand from its `factory_spec` dict. Only
+def estimand_from_spec(spec: dict) -> FiniteEvalEstimand:
+    """Reconstruct a FiniteEvalEstimand from its `factory_spec` dict. Only
     built-in factories round-trip; custom estimands must be re-passed at load
     time."""
     factory_name = spec["factory"]

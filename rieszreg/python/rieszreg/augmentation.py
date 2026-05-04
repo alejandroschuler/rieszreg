@@ -17,7 +17,7 @@ from typing import Any, Sequence
 
 import numpy as np
 
-from .estimands.base import LinearFormEstimand
+from .estimands.base import FiniteEvalEstimand
 from .estimands.tracer import trace
 
 
@@ -32,11 +32,11 @@ class AugmentedDataset:
 
 def build_augmented(
     rows: Sequence[dict[str, Any]],
-    estimand: LinearFormEstimand,
+    estimand: FiniteEvalEstimand,
 ) -> AugmentedDataset:
-    if not isinstance(estimand, LinearFormEstimand):
+    if not isinstance(estimand, FiniteEvalEstimand):
         raise TypeError(
-            f"build_augmented() requires a LinearFormEstimand; got "
+            f"build_augmented() requires a FiniteEvalEstimand; got "
             f"{type(estimand).__name__}."
         )
     feature_keys = estimand.feature_keys
