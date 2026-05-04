@@ -17,8 +17,10 @@ from rieszreg import (
     AugmentedDataset,
     Estimand,
     FitResult,
+    LinearFormEstimand,
     LossSpec,
     SquaredLoss,
+    aug_loss_alpha,
     build_augmented,
     trace,
 )
@@ -78,7 +80,10 @@ def _holdout_riesz_loss(
     aug = build_augmented(rows_valid, estimand)
     eta = predictor.predict_eta(aug.features)
     alpha = loss.link_to_alpha(eta)
-    return float(np.sum(loss.loss_row(aug.a, aug.b, alpha)) / aug.n_rows)
+    return float(
+        np.sum(aug_loss_alpha(loss, aug.is_original, aug.potential_deriv_coef, alpha))
+        / aug.n_rows
+    )
 
 
 @dataclass

@@ -4,17 +4,17 @@ For SquaredLoss the per-leaf optimum has a closed form `θ = (Σ J)⁻¹ (Σ A)`
 that EconML's `LinearMomentGRFCriterion` solves directly. For non-quadratic
 Bregman losses the leaf-level loss is
 
-    L_leaf(θ) = Σ_{k ∈ leaf} loss.loss_row(a_k, b_k, link(θ · φ(z_k)))
+    L_leaf(θ) = Σ_{r ∈ leaf} aug_loss_alpha(loss, D_r, C_r, link(θ · φ(z_r)))
 
 which is convex in θ (the loss spec's gradient is monotone) but non-linear,
 so we Newton-iterate. The per-row gradient and Hessian come from the loss
-spec's `gradient(a, b, η)` and `hessian(a, b, η, floor)` methods, which work
-in η-space.
+spec's `aug_grad_eta(D, C, η)` and `aug_hess_eta(D, C, η, floor)` methods,
+which work in η-space.
 
 Used by `AugForestRieszBackend` to post-hoc replace each leaf's stored value
 when the user asks for `KLLoss`, `BernoulliLoss`, or `BoundedSquaredLoss`.
 The tree structure is still chosen by the squared-loss MSE criterion — splits
-that maximize variance reduction in α* = −Σb / (2 Σa) also separate the
+that maximize variance reduction in α* = −Σ C / Σ D also separate the
 monotonically-related Bregman optima well.
 """
 
@@ -27,8 +27,8 @@ from rieszreg import LossSpec
 
 def solve_leaf_bregman(
     loss: LossSpec,
-    a_leaf: np.ndarray,
-    b_leaf: np.ndarray,
+    is_original_leaf: np.ndarray,
+    potential_deriv_coef_leaf: np.ndarray,
     phi_leaf: np.ndarray,
     *,
     base_score: float = 0.0,
@@ -37,21 +37,21 @@ def solve_leaf_bregman(
     tol: float = 1e-8,
     hessian_floor: float = 1e-6,
 ) -> np.ndarray:
-    """Find the per-leaf θ minimizing Σ_k loss.loss_row(a_k, b_k, link(η_k))
-    where η_k = θ · φ(z_k) + base_score.
+    """Find the per-leaf θ minimizing the augmented loss over rows in this leaf,
+    where η_r = θ · φ(z_r) + base_score.
 
     The base_score offset matches the predictor's `predict_eta` formula —
     when a non-zero base_score is in play, the leaf θ represents the
     deviation from base_score and Newton evaluates gradients at
-    η_k = θ · φ_k + base_score, not θ · φ_k.
+    η_r = θ · φ_r + base_score, not θ · φ_r.
 
     Parameters
     ----------
     loss
-        The Bregman loss spec. Provides ``gradient(a, b, η)`` and
-        ``hessian(a, b, η, floor)`` per row in η-space.
-    a_leaf, b_leaf
-        Augmented coefficients for the rows in this leaf, shape ``(m,)``.
+        The Bregman loss spec. Provides ``aug_grad_eta(D, C, η)`` and
+        ``aug_hess_eta(D, C, η, floor)`` per row in η-space.
+    is_original_leaf, potential_deriv_coef_leaf
+        Augmented coefficients (D, C) for the rows in this leaf, shape ``(m,)``.
     phi_leaf
         Basis evaluations at those rows, shape ``(m, p)``. For locally
         constant fits ``p = 1`` and ``phi_leaf[:, 0] = 1``.
@@ -74,33 +74,33 @@ def solve_leaf_bregman(
     if init_theta is None:
         init_theta = np.zeros(p, dtype=float)
 
-    if a_leaf.size == 0:
+    if is_original_leaf.size == 0:
         return init_theta.copy()
 
     if p == 1:
         return _newton_scalar(
-            loss, a_leaf, b_leaf, phi_leaf[:, 0],
+            loss, is_original_leaf, potential_deriv_coef_leaf, phi_leaf[:, 0],
             base_score=base_score, init_theta=float(init_theta[0]),
             max_iter=max_iter, tol=tol, hessian_floor=hessian_floor,
         )
     return _newton_multivariate(
-        loss, a_leaf, b_leaf, phi_leaf,
+        loss, is_original_leaf, potential_deriv_coef_leaf, phi_leaf,
         base_score=base_score, init_theta=init_theta,
         max_iter=max_iter, tol=tol, hessian_floor=hessian_floor,
     )
 
 
-def _newton_scalar(loss, a, b, phi, *, base_score, init_theta, max_iter, tol, hessian_floor):
+def _newton_scalar(loss, is_original, potential_deriv_coef, phi, *, base_score, init_theta, max_iter, tol, hessian_floor):
     """Scalar Newton iteration for p = 1.
 
-    Per-row η = θ · φ_k + base_score. Chain rule: ∂η/∂θ = φ_k.
+    Per-row η = θ · φ_r + base_score. Chain rule: ∂η/∂θ = φ_r.
     """
     theta = float(init_theta)
     phi2 = phi * phi
     for _ in range(max_iter):
         eta = theta * phi + base_score
-        g_eta = loss.gradient(a, b, eta)
-        h_eta = loss.hessian(a, b, eta, hessian_floor)
+        g_eta = loss.aug_grad_eta(is_original, potential_deriv_coef, eta)
+        h_eta = loss.aug_hess_eta(is_original, potential_deriv_coef, eta, hessian_floor)
         G = float(np.sum(g_eta * phi))
         H = float(np.sum(h_eta * phi2))
         if H <= 0.0:
@@ -113,14 +113,14 @@ def _newton_scalar(loss, a, b, phi, *, base_score, init_theta, max_iter, tol, he
     return np.array([theta], dtype=float)
 
 
-def _newton_multivariate(loss, a, b, phi, *, base_score, init_theta, max_iter, tol, hessian_floor):
+def _newton_multivariate(loss, is_original, potential_deriv_coef, phi, *, base_score, init_theta, max_iter, tol, hessian_floor):
     """Multivariate Newton for p > 1 (sieve case)."""
     p = phi.shape[1]
     theta = init_theta.astype(float).copy()
     for _ in range(max_iter):
         eta = phi @ theta + base_score
-        g_eta = loss.gradient(a, b, eta)
-        h_eta = loss.hessian(a, b, eta, hessian_floor)
+        g_eta = loss.aug_grad_eta(is_original, potential_deriv_coef, eta)
+        h_eta = loss.aug_hess_eta(is_original, potential_deriv_coef, eta, hessian_floor)
         G = phi.T @ g_eta
         H = (phi * h_eta[:, None]).T @ phi
         try:
@@ -140,8 +140,8 @@ def _newton_multivariate(loss, a, b, phi, *, base_score, init_theta, max_iter, t
 def compute_leaf_eta_table(
     forest,
     X_aug: np.ndarray,
-    a_aug: np.ndarray,
-    b_aug: np.ndarray,
+    is_original_aug: np.ndarray,
+    potential_deriv_coef_aug: np.ndarray,
     phi_aug: np.ndarray,
     loss: LossSpec,
     *,
@@ -162,8 +162,8 @@ def compute_leaf_eta_table(
             mask = leaf_ids_t == leaf_id
             theta = solve_leaf_bregman(
                 loss=loss,
-                a_leaf=a_aug[mask],
-                b_leaf=b_aug[mask],
+                is_original_leaf=is_original_aug[mask],
+                potential_deriv_coef_leaf=potential_deriv_coef_aug[mask],
                 phi_leaf=phi_aug[mask],
                 base_score=base_score,
             )
