@@ -4,7 +4,7 @@ title: "Estimands"
 
 {{< include _setup.qmd >}}
 
-A `LinearFormEstimand` describes the linear functional you want to fit. It holds three pieces of information: the column names $\alpha$ is indexed by (`feature_keys`), any per-row payload columns $m$ needs such as pre-sampled treatments for stochastic interventions (`extra_keys`), and the `m(alpha)(z)` callable.
+A `FiniteEvalEstimand` describes the linear functional you want to fit. It holds three pieces of information: the column names $\alpha$ is indexed by (`feature_keys`), any per-row payload columns $m$ needs such as pre-sampled treatments for stochastic interventions (`extra_keys`), and the `m(alpha)(z)` callable.
 
 `feature_keys` declares the input schema of $\alpha$ — the columns the underlying learner consumes when scoring a row. `extra_keys` declares non-feature columns that $m$ reaches into per row (for example, the list of pre-sampled treatments used by `StochasticIntervention`); they are passed through to $m$ as part of $z$ but are not features of $\alpha$.
 
@@ -185,7 +185,7 @@ LocalShift(delta = 0.3, threshold = 0.7)
 
 
 
-`StochasticIntervention` is a `LinearFormEstimand`: once each row's $K$ samples are fixed, the operator is the finite linear combination $m(\alpha)(z) = (1/K) \sum_k \alpha(a'_k, x)$. Pre-draw the samples once before fitting, and the estimand fits like any other.
+`StochasticIntervention` is a `FiniteEvalEstimand`: once each row's $K$ samples are fixed, the operator is the finite linear combination $m(\alpha)(z) = (1/K) \sum_k \alpha(a'_k, x)$. Pre-draw the samples once before fitting, and the estimand fits like any other.
 
 ::: {.panel-tabset group="lang"}
 
@@ -240,16 +240,16 @@ mean(booster$predict(df))
 
 ## Custom estimands
 
-To fit a finite-evaluation functional not covered by the built-ins, write the operator `m(alpha)(z)` and wrap it in a `LinearFormEstimand`. The tracer extracts the linear-form structure automatically.
+To fit a finite-evaluation functional not covered by the built-ins, write the operator `m(alpha)(z)` and wrap it in a `FiniteEvalEstimand`. The tracer extracts the linear-form structure automatically.
 
 `m` must be a finite linear combination of point evaluations of $\alpha$, built with `+`, `-`, scalar `*`, and calls to `alpha(...)`. Squaring, adding constants, integrals, and other non-linear operations raise.
 
 ::: {.callout-note title="Python-only"}
-Custom `m()` is Python-only. From R, define `m` in Python via `reticulate::py_run_string` and pass the resulting `LinearFormEstimand` to your estimator. See the [R interface page](r-interface.qmd) for the recipe.
+Custom `m()` is Python-only. From R, define `m` in Python via `reticulate::py_run_string` and pass the resulting `FiniteEvalEstimand` to your estimator. See the [R interface page](r-interface.qmd) for the recipe.
 :::
 
 ```{python}
-from rieszreg import LinearFormEstimand
+from rieszreg import FiniteEvalEstimand
 from rieszboost import RieszBooster
 import numpy as np, pandas as pd
 
@@ -260,7 +260,7 @@ def m_weighted_contrast(alpha):
                - alpha(a=1, x=z["x"])
     return inner
 
-est = LinearFormEstimand(
+est = FiniteEvalEstimand(
     feature_keys=("a", "x"),
     m=m_weighted_contrast,
     name="WeightedContrast",
@@ -287,12 +287,12 @@ The errors point at the offending operation:
 
 ```{python}
 #| error: true
-from rieszreg import LinearFormEstimand, trace
+from rieszreg import FiniteEvalEstimand, trace
 
 def bad_squared(alpha):
     return lambda z: alpha(a=1, x=z["x"]) ** 2  # nonlinear in alpha
 
-trace(LinearFormEstimand(feature_keys=("a", "x"), m=bad_squared), {"a": 0, "x": 0.5})
+trace(FiniteEvalEstimand(feature_keys=("a", "x"), m=bad_squared), {"a": 0, "x": 0.5})
 ```
 
 ```{python}
@@ -300,18 +300,18 @@ trace(LinearFormEstimand(feature_keys=("a", "x"), m=bad_squared), {"a": 0, "x": 
 def bad_constant(alpha):
     return lambda z: alpha(a=1, x=z["x"]) + 1.0  # constant offset
 
-trace(LinearFormEstimand(feature_keys=("a", "x"), m=bad_constant), {"a": 0, "x": 0.5})
+trace(FiniteEvalEstimand(feature_keys=("a", "x"), m=bad_constant), {"a": 0, "x": 0.5})
 ```
 
 For estimands with integrals or derivatives of $\alpha$ (outside the finite-linear-form algebra), Monte-Carlo-sample and use `StochasticIntervention` if applicable.
 
 ## Feature keys, extra keys
 
-The `LinearFormEstimand` dataclass has these fields:
+The `FiniteEvalEstimand` dataclass has these fields:
 
 ```python
 @dataclass
-class LinearFormEstimand(Estimand):
+class FiniteEvalEstimand(Estimand):
     feature_keys: tuple[str, ...]      # columns alpha is indexed by
     m: Callable[..., Any]              # the linear functional, m(alpha)(z)
     extra_keys: tuple[str, ...] = ()   # per-row payload columns (e.g. shift_samples)

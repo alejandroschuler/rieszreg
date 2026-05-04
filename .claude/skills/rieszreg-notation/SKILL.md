@@ -91,7 +91,7 @@ Empirical pseudo-data convention (when writing the empirical loss):
 - $Z_{ij} = a_j(Z_i, Y_i)$ — the $j$-th pseudo-datapoint generated from row $i$.
 - $C_{ij} = c_j(Z_i, Y_i)$ — its scalar coefficient.
 
-These objects belong to a `LinearFormEstimand` (the concrete subclass of `Estimand` that the tracer and augmentation engine support). Use "linear-form estimand" or "finite-evaluation estimand" in prose; reserve plain "estimand" for the abstract concept.
+These objects belong to a `FiniteEvalEstimand` (the concrete subclass of `Estimand` that the tracer and augmentation engine support). Use "finite-evaluation estimand" in prose; reserve plain "estimand" for the abstract concept.
 
 ## 13. Bregman-Riesz potential: math vs code names
 
