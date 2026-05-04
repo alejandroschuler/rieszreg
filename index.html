@@ -383,14 +383,14 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./estimands.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Estimands</span></a>
+  <a href="./losses.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Losses</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./losses.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Losses</span></a>
+  <a href="./estimands.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Estimands</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -533,19 +533,16 @@ window.Quarto = {
 
 
 <p><img src="banner.svg" class="hero-banner img-fluid" alt="RieszReg — Riesz regression for semiparametric inference"></p>
-<p><code>rieszreg</code> estimates the Riesz representer <span class="math inline">\(\alpha\)</span> of a linear estimand <span class="math inline">\(\psi = \mathbb{E}[m(\mu)(Z)]\)</span> — the building block of one-step, TMLE, and DML inference — with gradient boosting (<a href="./backends/boosting.html"><code>rieszboost</code></a>), kernel ridge (<a href="./backends/kernel.html"><code>krrr</code></a>), random forests (<a href="./backends/forest.html"><code>forestriesz</code></a>), or neural nets (<a href="./backends/neural.html"><code>riesznet</code></a>). It ships built-in factories for ATE, ATT, TSM, additive shifts, local shifts, stochastic interventions, and arbitrary user-defined estimands; the squared Riesz loss plus the wider Bregman family (KL, Bernoulli, bounded squared); and sklearn-native tuning, model selection, and cross-fitting. Python and R, with bitwise-identical predictions on the same input.</p>
+<p><code>rieszreg</code> estimates the Riesz representer <span class="math inline">\(\alpha\)</span> of a linear estimand <span class="math inline">\(\psi = \mathbb{E}[m(\mu)(Z,Y)]\)</span> — the building block of one-step, TMLE, and DML inference — with gradient boosting (<a href="./backends/boosting.html"><code>rieszboost</code></a>), kernel ridge (<a href="./backends/kernel.html"><code>krrr</code></a>), random forests (<a href="./backends/forest.html"><code>forestriesz</code></a>), or neural nets (<a href="./backends/neural.html"><code>riesznet</code></a>). Think of it as the <code>sklearn</code>, <code>tidymodels</code> or <code>superlearner</code> for Riesz regression.</p>
+<p><code>rieszreg</code> ships built-in factories for ATE, ATT, TSM, additive shifts, local shifts, stochastic interventions, and arbitrary user-defined estimands; the squared Riesz loss plus the wider Bregman family (KL, Bernoulli, bounded squared); and sklearn-native tuning, model selection, and cross-fitting. Python and R, with bitwise-identical predictions on the same input.</p>
 <section id="what-is-riesz-regression" class="level2">
 <h2 class="anchored" data-anchor-id="what-is-riesz-regression">What is Riesz regression?</h2>
 <p>You want to estimate some causal or structural estimand — say, the average treatment effect <span class="math inline">\(\psi = \mathbb{E}[\mu(1, X) - \mu(0, X)]\)</span>, where <span class="math inline">\(\mu(a, x) = \mathbb{E}[Y \mid A = a, X = x]\)</span>. A regression <span class="math inline">\(\hat\mu\)</span> for <span class="math inline">\(\mu\)</span> is biased; the standard fix uses a weight. For ATE, the weight is the inverse-propensity score:</p>
 <p><span class="math display">\[
 \alpha(a, x) \;=\; \frac{a}{\pi(x)} - \frac{1-a}{1-\pi(x)},
 \]</span></p>
-<p>so a weighting estimator averages <span class="math inline">\(\alpha(A_i, X_i) \cdot Y_i\)</span> over the sample. Modern efficient estimators (one-step, TMLE, DML) instead use the “weights” <span class="math inline">\(\alpha\)</span> to <em>correct</em> the plug-in regression:</p>
-<p><span class="math display">\[
-\hat\psi \;=\; \frac{1}{n} \sum_i \Big[\, m(\hat\mu)(Z_i) \;+\; \hat\alpha(Z_i)\,\big(Y_i - \hat\mu(Z_i)\big) \,\Big].
-\]</span></p>
-<p>Under the <a href="./intro.html">Riesz representation theorem</a>, similar weights exist for many different estimands. <code>rieszreg</code> learns these weights directly from data: no propensity model, no truncation, etc. The same machinery handles continuous shifts, stochastic interventions, and many custom estimands a user can write down — for which closed-form weights could otherwise involve tricky or slow density estimates.</p>
-<p>For the longer derivation and a survey of the closed-form weights for each built-in estimand, see <a href="./intro.html">What is Riesz regression?</a>. A general-audience introduction to representers is in <a href="https://arxiv.org/abs/2507.19413">Williams, Hines &amp; Rudolph (2025), <em>Riesz representers for the rest of us</em></a>.</p>
+<p>Under the <a href="./intro.html">Riesz representation theorem</a>, similar weights exist for many different estimands. <code>rieszreg</code> learns these weights directly from data: no propensity model, no truncation, etc. The same machinery handles continuous shifts, stochastic interventions, and many custom estimands a user can write down — for which closed-form weights could otherwise involve tricky or slow density estimates. These weights are then suitable for downstream use in weighting estimators or</p>
+<p>For the longer derivation and a survey of the closed-form weights for each built-in estimand, see <a href="./intro.html">What is Riesz regression?</a>.</p>
 </section>
 <section id="quickstart" class="level2">
 <h2 class="anchored" data-anchor-id="quickstart">Quickstart</h2>

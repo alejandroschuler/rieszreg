@@ -68,8 +68,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./losses.html" rel="next">
-<link href="./install.html" rel="prev">
+<link href="./tuning-and-cross-fitting.html" rel="next">
+<link href="./losses.html" rel="prev">
 <link href="./logo.svg" rel="icon" type="image/svg+xml">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -343,7 +343,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./estimands.html">Usage</a></li><li class="breadcrumb-item"><a href="./estimands.html">Estimands</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./losses.html">Usage</a></li><li class="breadcrumb-item"><a href="./estimands.html">Estimands</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -384,14 +384,14 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./estimands.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Estimands</span></a>
+  <a href="./losses.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Losses</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./losses.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Losses</span></a>
+  <a href="./estimands.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Estimands</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -518,13 +518,18 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#built-in-factories" id="toc-built-in-factories" class="nav-link active" data-scroll-target="#built-in-factories">Built-in factories</a></li>
-  <li><a href="#stochastic-intervention-pre-sample-then-fit" id="toc-stochastic-intervention-pre-sample-then-fit" class="nav-link" data-scroll-target="#stochastic-intervention-pre-sample-then-fit">Stochastic intervention: pre-sample, then fit</a></li>
+  <li><a href="#finite-evaluation-estimands" id="toc-finite-evaluation-estimands" class="nav-link active" data-scroll-target="#finite-evaluation-estimands">Finite-evaluation estimands</a>
+  <ul class="collapse">
+  <li><a href="#the-augmented-dataset" id="toc-the-augmented-dataset" class="nav-link" data-scroll-target="#the-augmented-dataset">The augmented dataset</a></li>
+  <li><a href="#built-in-estimands" id="toc-built-in-estimands" class="nav-link" data-scroll-target="#built-in-estimands">Built-in Estimands</a></li>
+  </ul></li>
+  <li><a href="#other-estimands" id="toc-other-estimands" class="nav-link" data-scroll-target="#other-estimands">Other Estimands</a></li>
   <li><a href="#custom-estimands" id="toc-custom-estimands" class="nav-link" data-scroll-target="#custom-estimands">Custom estimands</a>
   <ul class="collapse">
   <li><a href="#what-the-tracer-rejects" id="toc-what-the-tracer-rejects" class="nav-link" data-scroll-target="#what-the-tracer-rejects">What the tracer rejects</a></li>
   </ul></li>
   <li><a href="#feature-keys-extra-keys" id="toc-feature-keys-extra-keys" class="nav-link" data-scroll-target="#feature-keys-extra-keys">Feature keys, extra keys</a></li>
+  <li><a href="#initialization" id="toc-initialization" class="nav-link" data-scroll-target="#initialization">Initialization</a></li>
   </ul>
 </nav>
     </div>
@@ -532,7 +537,7 @@ window.Quarto = {
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./estimands.html">Usage</a></li><li class="breadcrumb-item"><a href="./estimands.html">Estimands</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./losses.html">Usage</a></li><li class="breadcrumb-item"><a href="./estimands.html">Estimands</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Estimands</h1>
 </div>
@@ -551,14 +556,237 @@ window.Quarto = {
 </header>
 
 
-<p>An <code>Estimand</code> describes the linear functional you want to fit. It holds three pieces of information: the column names <span class="math inline">\(\alpha\)</span> is indexed by (<code>feature_keys</code>), any per-row payload columns <span class="math inline">\(m\)</span> needs such as pre-sampled treatments for stochastic interventions (<code>extra_keys</code>), and the <code>m(z, alpha)</code> callable.</p>
+<p>A <code>LinearFormEstimand</code> describes the linear functional you want to fit. It holds three pieces of information: the column names <span class="math inline">\(\alpha\)</span> is indexed by (<code>feature_keys</code>), any per-row payload columns <span class="math inline">\(m\)</span> needs such as pre-sampled treatments for stochastic interventions (<code>extra_keys</code>), and the <code>m(alpha)(z)</code> callable.</p>
+<p><code>feature_keys</code> declares the input schema of <span class="math inline">\(\alpha\)</span> — the columns the underlying learner consumes when scoring a row. <code>extra_keys</code> declares non-feature columns that <span class="math inline">\(m\)</span> reaches into per row (for example, the list of pre-sampled treatments used by <code>StochasticIntervention</code>); they are passed through to <span class="math inline">\(m\)</span> as part of <span class="math inline">\(z\)</span> but are not features of <span class="math inline">\(\alpha\)</span>.</p>
 <p>This page covers the six built-in factories and how to write your own. The factories live in <code>rieszreg</code>; <code>rieszboost</code>, <code>krrr</code>, and <code>forestriesz</code> all re-export them so <code>from rieszboost import ATE</code>, <code>from krrr import ATE</code>, and <code>from forestriesz import ATE</code> resolve to the same object.</p>
-<section id="built-in-factories" class="level2">
-<h2 class="anchored" data-anchor-id="built-in-factories">Built-in factories</h2>
+<!-- 
+I think we should more clearly differentiate between m() operators that reduce to a finite linear combination of point evaluations of \mu and other kinds of linear operators. For the former class things are quite clear and it seems like data augmentation can pretty generically handle things. For estimands that don't fit this pattern, like the stochastic intervention, or an average derivative effect, we can still handle them but with more restrictions on the learner. This needs to be clear in the docs but also in the code, i.e. there needs to be a subclass of estimand that represents the finite linear combination of point eval case and the tracer only needs to handle that subclass (I think). 
+
+There may be another subclass to handle integrals, and maybe another for derivatives would make sense. The integrals can be handled with sampling in which case they sort of get replaced by / transformed to a finite evals case with more data? Derivatives may also come down to a finite evals case after a transformation that gets handled by the learner (eg autodiff). Need help thinking through this (are there other classes? What else is a linear operator besides finite linear combination, integration, and differentiation?) and how the Estimands and code should be structured to make this clear and to enforce the right things.
+
+Whatever conclusion/structure we come to, it will have to be documented clearly.
+-->
+<section id="finite-evaluation-estimands" class="level2">
+<h2 class="anchored" data-anchor-id="finite-evaluation-estimands">Finite-evaluation estimands</h2>
+<p>While the Riesz representer theorem applies to any continuous linear functional, the estimands that are easiest to support computationally are those that reduce to a finite linear combination of point evaluations of <span class="math inline">\(\mu\)</span>. For example, the ATE is <span class="math inline">\(\mathbb{E}[\mu(1, X) - \mu(0, X)]\)</span>, which reduces to the two point evaluations <span class="math inline">\(\mu(1, x)\)</span> and <span class="math inline">\(\mu(0, x)\)</span> for each row’s covariates <span class="math inline">\(x\)</span>. Many of our built-in estimands fit this pattern. <code>rieszreg</code> can work with other estimands as well, but since they are more rarely of interest and come at a computational cost or are only supported by some backends, we first focus on the finite-evaluation class.</p>
+<p>We say an estimand <span class="math inline">\(\psi = E[m(\mu)(Z,Y)]\)</span> is of finite-evaluation type if there exist fixed functions <span class="math inline">\(b: \mathbb R^k \times \mathcal Z \times \mathcal Y \to \mathbb R\)</span> and <span class="math inline">\(a: (\mathcal Z \times \mathcal Y) \to \mathcal Z^k\)</span> such that</p>
+<p><span class="math display">\[
+m(\mu)(z, y) = b(\vec\mu(a(z,y)), z, y)
+\]</span></p>
+<p>Where <span class="math inline">\(\vec\mu\)</span> denotes elementwise application of <span class="math inline">\(\mu\)</span> to its vector-valued input. The function <span class="math inline">\(a\)</span> selects <span class="math inline">\(k\)</span> points at which to evaluate <span class="math inline">\(\mu\)</span>, based on the values of <span class="math inline">\(z\)</span> and <span class="math inline">\(y\)</span>. For example, for the ATE, <span class="math inline">\(k=2\)</span> and <span class="math inline">\(a(z,y) = ((1, z_x), (0, z_x))\)</span> selects the treated and control potential-covariate pairs. The function <span class="math inline">\(b\)</span> then forms the contrast <span class="math inline">\(b(\mu_1, \mu_0, z, y) = \mu_1 - \mu_0\)</span>.</p>
+<p>The first observation we can make is that if an estimand is of this type (and <span class="math inline">\(m\)</span> is a linear operator, which we already must assume), it can be written as</p>
+<p><span class="math display">\[
+m(\mu)(z, y) = c(z,y)^\top \vec\mu(a(z,y))
+\]</span></p>
+<p>for some function <span class="math inline">\(c: (\mathcal Z \times \mathcal Y) \to \mathbb R^k\)</span> by the linearity of <span class="math inline">\(m\)</span>. In other words, <span class="math inline">\(m\)</span> must be a finite <em>linear combination</em> of point evaluations of <span class="math inline">\(\mu\)</span>. In the ATE example, <span class="math inline">\(c(z,y) = (1, -1)\)</span> gives the contrast weights for the treated and control evaluations of <span class="math inline">\(\mu\)</span>.</p>
+<p>Therefore for these estimands we can rewrite the empirical Bregman-Riesz loss. Define the <span class="math inline">\(k\)</span> pseudo-datapoints <span class="math inline">\(Z_{ij} = a_j(Z_i, Y_i)\)</span> with coefficients <span class="math inline">\(C_{ij} = c_j(Z_i, Y_i)\)</span> for each row <span class="math inline">\(i\)</span>. Then:</p>
+<p><span class="math display">\[
+\begin{aligned}
+\mathcal L_{h,n}(\alpha)
+&amp;= \sum_{i=1}^n \left[\tilde h(\alpha(Z_i)) - m(h' \circ \alpha)(Z_i,Y_i) \right] \\
+&amp;= \sum_{i=1}^n \left[\tilde h(\alpha(Z_i)) - \sum_{j=1}^k C_{ij} \cdot h'(\alpha(Z_{ij}))  \right]
+\end{aligned}
+\]</span></p>
+<p>The loss depends on <span class="math inline">\(\alpha\)</span> only through its values at <span class="math inline">\(\{Z_i\} \cup \{Z_{ij}\}\)</span>, at most <span class="math inline">\(n(k+1)\)</span> points. The coefficients <span class="math inline">\(C_{ij}\)</span> depend on data but not on <span class="math inline">\(\alpha\)</span> or on the potential function for the loss, so they can be computed once as a preprocessing step. The advantage of this is that, during fitting, evaluating the empirical loss only requires computing the values of <span class="math inline">\(\alpha\)</span> at these points. Methods that depend on a gradient of the empricial loss with respect to either some parameters of <span class="math inline">\(\alpha\)</span> (like <code>riesznet</code>) or <span class="math inline">\(\alpha\)</span> itself (<code>rieszboost</code>) inherit this, as do methods that depend on an analytic solution to the empirical loss minimization problem (<code>krrr</code>).</p>
+<section id="the-augmented-dataset" class="level3">
+<h3 class="anchored" data-anchor-id="the-augmented-dataset">The augmented dataset</h3>
+<p>The easiest way to keep track of the loss, deriviatves, etc. during training is to create an augmented dataset consisting of the points <span class="math inline">\(\{Z_i\} \cup \{Z_{ij}\}\)</span>, along with the appropriate coefficients <span class="math inline">\(C_{ij}\)</span>.</p>
+<p>Some pseudo-datapoints may coincide with the original observation. For ATE, <span class="math inline">\(Z_{i1} = (1, x_i)\)</span> and <span class="math inline">\(Z_{i2} = (0, x_i)\)</span>. A treated unit (<span class="math inline">\(a_i = 1\)</span>) has <span class="math inline">\(Z_{i1} = Z_i\)</span>, so two of the three evaluation points are the same. Let <span class="math inline">\(D_{ij} = \mathbf{1}[Z_{ij} = Z_i]\)</span> indicate overlap. We can split the <span class="math inline">\(h'\)</span> sum into overlapping and non-overlapping terms:</p>
+<p><span class="math display">\[
+\mathcal L_{h,n}(\alpha) = \sum_{i=1}^n \left[\tilde h(\alpha(Z_i)) - \sum_{j:\, D_{ij}=1} C_{ij}\, h'(\alpha(Z_i))\right] - \sum_{i=1}^n \sum_{j:\, D_{ij}=0} C_{ij}\, h'(\alpha(Z_{ij}))
+\]</span></p>
+<p>At each distinct evaluation point, the loss combines a <span class="math inline">\(\tilde h\)</span>-weight and an <span class="math inline">\(h'\)</span>-weight into a single term. <code>build_augmented</code> collects these distinct points for each row and stores their coefficients. Let <span class="math inline">\(r \in 1 \dots |\{Z_i\} \cup \{Z_{ij}\}|\)</span> index an enumeration of the augmented data points. Each of the augmented data points <span class="math inline">\(Z_r\)</span> corresponds to either a <span class="math inline">\(Z_{ij}\)</span> or a <span class="math inline">\(Z_i\)</span>, either of which corresponds to some original index row <span class="math inline">\(i\)</span>. Write <span class="math inline">\(i_r\)</span> to index the origin row corresponding to augmented row <span class="math inline">\(r\)</span>. The two weights for the augmented row are:</p>
+<p><span class="math display">\[
+D_r = \mathbf{1}[Z_r = Z_{i_r}],
+\qquad
+C_r = -\sum_{j \,:\, Z_{i_r, j} = Z_r} C_{i_r, j}.
+\]</span></p>
+<p>The <span class="math inline">\(\tilde h\)</span>-weight <span class="math inline">\(D_r\)</span> is <span class="math inline">\(1\)</span> exactly when <span class="math inline">\(Z_r\)</span> is the original observation, and the <span class="math inline">\(h'\)</span>-weight <span class="math inline">\(C_r\)</span> collects <span class="math inline">\(-C_{ij}\)</span> from every pseudo-datapoint of row <span class="math inline">\(i_r\)</span> that lands at <span class="math inline">\(Z_r\)</span> — an empty sum (giving <span class="math inline">\(C_r = 0\)</span>) when no pseudo-datapoint coincides with <span class="math inline">\(Z_{i_r}\)</span>. The per-row contribution to the empirical loss is then <span class="math inline">\(L_r = D_r\, \tilde h(\alpha(Z_r)) + C_r\, h'(\alpha(Z_r))\)</span>, and <span class="math inline">\(\mathcal L_{h,n}(\alpha) = \sum_r L_r\)</span>.</p>
+<p>For ATE with an untreated unit (<span class="math inline">\(a_i = 0\)</span>): before merging there are three evaluation points — <span class="math inline">\(Z_i = (0, x_i)\)</span> and pseudo-datapoints <span class="math inline">\((1, x_i)\)</span>, <span class="math inline">\((0, x_i)\)</span>. The pseudo-datapoint <span class="math inline">\((0, x_i)\)</span> coincides with <span class="math inline">\(Z_i\)</span> (<span class="math inline">\(D_{i2} = 1\)</span>), so they merge into one entry with <span class="math inline">\(\tilde h\)</span>-weight 1 and <span class="math inline">\(h'\)</span>-weight <span class="math inline">\(-C_{i2} = +1\)</span>. The other pseudo-datapoint <span class="math inline">\((1, x_i)\)</span> stays separate with <span class="math inline">\(\tilde h\)</span>-weight 0 and <span class="math inline">\(h'\)</span>-weight <span class="math inline">\(-C_{i1} = -1\)</span>. The result is two augmented rows instead of three. A treated unit merges the other pseudo-datapoint instead, also producing two rows.</p>
+<p>It can also happen that none of the pseudo-datapoints coincide with <span class="math inline">\(Z_i\)</span> — the union <span class="math inline">\(\{Z_i\} \cup \{Z_{ij}\}\)</span> then has <span class="math inline">\(k+1\)</span> distinct entries and no merging occurs. For example, <code>TSM(level=1)</code> on an untreated row (<span class="math inline">\(a_i = 0\)</span>) has <span class="math inline">\(Z_i = (0, x_i)\)</span> and a single pseudo-datapoint <span class="math inline">\((1, x_i)\)</span>; they are distinct, so <span class="math inline">\(Z_i\)</span> enters the augmented dataset as its own row with <span class="math inline">\(\tilde h\)</span>-weight <span class="math inline">\(1\)</span> and <span class="math inline">\(h'\)</span>-weight <span class="math inline">\(0\)</span> (no pseudo-datapoint lands there), and <span class="math inline">\((1, x_i)\)</span> enters as a separate row with <span class="math inline">\(\tilde h\)</span>-weight <span class="math inline">\(0\)</span> and <span class="math inline">\(h'\)</span>-weight <span class="math inline">\(-C_{i1} = -1\)</span>. The general rule is the same in every case: include <span class="math inline">\(Z_i\)</span> once, then add each pseudo-datapoint <span class="math inline">\(Z_{ij}\)</span> — merging into an existing entry when <span class="math inline">\(Z_{ij}\)</span> matches a point already in the dataset for row <span class="math inline">\(i\)</span>, otherwise as a new row.</p>
+<p>To make this concrete, take the ATE estimand on <span class="math inline">\(n=3\)</span> rows:</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
-<th>Factory</th>
+<th style="text-align: right;"><span class="math inline">\(i\)</span></th>
+<th style="text-align: right;"><span class="math inline">\(A_i\)</span></th>
+<th style="text-align: right;"><span class="math inline">\(X_i\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.2</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0.5</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0.8</td>
+</tr>
+</tbody>
+</table>
+<p>For each row, the three evaluation points <span class="math inline">\(\{Z_i,\, Z_{i1} = (1, X_i),\, Z_{i2} = (0, X_i)\}\)</span> collapse to two distinct entries after merging. The augmented dataset has <span class="math inline">\(2n = 6\)</span> rows; each row <span class="math inline">\(r\)</span> carries the evaluation point <span class="math inline">\((A_r, X_r)\)</span>, the <span class="math inline">\(\tilde h\)</span>-weight <span class="math inline">\(D_r\)</span>, the <span class="math inline">\(h'\)</span>-weight <span class="math inline">\(C_r\)</span>, and contributes a term <span class="math inline">\(L_r = D_r \cdot \tilde h(\alpha(A_r, X_r)) + C_r \cdot h'(\alpha(A_r, X_r))\)</span> to the empirical loss:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">from <span class="math inline">\(i\)</span></th>
+<th style="text-align: right;"><span class="math inline">\(A_r\)</span></th>
+<th style="text-align: right;"><span class="math inline">\(X_r\)</span></th>
+<th style="text-align: right;"><span class="math inline">\(D_r\)</span></th>
+<th style="text-align: right;"><span class="math inline">\(C_r\)</span></th>
+<th style="text-align: left;"><span class="math inline">\(L_r\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.2</td>
+<td style="text-align: right;"><span class="math inline">\(1\)</span></td>
+<td style="text-align: right;"><span class="math inline">\(+1\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(\tilde h(\alpha(0, 0.2)) + h'(\alpha(0, 0.2))\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0.2</td>
+<td style="text-align: right;"><span class="math inline">\(0\)</span></td>
+<td style="text-align: right;"><span class="math inline">\(-1\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(-h'(\alpha(1, 0.2))\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0.5</td>
+<td style="text-align: right;"><span class="math inline">\(1\)</span></td>
+<td style="text-align: right;"><span class="math inline">\(-1\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(\tilde h(\alpha(1, 0.5)) - h'(\alpha(1, 0.5))\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.5</td>
+<td style="text-align: right;"><span class="math inline">\(0\)</span></td>
+<td style="text-align: right;"><span class="math inline">\(+1\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(+h'(\alpha(0, 0.5))\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0.8</td>
+<td style="text-align: right;"><span class="math inline">\(1\)</span></td>
+<td style="text-align: right;"><span class="math inline">\(-1\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(\tilde h(\alpha(1, 0.8)) - h'(\alpha(1, 0.8))\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.8</td>
+<td style="text-align: right;"><span class="math inline">\(0\)</span></td>
+<td style="text-align: right;"><span class="math inline">\(+1\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(+h'(\alpha(0, 0.8))\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Rows <span class="math inline">\(i=2\)</span> and <span class="math inline">\(i=3\)</span> are treated, so the merging happens on the <span class="math inline">\((1, X_i)\)</span> pseudo-datapoint instead of <span class="math inline">\((0, X_i)\)</span>, flipping which row carries the <span class="math inline">\(\tilde h\)</span>-weight. Summing the <span class="math inline">\(L_r\)</span> column recovers the empirical loss:</p>
+<p><span class="math display">\[
+\mathcal L_{h,n}(\alpha) = \sum_{r=1}^{6} L_r = \sum_{i=1}^{3} \big[\tilde h(\alpha(Z_i)) - h'(\alpha(1, X_i)) + h'(\alpha(0, X_i))\big].
+\]</span></p>
+<p><code>build_augmented</code> produces this table directly: it stores the two coefficients as <code>is_original</code> (the <span class="math inline">\(\tilde h\)</span>-weight <span class="math inline">\(D_r\)</span>) and <code>potential_deriv_coef</code> (the <span class="math inline">\(h'\)</span>-weight <span class="math inline">\(C_r\)</span>) on the returned <code>AugmentedDataset</code>.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> ATE, build_augmented</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({<span class="st">"a"</span>: [<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>], <span class="st">"x"</span>: [<span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">0.8</span>]})</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>df</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   a    x
+0  0  0.2
+1  1  0.5
+2  1  0.8</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>estimand <span class="op">=</span> ATE(treatment<span class="op">=</span><span class="st">"a"</span>, covariates<span class="op">=</span>(<span class="st">"x"</span>,))</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>aug <span class="op">=</span> build_augmented(df.to_dict(<span class="st">"records"</span>), estimand)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>aug_df <span class="op">=</span> pd.DataFrame({</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"i"</span>: aug.origin_index <span class="op">+</span> <span class="dv">1</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"A"</span>: aug.features[:, <span class="dv">0</span>],</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"X"</span>: aug.features[:, <span class="dv">1</span>],</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"D"</span>: aug.is_original,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"C"</span>: aug.potential_deriv_coef,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>aug_df</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   i    A    X    D    C
+0  1  0.0  0.2  1.0  1.0
+1  1  1.0  0.2  0.0 -1.0
+2  2  1.0  0.5  1.0 -1.0
+3  2  0.0  0.5  0.0  1.0
+4  3  1.0  0.8  1.0 -1.0
+5  3  0.0  0.8  0.0  1.0</code></pre>
+</div>
+</div>
+<p>Pick a candidate <span class="math inline">\(\alpha(a, x) = a + x\)</span> and the squared loss (<span class="math inline">\(\tilde h(t) = t^2\)</span>, <span class="math inline">\(h'(t) = 2t\)</span>). The per-row contribution becomes <span class="math inline">\(L_r = D \cdot \alpha^2 + 2 C \cdot \alpha\)</span>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>F <span class="op">=</span> aug_df[<span class="st">"A"</span>] <span class="op">+</span> aug_df[<span class="st">"X"</span>]                    <span class="co"># α evaluated at each augmented point</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>aug_df[<span class="st">"L_r"</span>] <span class="op">=</span> aug.is_original <span class="op">*</span> F<span class="op">**</span><span class="dv">2</span> <span class="op">+</span> <span class="fl">2.0</span> <span class="op">*</span> aug.potential_deriv_coef <span class="op">*</span> F</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>aug_df</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   i    A    X    D    C   L_r
+0  1  0.0  0.2  1.0  1.0  0.44
+1  1  1.0  0.2  0.0 -1.0 -2.40
+2  2  1.0  0.5  1.0 -1.0 -0.75
+3  2  0.0  0.5  0.0  1.0  1.00
+4  3  1.0  0.8  1.0 -1.0 -0.36
+5  3  0.0  0.8  0.0  1.0  1.60</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>aug_df[<span class="st">"L_r"</span>].<span class="bu">sum</span>()                              <span class="co"># empirical loss</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>np.float64(-0.46999999999999975)</code></pre>
+</div>
+</div>
+<p>The same number drops out of the original row-wise form <span class="math inline">\(\sum_i [\alpha(Z_i)^2 - 2\alpha(1, X_i) + 2\alpha(0, X_i)]\)</span>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(df[<span class="st">"a"</span>] <span class="op">+</span> df[<span class="st">"x"</span>])<span class="op">**</span><span class="dv">2</span> <span class="op">-</span> <span class="dv">2</span><span class="op">*</span>(<span class="dv">1</span> <span class="op">+</span> df[<span class="st">"x"</span>]) <span class="op">+</span> <span class="dv">2</span><span class="op">*</span>(<span class="dv">0</span> <span class="op">+</span> df[<span class="st">"x"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>0   -1.96
+1    0.25
+2    1.24
+dtype: float64</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>((df[<span class="st">"a"</span>] <span class="op">+</span> df[<span class="st">"x"</span>])<span class="op">**</span><span class="dv">2</span> <span class="op">-</span> <span class="dv">2</span><span class="op">*</span>(<span class="dv">1</span> <span class="op">+</span> df[<span class="st">"x"</span>]) <span class="op">+</span> <span class="dv">2</span><span class="op">*</span>(<span class="dv">0</span> <span class="op">+</span> df[<span class="st">"x"</span>])).<span class="bu">sum</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>np.float64(-0.46999999999999975)</code></pre>
+</div>
+</div>
+</section>
+<section id="built-in-estimands" class="level3">
+<h3 class="anchored" data-anchor-id="built-in-estimands">Built-in Estimands</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Estimand</th>
 <th><span class="math inline">\(m(\alpha)(z)\)</span></th>
 <th>Notes</th>
 </tr>
@@ -589,11 +817,6 @@ window.Quarto = {
 <td><span class="math inline">\(\mathbf{1}\{a &lt; \text{threshold}\} \cdot (\alpha(a + \delta, x) - \alpha(a, x))\)</span></td>
 <td>LASE <em>partial-estimand</em> surface; same caveat as ATT.</td>
 </tr>
-<tr class="even">
-<td><code>StochasticIntervention(samples_key, ...)</code></td>
-<td><span class="math inline">\(\frac{1}{K} \sum_k \alpha(a'_k, x)\)</span></td>
-<td>IPSI via Monte Carlo over the intervention density — see <a href="https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/stochastic_intervention.py"><code>rieszboost/examples/stochastic_intervention.py</code></a></td>
-</tr>
 </tbody>
 </table>
 <p>The R and Python factories take the same arguments.</p>
@@ -602,18 +825,18 @@ window.Quarto = {
 <div class="tab-content" data-group="lang">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> (</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    ATE, ATT, TSM, AdditiveShift, LocalShift, StochasticIntervention,</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>ATE(treatment<span class="op">=</span><span class="st">"a"</span>, covariates<span class="op">=</span>(<span class="st">"x"</span>,)).name</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> (</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    ATE, ATT, TSM, AdditiveShift, LocalShift, StochasticIntervention,</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>ATE(treatment<span class="op">=</span><span class="st">"a"</span>, covariates<span class="op">=</span>(<span class="st">"x"</span>,)).name</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>'ATE'</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>TSM(level<span class="op">=</span><span class="dv">1</span>, treatment<span class="op">=</span><span class="st">"a"</span>, covariates<span class="op">=</span>(<span class="st">"x"</span>,)).name</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>TSM(level<span class="op">=</span><span class="dv">1</span>, treatment<span class="op">=</span><span class="st">"a"</span>, covariates<span class="op">=</span>(<span class="st">"x"</span>,)).name</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>'TSM(level=1)'</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>LocalShift(delta<span class="op">=</span><span class="fl">0.3</span>, threshold<span class="op">=</span><span class="fl">0.7</span>).name</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>LocalShift(delta<span class="op">=</span><span class="fl">0.3</span>, threshold<span class="op">=</span><span class="fl">0.7</span>).name</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>'LocalShift(delta=0.3, threshold=0.7)'</code></pre>
 </div>
@@ -621,55 +844,56 @@ window.Quarto = {
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ATE</span>(<span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> <span class="st">"x"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ATE</span>(<span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> <span class="st">"x"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function ATE.&lt;locals&gt;.m at 0x7ff806a7c360&gt;, extra_keys=(), name='ATE', factory_spec={'factory': 'ATE', 'args': {'treatment': 'a', 'covariates': ['x']}})
- signature: (z, alpha)</code></pre>
+<pre><code>LinearFormEstimand(feature_keys=('a', 'x'), m=&lt;function ATE.&lt;locals&gt;.m at 0x12e370040&gt;, extra_keys=(), name='ATE', factory_spec={'factory': 'ATE', 'args': {'treatment': 'a', 'covariates': ['x']}})
+ signature: (alpha)</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">TSM</span>(<span class="at">level =</span> <span class="dv">1</span>, <span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> <span class="st">"x"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">TSM</span>(<span class="at">level =</span> <span class="dv">1</span>, <span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> <span class="st">"x"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function TSM.&lt;locals&gt;.m at 0x7ff806a7c0e0&gt;, extra_keys=(), name='TSM(level=1.0)', factory_spec={'factory': 'TSM', 'args': {'level': 1.0, 'treatment': 'a', 'covariates': ['x']}})
- signature: (z, alpha)</code></pre>
+<pre><code>LinearFormEstimand(feature_keys=('a', 'x'), m=&lt;function TSM.&lt;locals&gt;.m at 0x12e386340&gt;, extra_keys=(), name='TSM(level=1.0)', factory_spec={'factory': 'TSM', 'args': {'level': 1.0, 'treatment': 'a', 'covariates': ['x']}})
+ signature: (alpha)</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">LocalShift</span>(<span class="at">delta =</span> <span class="fl">0.3</span>, <span class="at">threshold =</span> <span class="fl">0.7</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">LocalShift</span>(<span class="at">delta =</span> <span class="fl">0.3</span>, <span class="at">threshold =</span> <span class="fl">0.7</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function LocalShift.&lt;locals&gt;.m at 0x7ff7eff76e80&gt;, extra_keys=(), name='LocalShift(delta=0.3, threshold=0.7)', factory_spec={'factory': 'LocalShift', 'args': {'delta': 0.3, 'threshold': 0.7, 'treatment': 'a', 'covariates': ['x']}})
- signature: (z, alpha)</code></pre>
+<pre><code>LinearFormEstimand(feature_keys=('a', 'x'), m=&lt;function LocalShift.&lt;locals&gt;.m at 0x12e387740&gt;, extra_keys=(), name='LocalShift(delta=0.3, threshold=0.7)', factory_spec={'factory': 'LocalShift', 'args': {'delta': 0.3, 'threshold': 0.7, 'treatment': 'a', 'covariates': ['x']}})
+ signature: (alpha)</code></pre>
 </div>
 </div>
 </div>
 </div>
 </div>
 </section>
-<section id="stochastic-intervention-pre-sample-then-fit" class="level2">
-<h2 class="anchored" data-anchor-id="stochastic-intervention-pre-sample-then-fit">Stochastic intervention: pre-sample, then fit</h2>
-<p><code>StochasticIntervention</code> needs a list of treatment values drawn from the intervention density on each row. Build that column once before fitting.</p>
+</section>
+<section id="other-estimands" class="level2">
+<h2 class="anchored" data-anchor-id="other-estimands">Other Estimands</h2>
+<p><code>StochasticIntervention</code> is a <code>LinearFormEstimand</code>: once each row’s <span class="math inline">\(K\)</span> samples are fixed, the operator is the finite linear combination <span class="math inline">\(m(\alpha)(z) = (1/K) \sum_k \alpha(a'_k, x)\)</span>. Pre-draw the samples once before fitting, and the estimand fits like any other.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
 <div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np, pandas <span class="im">as</span> pd</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszboost <span class="im">import</span> RieszBooster</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> StochasticIntervention</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">0</span>)</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>n <span class="op">=</span> <span class="dv">1000</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> rng.uniform(<span class="dv">0</span>, <span class="dv">1</span>, n)</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> rng.uniform(<span class="dv">0</span>, <span class="dv">1</span>, n)</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({<span class="st">"a"</span>: a, <span class="st">"x"</span>: x})</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Modified-treatment policy: a' ~ Normal(a + 0.1, 0.2), 20 samples per row</span></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>df[<span class="st">"shift_samples"</span>] <span class="op">=</span> [</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    rng.normal(a_i <span class="op">+</span> <span class="fl">0.1</span>, <span class="fl">0.2</span>, size<span class="op">=</span><span class="dv">20</span>) <span class="cf">for</span> a_i <span class="kw">in</span> df[<span class="st">"a"</span>]</span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>]</span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>booster <span class="op">=</span> RieszBooster(</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>StochasticIntervention(samples_key<span class="op">=</span><span class="st">"shift_samples"</span>),</span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    n_estimators<span class="op">=</span><span class="dv">200</span>, learning_rate<span class="op">=</span><span class="fl">0.05</span>, max_depth<span class="op">=</span><span class="dv">4</span>,</span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>).fit(df)</span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>booster.predict(df).mean()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np, pandas <span class="im">as</span> pd</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszboost <span class="im">import</span> RieszBooster</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> StochasticIntervention</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">0</span>)</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>n <span class="op">=</span> <span class="dv">1000</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> rng.uniform(<span class="dv">0</span>, <span class="dv">1</span>, n)</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> rng.uniform(<span class="dv">0</span>, <span class="dv">1</span>, n)</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({<span class="st">"a"</span>: a, <span class="st">"x"</span>: x})</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Modified-treatment policy: a' ~ Normal(a + 0.1, 0.2), 20 samples per row</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>df[<span class="st">"shift_samples"</span>] <span class="op">=</span> [</span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>    rng.normal(a_i <span class="op">+</span> <span class="fl">0.1</span>, <span class="fl">0.2</span>, size<span class="op">=</span><span class="dv">20</span>) <span class="cf">for</span> a_i <span class="kw">in</span> df[<span class="st">"a"</span>]</span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>booster <span class="op">=</span> RieszBooster(</span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>StochasticIntervention(samples_key<span class="op">=</span><span class="st">"shift_samples"</span>),</span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a>    n_estimators<span class="op">=</span><span class="dv">200</span>, learning_rate<span class="op">=</span><span class="fl">0.05</span>, max_depth<span class="op">=</span><span class="dv">4</span>,</span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a>).fit(df)</span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a>booster.predict(df).mean()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>np.float32(0.9001383)</code></pre>
 </div>
@@ -677,20 +901,20 @@ window.Quarto = {
 </div>
 <div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">0</span>)</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>n  <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>x  <span class="ot">&lt;-</span> <span class="fu">runif</span>(n); a <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">a =</span> a, <span class="at">x =</span> x)</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co"># list-column with 20 samples per row from Normal(a + 0.1, 0.2)</span></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>shift_samples <span class="ot">&lt;-</span> <span class="fu">lapply</span>(df<span class="sc">$</span>a, <span class="cf">function</span>(a_i) <span class="fu">rnorm</span>(<span class="dv">20</span>, a_i <span class="sc">+</span> <span class="fl">0.1</span>, <span class="fl">0.2</span>))</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> <span class="fu">StochasticIntervention</span>(<span class="at">samples_key =</span> <span class="st">"shift_samples"</span>),</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_estimators =</span> <span class="dv">200</span>L, <span class="at">learning_rate =</span> <span class="fl">0.05</span>, <span class="at">max_depth =</span> <span class="dv">4</span>L</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">fit</span>(df)</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(booster<span class="sc">$</span><span class="fu">predict</span>(df))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">0</span>)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>n  <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>x  <span class="ot">&lt;-</span> <span class="fu">runif</span>(n); a <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">a =</span> a, <span class="at">x =</span> x)</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="co"># list-column with 20 samples per row from Normal(a + 0.1, 0.2)</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>shift_samples <span class="ot">&lt;-</span> <span class="fu">lapply</span>(df<span class="sc">$</span>a, <span class="cf">function</span>(a_i) <span class="fu">rnorm</span>(<span class="dv">20</span>, a_i <span class="sc">+</span> <span class="fl">0.1</span>, <span class="fl">0.2</span>))</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> <span class="fu">StochasticIntervention</span>(<span class="at">samples_key =</span> <span class="st">"shift_samples"</span>),</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_estimators =</span> <span class="dv">200</span>L, <span class="at">learning_rate =</span> <span class="fl">0.05</span>, <span class="at">max_depth =</span> <span class="dv">4</span>L</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">fit</span>(df)</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(booster<span class="sc">$</span><span class="fu">predict</span>(df))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 0.8916776</code></pre>
 </div>
@@ -702,8 +926,8 @@ window.Quarto = {
 </section>
 <section id="custom-estimands" class="level2">
 <h2 class="anchored" data-anchor-id="custom-estimands">Custom estimands</h2>
-<p>To fit a functional not covered by the built-ins, write <code>m(z, alpha)</code> and wrap it in an <code>Estimand</code>. The library traces <span class="math inline">\(m\)</span> to extract the linear-form structure.</p>
-<p><span class="math inline">\(m\)</span> must be a finite linear combination of point evaluations of <span class="math inline">\(\alpha\)</span>, built with <code>+</code>, <code>-</code>, scalar <code>*</code>, and calls to <code>alpha(...)</code>. Squaring, adding constants, integrals, and other non-linear operations raise.</p>
+<p>To fit a finite-evaluation functional not covered by the built-ins, write the operator <code>m(alpha)(z)</code> and wrap it in a <code>LinearFormEstimand</code>. The tracer extracts the linear-form structure automatically.</p>
+<p><code>m</code> must be a finite linear combination of point evaluations of <span class="math inline">\(\alpha\)</span>, built with <code>+</code>, <code>-</code>, scalar <code>*</code>, and calls to <code>alpha(...)</code>. Squaring, adding constants, integrals, and other non-linear operations raise.</p>
 <div class="callout callout-style-default callout-note callout-titled" title="Python-only">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -714,39 +938,41 @@ window.Quarto = {
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Custom <code>m()</code> is Python-only. From R, define <code>m</code> in Python via <code>reticulate::py_run_string</code> and pass the resulting <code>Estimand</code> to your estimator. See the <a href="./r-interface.html">R interface page</a> for the recipe.</p>
+<p>Custom <code>m()</code> is Python-only. From R, define <code>m</code> in Python via <code>reticulate::py_run_string</code> and pass the resulting <code>LinearFormEstimand</code> to your estimator. See the <a href="./r-interface.html">R interface page</a> for the recipe.</p>
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> Estimand</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszboost <span class="im">import</span> RieszBooster</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np, pandas <span class="im">as</span> pd</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co"># A weighted contrast: 2x the ATE at level a=2 minus the level at a=1.</span></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> m_weighted_contrast(z, alpha):</span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="fl">2.0</span> <span class="op">*</span> (alpha(a<span class="op">=</span><span class="dv">2</span>, x<span class="op">=</span>z[<span class="st">"x"</span>]) <span class="op">-</span> alpha(a<span class="op">=</span><span class="dv">0</span>, x<span class="op">=</span>z[<span class="st">"x"</span>])) <span class="op">\</span></span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>           <span class="op">-</span> alpha(a<span class="op">=</span><span class="dv">1</span>, x<span class="op">=</span>z[<span class="st">"x"</span>])</span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>est <span class="op">=</span> Estimand(</span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    feature_keys<span class="op">=</span>(<span class="st">"a"</span>, <span class="st">"x"</span>),</span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    m<span class="op">=</span>m_weighted_contrast,</span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"WeightedContrast"</span>,</span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(est)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> LinearFormEstimand</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszboost <span class="im">import</span> RieszBooster</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np, pandas <span class="im">as</span> pd</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="co"># A weighted contrast: 2x the ATE at level a=2 minus the level at a=1.</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> m_weighted_contrast(alpha):</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> inner(z):</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="fl">2.0</span> <span class="op">*</span> (alpha(a<span class="op">=</span><span class="dv">2</span>, x<span class="op">=</span>z[<span class="st">"x"</span>]) <span class="op">-</span> alpha(a<span class="op">=</span><span class="dv">0</span>, x<span class="op">=</span>z[<span class="st">"x"</span>])) <span class="op">\</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>               <span class="op">-</span> alpha(a<span class="op">=</span><span class="dv">1</span>, x<span class="op">=</span>z[<span class="st">"x"</span>])</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> inner</span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>est <span class="op">=</span> LinearFormEstimand(</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>    feature_keys<span class="op">=</span>(<span class="st">"a"</span>, <span class="st">"x"</span>),</span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>    m<span class="op">=</span>m_weighted_contrast,</span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"WeightedContrast"</span>,</span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(est)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function m_weighted_contrast at 0x7ff7e358b240&gt;, extra_keys=(), name='WeightedContrast', factory_spec=None)</code></pre>
+<pre><code>LinearFormEstimand(feature_keys=('a', 'x'), m=&lt;function m_weighted_contrast at 0x12e764b80&gt;, extra_keys=(), name='WeightedContrast', factory_spec=None)</code></pre>
 </div>
 </div>
 <p>Pass the estimand to any backend’s estimator class:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">0</span>)</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"a"</span>: rng.choice([<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>], size<span class="op">=</span><span class="dv">500</span>).astype(<span class="bu">float</span>),</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"x"</span>: rng.uniform(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">500</span>),</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>booster <span class="op">=</span> RieszBooster(estimand<span class="op">=</span>est, n_estimators<span class="op">=</span><span class="dv">100</span>, max_depth<span class="op">=</span><span class="dv">3</span>).fit(df)</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>booster.predict(df)[:<span class="dv">5</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">0</span>)</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"a"</span>: rng.choice([<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>], size<span class="op">=</span><span class="dv">500</span>).astype(<span class="bu">float</span>),</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"x"</span>: rng.uniform(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">500</span>),</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>booster <span class="op">=</span> RieszBooster(estimand<span class="op">=</span>est, n_estimators<span class="op">=</span><span class="dv">100</span>, max_depth<span class="op">=</span><span class="dv">3</span>).fit(df)</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>booster.predict(df)[:<span class="dv">5</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>array([ 4.462047 , -2.6374767, -2.7431874, -5.187854 , -5.187854 ],
       dtype=float32)</code></pre>
@@ -756,21 +982,21 @@ window.Quarto = {
 <h3 class="anchored" data-anchor-id="what-the-tracer-rejects">What the tracer rejects</h3>
 <p>The errors point at the offending operation:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> Estimand, trace</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> bad_squared(z, alpha):</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> alpha(a<span class="op">=</span><span class="dv">1</span>, x<span class="op">=</span>z[<span class="st">"x"</span>]) <span class="op">**</span> <span class="dv">2</span>  <span class="co"># nonlinear in alpha</span></span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>trace(Estimand(feature_keys<span class="op">=</span>(<span class="st">"a"</span>, <span class="st">"x"</span>), m<span class="op">=</span>bad_squared), {<span class="st">"a"</span>: <span class="dv">0</span>, <span class="st">"x"</span>: <span class="fl">0.5</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> LinearFormEstimand, trace</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> bad_squared(alpha):</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="kw">lambda</span> z: alpha(a<span class="op">=</span><span class="dv">1</span>, x<span class="op">=</span>z[<span class="st">"x"</span>]) <span class="op">**</span> <span class="dv">2</span>  <span class="co"># nonlinear in alpha</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>trace(LinearFormEstimand(feature_keys<span class="op">=</span>(<span class="st">"a"</span>, <span class="st">"x"</span>), m<span class="op">=</span>bad_squared), {<span class="st">"a"</span>: <span class="dv">0</span>, <span class="st">"x"</span>: <span class="fl">0.5</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>TypeError: unsupported operand type(s) for ** or pow(): 'LinearForm' and 'int'</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> bad_constant(z, alpha):</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> alpha(a<span class="op">=</span><span class="dv">1</span>, x<span class="op">=</span>z[<span class="st">"x"</span>]) <span class="op">+</span> <span class="fl">1.0</span>  <span class="co"># constant offset</span></span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>trace(Estimand(feature_keys<span class="op">=</span>(<span class="st">"a"</span>, <span class="st">"x"</span>), m<span class="op">=</span>bad_constant), {<span class="st">"a"</span>: <span class="dv">0</span>, <span class="st">"x"</span>: <span class="fl">0.5</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> bad_constant(alpha):</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="kw">lambda</span> z: alpha(a<span class="op">=</span><span class="dv">1</span>, x<span class="op">=</span>z[<span class="st">"x"</span>]) <span class="op">+</span> <span class="fl">1.0</span>  <span class="co"># constant offset</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>trace(LinearFormEstimand(feature_keys<span class="op">=</span>(<span class="st">"a"</span>, <span class="st">"x"</span>), m<span class="op">=</span>bad_constant), {<span class="st">"a"</span>: <span class="dv">0</span>, <span class="st">"x"</span>: <span class="fl">0.5</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>TypeError: Cannot add a scalar to a LinearForm — m must be linear in alpha (no constant offsets).</code></pre>
 </div>
@@ -780,16 +1006,67 @@ window.Quarto = {
 </section>
 <section id="feature-keys-extra-keys" class="level2">
 <h2 class="anchored" data-anchor-id="feature-keys-extra-keys">Feature keys, extra keys</h2>
-<p>The <code>Estimand</code> dataclass has these fields:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Estimand:</span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    feature_keys: <span class="bu">tuple</span>[<span class="bu">str</span>, ...]      <span class="co"># columns alpha is indexed by</span></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    m: Callable[..., Any]              <span class="co"># the linear functional</span></span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>    extra_keys: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> ()   <span class="co"># per-row payload columns (e.g. shift_samples)</span></span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span> <span class="op">=</span> <span class="st">"custom"</span></span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    factory_spec: <span class="bu">dict</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>   <span class="co"># set by built-in factories so the estimand</span></span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>                                       <span class="co"># round-trips through save / load</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The estimator reads <code>feature_keys</code> and <code>extra_keys</code> to assemble the row dicts passed to <code>m</code>.</p>
+<p>The <code>LinearFormEstimand</code> dataclass has these fields:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LinearFormEstimand(Estimand):</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>    feature_keys: <span class="bu">tuple</span>[<span class="bu">str</span>, ...]      <span class="co"># columns alpha is indexed by</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>    m: Callable[..., Any]              <span class="co"># the linear functional, m(alpha)(z)</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>    extra_keys: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> ()   <span class="co"># per-row payload columns (e.g. shift_samples)</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span> <span class="op">=</span> <span class="st">"custom"</span></span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>    factory_spec: <span class="bu">dict</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>   <span class="co"># set by built-in factories so the estimand</span></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>                                       <span class="co"># round-trips through save / load</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The estimator reads <code>feature_keys</code> and <code>extra_keys</code> to assemble the row dicts passed to <code>m</code>. <code>feature_keys</code> is the input schema of <span class="math inline">\(\alpha\)</span> (the underlying learner needs a fixed feature set); <code>extra_keys</code> lets <code>m</code> reach payload columns that are not part of <span class="math inline">\(\alpha\)</span>’s input space.</p>
+</section>
+<section id="initialization" class="level2">
+<h2 class="anchored" data-anchor-id="initialization">Initialization</h2>
+<p>Every <code>RieszEstimator</code> subclass takes an <code>init=</code> constructor arg that controls the α-space starting value of the model. The orchestrator converts <code>init</code> to an η-space <code>base_score</code> via <code>loss.alpha_to_eta</code>; backends use <code>base_score</code> as a prediction offset.</p>
+<p>The default — <code>init=None</code> — sets α to the <strong>empirical loss-minimizing constant</strong>. For any Bregman loss with strictly convex <span class="math inline">\(h\)</span>, the constant <span class="math inline">\(a^*\)</span> that minimizes the per-row Riesz loss <span class="math display">\[
+P_n L(a) \;=\; \tilde h(a) \;-\; h'(a) \cdot \bar m, \qquad \bar m = P_n[m(\alpha = 1)(Z, Y)]
+\]</span> satisfies the FOC <span class="math inline">\(\tilde h'(a) = h''(a) \bar m\)</span>. Using <span class="math inline">\(\tilde h(t) = t h'(t) - h(t)\)</span> we get <span class="math inline">\(\tilde h'(t) = t h''(t)\)</span>, so the FOC collapses to <span class="math inline">\(a^* = \bar m\)</span>. The result is <strong>loss-independent</strong> — the only loss-specific step is projecting <span class="math inline">\(\bar m\)</span> into the loss’s α-domain when its codomain is restricted. Each <code>Loss</code> exposes <code>best_constant_init(m_bar)</code> for that projection.</p>
+<p>For the built-in estimands <span class="math inline">\(\bar m\)</span> is structurally constant (doesn’t depend on the data realization):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Estimand</th>
+<th><span class="math inline">\(m(\alpha = 1)(Z, Y)\)</span> per row</th>
+<th><span class="math inline">\(\bar m\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ATE</code>, <code>ATT</code>, <code>AdditiveShift</code>, <code>LocalShift</code></td>
+<td><span class="math inline">\(1 + (-1) = 0\)</span></td>
+<td><span class="math inline">\(0\)</span></td>
+</tr>
+<tr class="even">
+<td><code>TSM(v)</code></td>
+<td><span class="math inline">\(1\)</span></td>
+<td><span class="math inline">\(1\)</span></td>
+</tr>
+<tr class="odd">
+<td><code>StochasticIntervention</code></td>
+<td><span class="math inline">\(K \cdot (1/K) = 1\)</span></td>
+<td><span class="math inline">\(1\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>For custom estimands <span class="math inline">\(\bar m\)</span> can depend on the data; the orchestrator computes it from the training rows after the validation split (no peeking) by tracing each row and averaging the sum of trace coefficients.</p>
+<p>Override the default by passing a float:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>booster <span class="op">=</span> RieszBooster(estimand<span class="op">=</span>ATE(), init<span class="op">=</span><span class="fl">0.0</span>)        <span class="co"># explicit zero baseline</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>booster <span class="op">=</span> RieszBooster(estimand<span class="op">=</span>TSM(level<span class="op">=</span><span class="dv">1</span>), init<span class="op">=</span><span class="fl">2.5</span>) <span class="co"># informed prior</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-note callout-titled" title="Boundary cases">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Boundary cases
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For <code>BernoulliLoss</code> + <code>TSM</code> (or any density-ratio estimand with <span class="math inline">\(\bar m = 1\)</span>) the loss-minimizing constant sits on the upper boundary, and the projection clips to <span class="math inline">\(1 - \varepsilon\)</span>. The sigmoid is saturated at that init and gradients are tiny, so iterative training may stall. Pass <code>init=0.5</code> (or another interior value) when this matters. The <code>KLLoss</code> / <code>BoundedSquaredLoss</code> boundaries can hit the same issue when <span class="math inline">\(\bar m\)</span> lands exactly on a bound.</p>
+</div>
+</div>
 
 
 </section>
@@ -1210,13 +1487,13 @@ window.Quarto = {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./install.html" class="pagination-link" aria-label="Install">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Install</span>
+      <a href="./losses.html" class="pagination-link" aria-label="Losses">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Losses</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./losses.html" class="pagination-link" aria-label="Losses">
-        <span class="nav-page-text">Losses</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./tuning-and-cross-fitting.html" class="pagination-link" aria-label="Tuning and Cross-Fitting">
+        <span class="nav-page-text">Tuning and Cross-Fitting</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

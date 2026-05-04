@@ -384,14 +384,14 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../estimands.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Estimands</span></a>
+  <a href="../losses.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Losses</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../losses.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Losses</span></a>
+  <a href="../estimands.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Estimands</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -645,48 +645,54 @@ window.Quarto = {
 <div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(xgboost)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>sk_ms <span class="ot">&lt;-</span> <span class="fu">import</span>(<span class="st">"sklearn.model_selection"</span>, <span class="at">convert =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>cv    <span class="ot">&lt;-</span> sk_ms<span class="sc">$</span><span class="fu">KFold</span>(<span class="at">n_splits =</span> <span class="dv">5</span>L, <span class="at">shuffle =</span> <span class="cn">TRUE</span>, <span class="at">random_state =</span> <span class="dv">0</span>L)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressPackageStartupMessages</span>(<span class="fu">library</span>(rsample))</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">0</span>)</span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Outcome regression μ̂(A, X) via xgboost (R) with manual 5-fold cross-fit.</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>X_full <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(df[, <span class="fu">c</span>(<span class="st">"a"</span>, COVARIATES)])</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>y      <span class="ot">&lt;-</span> df<span class="sc">$</span>y</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>folds  <span class="ot">&lt;-</span> <span class="fu">split</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(df)),</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                <span class="fu">sample</span>(<span class="fu">rep_len</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="fu">nrow</span>(df))))</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>mu_oof <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(df))</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (te <span class="cf">in</span> folds) {</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  bst <span class="ot">&lt;-</span> <span class="fu">xgb.train</span>(</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">params =</span> <span class="fu">list</span>(<span class="at">objective =</span> <span class="st">"reg:squarederror"</span>, <span class="at">eta =</span> <span class="fl">0.05</span>,</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                  <span class="at">max_depth =</span> <span class="dv">4</span>, <span class="at">lambda =</span> <span class="fl">1.0</span>, <span class="at">verbosity =</span> <span class="dv">0</span>),</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">data =</span> <span class="fu">xgb.DMatrix</span>(X_full[<span class="sc">-</span>te, , <span class="at">drop =</span> <span class="cn">FALSE</span>], <span class="at">label =</span> y[<span class="sc">-</span>te]),</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrounds =</span> <span class="dv">300</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  mu_oof[te] <span class="ot">&lt;-</span> <span class="fu">predict</span>(bst, X_full[te, , <span class="at">drop =</span> <span class="cn">FALSE</span>])</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Riesz representer α̂ via cross_val_predict on the rieszboost R6 wrapper.</span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(</span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> <span class="fu">ATE</span>(<span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> COVARIATES),</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_estimators =</span> <span class="dv">2000</span>L, <span class="at">early_stopping_rounds =</span> <span class="dv">20</span>L, <span class="at">validation_fraction =</span> <span class="fl">0.2</span>,</span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">learning_rate =</span> <span class="fl">0.05</span>, <span class="at">max_depth =</span> <span class="dv">3</span>L, <span class="at">reg_lambda =</span> <span class="fl">10.0</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>alpha_hat <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">py_to_r</span>(</span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  sk_ms<span class="sc">$</span><span class="fu">cross_val_predict</span>(booster<span class="sc">$</span>py,</span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>                          <span class="fu">r_to_py</span>(df[, <span class="fu">c</span>(<span class="st">"a"</span>, COVARIATES)]),</span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>                          <span class="at">cv =</span> <span class="dv">5</span>L)</span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>))</span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Counterfactual μ̂(1, X) and μ̂(0, X) from a full-data fit.</span></span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>mu_full <span class="ot">&lt;-</span> <span class="fu">xgb.train</span>(</span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">params =</span> <span class="fu">list</span>(<span class="at">objective =</span> <span class="st">"reg:squarederror"</span>, <span class="at">eta =</span> <span class="fl">0.05</span>,</span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>                <span class="at">max_depth =</span> <span class="dv">4</span>, <span class="at">lambda =</span> <span class="fl">1.0</span>, <span class="at">verbosity =</span> <span class="dv">0</span>),</span>
-<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> <span class="fu">xgb.DMatrix</span>(X_full, <span class="at">label =</span> y),</span>
-<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">nrounds =</span> <span class="dv">300</span></span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>X1 <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">a =</span> <span class="dv">1</span>, <span class="fu">as.matrix</span>(df[, COVARIATES]))</span>
-<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>X0 <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">a =</span> <span class="dv">0</span>, <span class="fu">as.matrix</span>(df[, COVARIATES]))</span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>mu1 <span class="ot">&lt;-</span> <span class="fu">predict</span>(mu_full, X1)</span>
-<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>mu0 <span class="ot">&lt;-</span> <span class="fu">predict</span>(mu_full, X0)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Shared 5-fold split — used for both μ̂ and α̂ so they're aligned.</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>splits <span class="ot">&lt;-</span> <span class="fu">vfold_cv</span>(df, <span class="at">v =</span> <span class="dv">5</span>)<span class="sc">$</span>splits</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Outcome regression μ̂(A, X) via xgboost (R) with 5-fold cross-fit.</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>X_full <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(df[, <span class="fu">c</span>(<span class="st">"a"</span>, COVARIATES)])</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>y      <span class="ot">&lt;-</span> df<span class="sc">$</span>y</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>mu_oof <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(df))</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (split <span class="cf">in</span> splits) {</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  te_idx <span class="ot">&lt;-</span> <span class="fu">complement</span>(split)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  tr_idx <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(df)), te_idx)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  bst <span class="ot">&lt;-</span> <span class="fu">xgb.train</span>(</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">params =</span> <span class="fu">list</span>(<span class="at">objective =</span> <span class="st">"reg:squarederror"</span>, <span class="at">eta =</span> <span class="fl">0.05</span>,</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>                  <span class="at">max_depth =</span> <span class="dv">4</span>, <span class="at">lambda =</span> <span class="fl">1.0</span>, <span class="at">verbosity =</span> <span class="dv">0</span>),</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">data =</span> <span class="fu">xgb.DMatrix</span>(X_full[tr_idx, , <span class="at">drop =</span> <span class="cn">FALSE</span>], <span class="at">label =</span> y[tr_idx]),</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrounds =</span> <span class="dv">300</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  mu_oof[te_idx] <span class="ot">&lt;-</span> <span class="fu">predict</span>(bst, X_full[te_idx, , <span class="at">drop =</span> <span class="cn">FALSE</span>])</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Riesz representer α̂ via the same 5-fold loop, calling $fit / $predict on</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co"># the R6 booster per fold.</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>make_booster <span class="ot">&lt;-</span> <span class="cf">function</span>() RieszBooster<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> <span class="fu">ATE</span>(<span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> COVARIATES),</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_estimators =</span> <span class="dv">2000</span>L, <span class="at">early_stopping_rounds =</span> <span class="dv">20</span>L, <span class="at">validation_fraction =</span> <span class="fl">0.2</span>,</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">learning_rate =</span> <span class="fl">0.05</span>, <span class="at">max_depth =</span> <span class="dv">3</span>L, <span class="at">reg_lambda =</span> <span class="fl">10.0</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>alpha_hat <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(df))</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (split <span class="cf">in</span> splits) {</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  m <span class="ot">&lt;-</span> <span class="fu">make_booster</span>()</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>  m<span class="sc">$</span><span class="fu">fit</span>(<span class="fu">analysis</span>(split))</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  alpha_hat[<span class="fu">complement</span>(split)] <span class="ot">&lt;-</span> m<span class="sc">$</span><span class="fu">predict</span>(<span class="fu">assessment</span>(split))</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> <span class="fu">make_booster</span>()  <span class="co"># used by the TMLE step below to produce α at counterfactual treatment levels</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Counterfactual μ̂(1, X) and μ̂(0, X) from a full-data fit.</span></span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>mu_full <span class="ot">&lt;-</span> <span class="fu">xgb.train</span>(</span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">params =</span> <span class="fu">list</span>(<span class="at">objective =</span> <span class="st">"reg:squarederror"</span>, <span class="at">eta =</span> <span class="fl">0.05</span>,</span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>                <span class="at">max_depth =</span> <span class="dv">4</span>, <span class="at">lambda =</span> <span class="fl">1.0</span>, <span class="at">verbosity =</span> <span class="dv">0</span>),</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> <span class="fu">xgb.DMatrix</span>(X_full, <span class="at">label =</span> y),</span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>  <span class="at">nrounds =</span> <span class="dv">300</span></span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>X1 <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">a =</span> <span class="dv">1</span>, <span class="fu">as.matrix</span>(df[, COVARIATES]))</span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>X0 <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">a =</span> <span class="dv">0</span>, <span class="fu">as.matrix</span>(df[, COVARIATES]))</span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>mu1 <span class="ot">&lt;-</span> <span class="fu">predict</span>(mu_full, X1)</span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>mu0 <span class="ot">&lt;-</span> <span class="fu">predict</span>(mu_full, X0)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
 </div>
@@ -694,7 +700,7 @@ window.Quarto = {
 </section>
 <section id="dml-one-step" class="level2">
 <h2 class="anchored" data-anchor-id="dml-one-step">DML / one-step</h2>
-<p>The efficient influence function for ATE is <span class="math inline">\(\mathrm{IF}(O) = m(Z, \hat g) + \hat\alpha(Z)\,(Y - \hat\mu(Z))\)</span>, with <span class="math inline">\(m(Z, \hat g) = \hat\mu(1, X) - \hat\mu(0, X)\)</span>. Average it for <span class="math inline">\(\hat\theta\)</span>; its sample variance gives the SE.</p>
+<p>The efficient influence function for ATE is <span class="math inline">\(\mathrm{IF}(O) = m(\hat\mu)(Z) + \hat\alpha(Z)\,(Y - \hat\mu(Z))\)</span>, with <span class="math inline">\(m(\hat\mu)(Z) = \hat\mu(1, X) - \hat\mu(0, X)\)</span>. Average it for <span class="math inline">\(\hat\psi\)</span>; its sample variance gives the SE.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -727,9 +733,9 @@ window.Quarto = {
 <span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"psi_ATE = %.2f</span><span class="sc">\n</span><span class="st">SE      = %.2f</span><span class="sc">\n</span><span class="st">95%% CI  = [%.2f, %.2f]</span><span class="sc">\n</span><span class="st">"</span>,</span>
 <span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>            psi, se, ci[<span class="dv">1</span>], ci[<span class="dv">2</span>]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>psi_ATE = -2052.99
-SE      = 686.33
-95% CI  = [-3398.20, -707.79]</code></pre>
+<pre><code>psi_ATE = -2187.86
+SE      = 223.51
+95% CI  = [-2625.95, -1749.77]</code></pre>
 </div>
 </div>
 </div>
@@ -739,7 +745,7 @@ SE      = 686.33
 </section>
 <section id="tmle" class="level2">
 <h2 class="anchored" data-anchor-id="tmle">TMLE</h2>
-<p>TMLE solves the same EIF=0 estimating equation as one-step but does it by <em>targeting</em> <span class="math inline">\(\hat\mu\)</span>: fit a one-parameter fluctuation <span class="math inline">\(\mu^\star(\cdot) = \hat\mu(\cdot) + \epsilon \hat\alpha(\cdot)\)</span> on a “clever covariate” <span class="math inline">\(\hat\alpha\)</span> to drive the empirical mean of <span class="math inline">\(\hat\alpha(O)(Y - \mu^\star(O))\)</span> to zero, then take the plug-in <span class="math inline">\(\hat\theta = (1/n) \sum \mu^\star(1, X) - \mu^\star(0, X)\)</span>. For continuous <span class="math inline">\(Y\)</span> the targeting is a single linear regression of the outcome residual on <span class="math inline">\(\hat\alpha\)</span>.</p>
+<p>TMLE solves the same EIF=0 estimating equation as one-step but does it by <em>targeting</em> <span class="math inline">\(\hat\mu\)</span>: fit a one-parameter fluctuation <span class="math inline">\(\mu^\star(\cdot) = \hat\mu(\cdot) + \epsilon \hat\alpha(\cdot)\)</span> on a “clever covariate” <span class="math inline">\(\hat\alpha\)</span> to drive the empirical mean of <span class="math inline">\(\hat\alpha(O)(Y - \mu^\star(O))\)</span> to zero, then take the plug-in <span class="math inline">\(\hat\psi = (1/n) \sum \mu^\star(1, X) - \mu^\star(0, X)\)</span>. For continuous <span class="math inline">\(Y\)</span> the targeting is a single linear regression of the outcome residual on <span class="math inline">\(\hat\alpha\)</span>.</p>
 <p>To target the counterfactual predictions we also need <span class="math inline">\(\hat\alpha\)</span> at <span class="math inline">\(A=1\)</span> and <span class="math inline">\(A=0\)</span>. Refit the booster on the full sample and predict at the two counterfactual treatment levels.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-4-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-1" role="tab" aria-controls="tabset-4-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-4-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-2" role="tab" aria-controls="tabset-4-2" aria-selected="false" href="">R</a></li></ul>
@@ -1164,40 +1170,42 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
   background-color: var(--sklearn-color-fitted-level-3);
 }
 </style><div id="sk-container-id-1" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>RieszBooster(early_stopping_rounds=20,
-             estimand=Estimand(feature_keys=('a', 'age', 'educ', 'black',
-                                             'hisp', 'marr', 'nodegree', 're74',
-                                             're75'),
-                               m=&lt;function ATE.&lt;locals&gt;.m at 0x16c2aa020&gt;,
-                               extra_keys=(),
-                               name='ATE',
-                               factory_spec={'args': {'covariates': ['age',
-                                                                     'educ',
-                                                                     'black',
-                                                                     'hisp',
-                                                                     'marr',
-                                                                     'nodegree',
-                                                                     're74',
-                                                                     're75'],
-                                                      'treatment': 'a'},
-                                             'factory': 'ATE'}),
+             estimand=LinearFormEstimand(feature_keys=('a', 'age', 'educ',
+                                                       'black', 'hisp', 'marr',
+                                                       'nodegree', 're74',
+                                                       're75'),
+                                         m=&lt;function ATE.&lt;locals&gt;.m at 0x142a18c20&gt;,
+                                         extra_keys=(),
+                                         name='ATE',
+                                         factory_spec={'args': {'covariates': ['age',
+                                                                               'educ',
+                                                                               'black',
+                                                                               'hisp',
+                                                                               'marr',
+                                                                               'nodegree',
+                                                                               're74',
+                                                                               're75'],
+                                                                'treatment': 'a'},
+                                                       'factory': 'ATE'}),
              max_depth=3, n_estimators=2000, reg_lambda=10.0,
              validation_fraction=0.2)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-1" type="checkbox" checked=""><label for="sk-estimator-id-1" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>RieszBooster</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted"><pre>RieszBooster(early_stopping_rounds=20,
-             estimand=Estimand(feature_keys=('a', 'age', 'educ', 'black',
-                                             'hisp', 'marr', 'nodegree', 're74',
-                                             're75'),
-                               m=&lt;function ATE.&lt;locals&gt;.m at 0x16c2aa020&gt;,
-                               extra_keys=(),
-                               name='ATE',
-                               factory_spec={'args': {'covariates': ['age',
-                                                                     'educ',
-                                                                     'black',
-                                                                     'hisp',
-                                                                     'marr',
-                                                                     'nodegree',
-                                                                     're74',
-                                                                     're75'],
-                                                      'treatment': 'a'},
-                                             'factory': 'ATE'}),
+             estimand=LinearFormEstimand(feature_keys=('a', 'age', 'educ',
+                                                       'black', 'hisp', 'marr',
+                                                       'nodegree', 're74',
+                                                       're75'),
+                                         m=&lt;function ATE.&lt;locals&gt;.m at 0x142a18c20&gt;,
+                                         extra_keys=(),
+                                         name='ATE',
+                                         factory_spec={'args': {'covariates': ['age',
+                                                                               'educ',
+                                                                               'black',
+                                                                               'hisp',
+                                                                               'marr',
+                                                                               'nodegree',
+                                                                               're74',
+                                                                               're75'],
+                                                                'treatment': 'a'},
+                                                       'factory': 'ATE'}),
              max_depth=3, n_estimators=2000, reg_lambda=10.0,
              validation_fraction=0.2)</pre></div> </div></div></div></div>
 </div>
@@ -1252,9 +1260,9 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 <span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"psi_TMLE = %.2f</span><span class="sc">\n</span><span class="st">SE       = %.2f</span><span class="sc">\n</span><span class="st">95%% CI   = [%.2f, %.2f]</span><span class="sc">\n</span><span class="st">"</span>,</span>
 <span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>            psi_tmle, se_tmle, ci_tmle[<span class="dv">1</span>], ci_tmle[<span class="dv">2</span>]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>psi_TMLE = -2096.55
-SE       = 686.14
-95% CI   = [-3441.38, -751.71]</code></pre>
+<pre><code>psi_TMLE = -1907.39
+SE       = 223.73
+95% CI   = [-2345.91, -1468.88]</code></pre>
 </div>
 </div>
 </div>
@@ -1264,7 +1272,7 @@ SE       = 686.14
 </section>
 <section id="other-estimands" class="level2">
 <h2 class="anchored" data-anchor-id="other-estimands">Other estimands</h2>
-<p>The pattern generalizes verbatim. Swap the estimand factory and the <span class="math inline">\(m(Z, \hat g)\)</span> formula:</p>
+<p>The pattern generalizes verbatim. Swap the estimand factory and the <span class="math inline">\(m(\hat\mu)(Z)\)</span> formula:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 33%">
@@ -1274,29 +1282,29 @@ SE       = 686.14
 <thead>
 <tr class="header">
 <th>Estimand</th>
-<th><span class="math inline">\(m(Z, \hat g)\)</span></th>
+<th><span class="math inline">\(m(\hat\mu)(Z)\)</span></th>
 <th>Riesz factory</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td>ATT</td>
-<td><span class="math inline">\(A(\hat g(1, X) - \hat g(0, X))\)</span>, then divide by <span class="math inline">\(\hat P(A=1)\)</span></td>
+<td><span class="math inline">\(A(\hat\mu(1, X) - \hat\mu(0, X))\)</span>, then divide by <span class="math inline">\(\hat{P}(A=1)\)</span></td>
 <td><code>ATT(...)</code></td>
 </tr>
 <tr class="even">
 <td>TSM at <span class="math inline">\(a^\star\)</span></td>
-<td><span class="math inline">\(\hat g(a^\star, X)\)</span></td>
+<td><span class="math inline">\(\hat\mu(a^\star, X)\)</span></td>
 <td><code>TSM(level=a_star)</code></td>
 </tr>
 <tr class="odd">
 <td>Additive shift <span class="math inline">\(\delta\)</span></td>
-<td><span class="math inline">\(\hat g(A + \delta, X) - \hat g(A, X)\)</span></td>
+<td><span class="math inline">\(\hat\mu(A + \delta, X) - \hat\mu(A, X)\)</span></td>
 <td><code>AdditiveShift(delta)</code></td>
 </tr>
 <tr class="even">
 <td>Stochastic intervention</td>
-<td><span class="math inline">\(\int \hat g(a', X)\,h(a' \mid X)\,da'\)</span></td>
+<td><span class="math inline">\(\int \hat\mu(a', X)\,h(a' \mid X)\,da'\)</span></td>
 <td><code>StochasticIntervention(...)</code></td>
 </tr>
 </tbody>

@@ -355,14 +355,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./estimands.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Estimands</span></a>
+  <a href="./losses.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Losses</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./losses.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Losses</span></a>
+  <a href="./estimands.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Estimands</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -583,18 +583,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="tracer" class="level2">
 <h2 class="anchored" data-anchor-id="tracer">Tracer</h2>
-<p>The user writes <code>m(z, alpha)</code> with <code>+</code>, <code>-</code>, scalar <code>*</code>, and calls to <code>alpha(...)</code>. <code>rieszreg.estimands.tracer</code> passes a <code>Tracer</code> in as <code>alpha</code>; each call returns a single-term <code>LinearForm</code>, and Python’s operator overloading composes them. The result has <code>.as_pairs()</code> returning <code>[(coef, point), ...]</code>, which <code>build_augmented</code> consumes. Operations outside the linear-form algebra (squaring, integrals, constants) raise at trace time.</p>
+<p>The user writes the operator <code>m(alpha)(z)</code> with <code>+</code>, <code>-</code>, scalar <code>*</code>, and calls to <code>alpha(...)</code>. <code>rieszreg.estimands.tracer</code> passes a <code>Tracer</code> in as <code>alpha</code>; each call returns a single-term <code>LinearForm</code>, and Python’s operator overloading composes them. The result has <code>.as_pairs()</code> returning <code>[(coef, point), ...]</code>, which <code>build_augmented</code> consumes. Operations outside the linear-form algebra (squaring, integrals, constants) raise at trace time.</p>
 </section>
 <section id="adding-an-estimand-factory" class="level2">
 <h2 class="anchored" data-anchor-id="adding-an-estimand-factory">Adding an estimand factory</h2>
-<p>Estimand factories belong in <code>rieszreg.estimands.base</code>, not in the implementation packages. A factory returns an <code>Estimand</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> MyEstimand(param, treatment<span class="op">=</span><span class="st">"a"</span>, covariates<span class="op">=</span>(<span class="st">"x"</span>,)) <span class="op">-&gt;</span> Estimand:</span>
+<p>Estimand factories belong in <code>rieszreg.estimands.base</code>, not in the implementation packages. A factory returns a <code>LinearFormEstimand</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> MyEstimand(param, treatment<span class="op">=</span><span class="st">"a"</span>, covariates<span class="op">=</span>(<span class="st">"x"</span>,)) <span class="op">-&gt;</span> LinearFormEstimand:</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    cov <span class="op">=</span> <span class="bu">tuple</span>(covariates)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> m(z, alpha):</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>        x_kwargs <span class="op">=</span> {k: z[k] <span class="cf">for</span> k <span class="kw">in</span> cov}</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> alpha(<span class="op">**</span>{treatment: param, <span class="op">**</span>x_kwargs})</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> Estimand(feature_keys<span class="op">=</span>(treatment, <span class="op">*</span>cov), m<span class="op">=</span>m, name<span class="op">=</span><span class="ss">f"MyEstimand(</span><span class="sc">{</span>param<span class="sc">}</span><span class="ss">)"</span>,</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>                    factory_spec<span class="op">=</span>{<span class="st">"factory"</span>: <span class="st">"MyEstimand"</span>, <span class="st">"args"</span>: {<span class="st">"param"</span>: param, ...}})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> m(alpha):</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> inner(z):</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>            x_kwargs <span class="op">=</span> {k: z[k] <span class="cf">for</span> k <span class="kw">in</span> cov}</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> alpha(<span class="op">**</span>{treatment: param, <span class="op">**</span>x_kwargs})</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> inner</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> LinearFormEstimand(</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        feature_keys<span class="op">=</span>(treatment, <span class="op">*</span>cov), m<span class="op">=</span>m, name<span class="op">=</span><span class="ss">f"MyEstimand(</span><span class="sc">{</span>param<span class="sc">}</span><span class="ss">)"</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        factory_spec<span class="op">=</span>{<span class="st">"factory"</span>: <span class="st">"MyEstimand"</span>, <span class="st">"args"</span>: {<span class="st">"param"</span>: param, ...}},</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Then:</p>
 <ol type="1">
 <li>Add to <code>_FACTORY_REGISTRY</code> in <code>rieszreg/python/rieszreg/estimands/base.py</code> so the round-trip serialization registry knows about it.</li>

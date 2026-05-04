@@ -314,7 +314,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./estimands.html">Usage</a></li><li class="breadcrumb-item"><a href="./r-interface.html">R interface</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./losses.html">Usage</a></li><li class="breadcrumb-item"><a href="./r-interface.html">R interface</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -355,14 +355,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./estimands.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Estimands</span></a>
+  <a href="./losses.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Losses</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./losses.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Losses</span></a>
+  <a href="./estimands.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Estimands</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -495,6 +495,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#api-surface-forestriesz" id="toc-api-surface-forestriesz" class="nav-link" data-scroll-target="#api-surface-forestriesz">API surface (forestriesz)</a></li>
   <li><a href="#api-surface-riesznet" id="toc-api-surface-riesznet" class="nav-link" data-scroll-target="#api-surface-riesznet">API surface (riesznet)</a></li>
   <li><a href="#parity" id="toc-parity" class="nav-link" data-scroll-target="#parity">Parity</a></li>
+  <li><a href="#cross-fitting-and-tuning-from-r" id="toc-cross-fitting-and-tuning-from-r" class="nav-link" data-scroll-target="#cross-fitting-and-tuning-from-r">Cross-fitting and tuning from R</a></li>
   <li><a href="#custom-python-objects-from-r" id="toc-custom-python-objects-from-r" class="nav-link" data-scroll-target="#custom-python-objects-from-r">Custom Python objects from R</a></li>
   <li><a href="#reaching-the-python-object-directly" id="toc-reaching-the-python-object-directly" class="nav-link" data-scroll-target="#reaching-the-python-object-directly">Reaching the Python object directly</a></li>
   </ul>
@@ -504,7 +505,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./estimands.html">Usage</a></li><li class="breadcrumb-item"><a href="./r-interface.html">R interface</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./losses.html">Usage</a></li><li class="breadcrumb-item"><a href="./r-interface.html">R interface</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">R interface</h1>
 </div>
@@ -824,21 +825,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>The two columns above use different RNGs (<code>default_rng(0)</code> versus <code>set.seed(0)</code>), so the <code>df</code> and the predictions differ between tabs. To verify parity end-to-end, fit on the same data in both languages and compare predictions row-by-row.</p>
 </section>
+<section id="cross-fitting-and-tuning-from-r" class="level2">
+<h2 class="anchored" data-anchor-id="cross-fitting-and-tuning-from-r">Cross-fitting and tuning from R</h2>
+<p>Use <code>rsample::vfold_cv</code> for splits and a <code>for</code> loop over <code>$fit()</code> / <code>$predict()</code> / <code>$score()</code> on the R6 estimator. See <a href="./tuning-and-cross-fitting.html">Tuning and cross-fitting</a> for full examples.</p>
+</section>
 <section id="custom-python-objects-from-r" class="level2">
 <h2 class="anchored" data-anchor-id="custom-python-objects-from-r">Custom Python objects from R</h2>
 <p>The <code>LinearForm</code> tracer is Python-only. To use a custom estimand or <code>LossSpec</code> subclass from R, define it in Python via reticulate:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>reticulate<span class="sc">::</span><span class="fu">py_run_string</span>(<span class="st">"</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="st">def m_my_thing(z, alpha):</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="st">    return 2.0 * (alpha(a=2, x=z['x']) - alpha(a=0, x=z['x']))</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="st">from rieszreg import Estimand</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="st">my_estimand = Estimand(feature_keys=('a', 'x'), m=m_my_thing, name='MyThing')</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="st">"</span>)</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>est <span class="ot">&lt;-</span> reticulate<span class="sc">::</span>py<span class="sc">$</span>my_estimand</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(<span class="at">estimand =</span> est, <span class="at">n_estimators =</span> <span class="dv">100</span>L, <span class="at">max_depth =</span> <span class="dv">3</span>L)</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">fit</span>(df_r)</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">predict</span>(df_r)[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="st">def m_my_thing(alpha):</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="st">    def inner(z):</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="st">        return 2.0 * (alpha(a=2, x=z['x']) - alpha(a=0, x=z['x']))</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="st">    return inner</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="st">from rieszreg import LinearFormEstimand</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="st">my_estimand = LinearFormEstimand(feature_keys=('a', 'x'), m=m_my_thing, name='MyThing')</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="st">"</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>est <span class="ot">&lt;-</span> reticulate<span class="sc">::</span>py<span class="sc">$</span>my_estimand</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(<span class="at">estimand =</span> est, <span class="at">n_estimators =</span> <span class="dv">100</span>L, <span class="at">max_depth =</span> <span class="dv">3</span>L)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">fit</span>(df_r)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">predict</span>(df_r)[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>The same pattern works for custom <code>LossSpec</code> subclasses: subclass in Python and pass the instance via <code>loss=</code>.</p>
 </section>
 <section id="reaching-the-python-object-directly" class="level2">
