@@ -1,29 +1,48 @@
-"""KL Bregman-Riesz loss: φ(t) = t·log(t), exp link, density-ratio estimands."""
+"""KL Bregman-Riesz loss: h(t) = t · log(t), exp link, density-ratio estimands."""
 
 from __future__ import annotations
 
 import numpy as np
 
+from .base import Loss
 
-class KLLoss:
-    """φ(t) = t·log(t). ψ(t) = t. Exp link: α = exp(η) so α > 0 always.
-    Per-row loss in α: a·α + (b/2)·log(α).
-    With η = log(α), loss in η: a·exp(η) + (b/2)·η.
-    Gradient (in η) = a·exp(η) + b/2.
-    Hessian (in η) = a·exp(η)  (positive whenever a ≥ 0; floored).
 
-    Requires all m-coefficients to be non-negative (b ≤ 0 in augmented data),
-    which restricts to density-ratio-style estimands (TSM, IPSI, etc.).
+class KLLoss(Loss):
+    """h(t) = t · log(t). h'(t) = log(t) + 1. h_tilde(t) = t.
+    Exp link: α = exp(η) so α > 0 always.
+
+    Augmented-row loss in α-space: D · α + C · log(α) (constant offset dropped).
+    With η = log(α), gradient (η) = D · exp(η) + C = D · α + C.
+    Hessian (η) = D · exp(η) = D · α (floored).
+
+    Pair with density-ratio estimands (TSM, IPSI) — for ATE-style estimands
+    where m has negative coefficients, the empirical KL loss is unbounded below.
     """
 
     name = "kl"
 
     def __init__(self, max_eta: float = 50.0):
+        super().__init__()
         # Clip η before exp() to avoid overflow when the backend takes a big update step.
         self.max_eta = float(max_eta)
 
     def _clip(self, eta):
         return np.clip(eta, -self.max_eta, self.max_eta)
+
+    def _safe_alpha(self, alpha):
+        return np.maximum(alpha, np.exp(-self.max_eta))
+
+    def potential(self, alpha):
+        a = self._safe_alpha(alpha)
+        return a * np.log(a)
+
+    def potential_deriv(self, alpha):
+        a = self._safe_alpha(alpha)
+        return np.log(a) + 1.0
+
+    def tilde_potential(self, alpha):
+        # h_tilde(t) = t · h'(t) − h(t) = t · (log t + 1) − t · log t = t.
+        return alpha
 
     def link_to_alpha(self, eta):
         return np.exp(self._clip(eta))
@@ -37,34 +56,19 @@ class KLLoss:
             raise ValueError("KLLoss requires positive alpha for init.")
         return float(np.log(alpha))
 
-    def loss_row(self, a, b, alpha):
-        # alpha is already α (post-link); guard log against zero.
-        alpha = np.maximum(alpha, np.exp(-self.max_eta))
-        return a * alpha + 0.5 * b * np.log(alpha)
-
-    def gradient(self, a, b, eta):
+    def aug_grad_eta(self, is_original, potential_deriv_coef, eta):
         alpha = np.exp(self._clip(eta))
-        return a * alpha + 0.5 * b
+        return is_original * alpha + potential_deriv_coef
 
-    def hessian(self, a, b, eta, hessian_floor):
-        del b
+    def aug_hess_eta(self, is_original, potential_deriv_coef, eta, hessian_floor):
+        del potential_deriv_coef
         alpha = np.exp(self._clip(eta))
-        return np.maximum(a * alpha, hessian_floor)
+        return np.maximum(is_original * alpha, hessian_floor)
 
     def best_constant_init(self, m_bar: float) -> float:
         # Exp link: α > 0. Floor m̄ at the smallest α the link can represent.
         eps = float(np.exp(-self.max_eta))
         return max(float(m_bar), eps)
-
-    def validate_coefficients(self, b):
-        if np.any(b > 0):
-            raise ValueError(
-                "KLLoss requires all m-coefficients to be non-negative "
-                "(equivalently: all augmented `b` values <= 0). Your m has at "
-                "least one row with a positive linear coefficient — try "
-                "SquaredLoss instead, or restrict to density-ratio estimands "
-                "(TSM, IPSI, etc.)."
-            )
 
     def to_spec(self) -> dict:
         return {"type": "KLLoss", "args": {"max_eta": self.max_eta}}

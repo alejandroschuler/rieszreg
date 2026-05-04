@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from rieszreg import Estimand, LinearForm, Tracer, trace
+from rieszreg import LinearForm, LinearFormEstimand, Tracer, trace
 
 
 def _coef_at(pairs, **point):
@@ -66,7 +66,7 @@ def test_squaring_raises():
         def inner(z):
             return alpha(a=1, x=z["x"]) ** 2
         return inner
-    est = Estimand(feature_keys=("a", "x"), m=m)
+    est = LinearFormEstimand(feature_keys=("a", "x"), m=m)
     with pytest.raises(TypeError):
         trace(est, {"a": 0, "x": 0.5})
 
@@ -76,7 +76,7 @@ def test_non_linearform_return_raises():
         def inner(z):
             return "not a linear form"
         return inner
-    est = Estimand(feature_keys=("a", "x"), m=m)
+    est = LinearFormEstimand(feature_keys=("a", "x"), m=m)
     with pytest.raises(TypeError, match="LinearForm"):
         trace(est, {"a": 0, "x": 0.5})
 
@@ -86,5 +86,5 @@ def test_zero_scalar_return_yields_empty():
         def inner(z):
             return 0
         return inner
-    est = Estimand(feature_keys=("a", "x"), m=m)
+    est = LinearFormEstimand(feature_keys=("a", "x"), m=m)
     assert trace(est, {"a": 0, "x": 0.5}) == []

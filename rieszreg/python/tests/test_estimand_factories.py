@@ -10,7 +10,7 @@ from rieszreg import (
     ATE,
     ATT,
     AdditiveShift,
-    Estimand,
+    LinearFormEstimand,
     LocalShift,
     StochasticIntervention,
     TSM,
@@ -89,6 +89,6 @@ def test_custom_estimand_pickle_uses_factory_spec_when_set():
             return alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"])
         return inner
 
-    est = Estimand(feature_keys=("a", "x"), m=m, name="custom")
+    est = LinearFormEstimand(feature_keys=("a", "x"), m=m, name="custom")
     # No factory_spec → falls back to default reduce; tested elsewhere.
     assert est.factory_spec is None

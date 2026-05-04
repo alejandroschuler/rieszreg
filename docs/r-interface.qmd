@@ -141,17 +141,23 @@ head(alpha_r, 5)
 
 The two columns above use different RNGs (`default_rng(0)` versus `set.seed(0)`), so the `df` and the predictions differ between tabs. To verify parity end-to-end, fit on the same data in both languages and compare predictions row-by-row.
 
+## Cross-fitting and tuning from R
+
+Use `rsample::vfold_cv` for splits and a `for` loop over `$fit()` / `$predict()` / `$score()` on the R6 estimator. See [Tuning and cross-fitting](tuning-and-cross-fitting.qmd) for full examples.
+
 ## Custom Python objects from R
 
 The `LinearForm` tracer is Python-only. To use a custom estimand or `LossSpec` subclass from R, define it in Python via reticulate:
 
 ```r
 reticulate::py_run_string("
-def m_my_thing(z, alpha):
-    return 2.0 * (alpha(a=2, x=z['x']) - alpha(a=0, x=z['x']))
+def m_my_thing(alpha):
+    def inner(z):
+        return 2.0 * (alpha(a=2, x=z['x']) - alpha(a=0, x=z['x']))
+    return inner
 
-from rieszreg import Estimand
-my_estimand = Estimand(feature_keys=('a', 'x'), m=m_my_thing, name='MyThing')
+from rieszreg import LinearFormEstimand
+my_estimand = LinearFormEstimand(feature_keys=('a', 'x'), m=m_my_thing, name='MyThing')
 ")
 
 est <- reticulate::py$my_estimand

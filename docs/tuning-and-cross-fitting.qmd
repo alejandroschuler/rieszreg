@@ -4,7 +4,9 @@ title: "Tuning and Cross-Fitting"
 
 {{< include _setup.qmd >}}
 
-`RieszBooster`, `KernelRieszRegressor`, `ForestRieszRegressor`, `AugForestRieszRegressor`, and `RieszNet` are all subclasses of `rieszreg.RieszEstimator`, which inherits from `sklearn.base.BaseEstimator`. Every sklearn tool that works on an estimator works here: `cross_val_predict`, `GridSearchCV`, `Pipeline`, `clone`, `set_params`, `RandomizedSearchCV`, `HalvingGridSearchCV`, and the rest of `sklearn.model_selection`. Hyperparameter grids, cross-fitting folds, multi-loss comparison, and multi-learner selection all use the same API.
+`RieszBooster`, `KernelRieszRegressor`, `ForestRieszRegressor`, `AugForestRieszRegressor`, and `RieszNet` are all subclasses of `rieszreg.RieszEstimator`, which inherits from `sklearn.base.BaseEstimator`.
+
+From Python, every sklearn tool works without modification: `cross_val_predict`, `GridSearchCV`, `Pipeline`, `clone`, `set_params`, `RandomizedSearchCV`, `HalvingGridSearchCV`, and the rest of `sklearn.model_selection`. From R, use `rsample::vfold_cv` for splits and a `for` loop over the R6 estimator's `$fit()` / `$predict()` / `$score()` per fold.
 
 This page uses `RieszBooster` for the single-learner sections and adds `RieszNet` and `ForestRieszRegressor` to the ensemble-selection example. The same patterns work for `KernelRieszRegressor` and `AugForestRieszRegressor` with backend-specific hyperparameters.
 
@@ -45,6 +47,7 @@ alpha_oof.shape, alpha_oof[:5]
 ## R
 
 ```{r}
+suppressPackageStartupMessages(library(rsample))
 set.seed(0)
 n  <- 2000
 x  <- runif(n)
@@ -52,10 +55,7 @@ pi <- 1 / (1 + exp(-(-0.02 * x - x^2 + 4 * log(x + 0.3) + 1.5)))
 a  <- rbinom(n, 1, pi)
 df <- data.frame(a = as.numeric(a), x = x)
 
-# Call sklearn directly via reticulate, passing the underlying Python
-# estimator from `booster$py`.
-sk_ms <- reticulate::import("sklearn.model_selection", convert = FALSE)
-booster <- RieszBooster$new(
+make_booster <- function() RieszBooster$new(
   estimand = ATE(),
   n_estimators = 2000L,
   early_stopping_rounds = 20L,
@@ -63,15 +63,19 @@ booster <- RieszBooster$new(
   learning_rate = 0.05,
   max_depth = 4L
 )
-alpha_oof <- as.numeric(reticulate::py_to_r(
-  sk_ms$cross_val_predict(booster$py, reticulate::r_to_py(df), cv = 5L)
-))
+
+alpha_oof <- numeric(nrow(df))
+for (split in vfold_cv(df, v = 5)$splits) {
+  booster <- make_booster()
+  booster$fit(analysis(split))
+  alpha_oof[complement(split)] <- booster$predict(assessment(split))
+}
 length(alpha_oof); head(alpha_oof)
 ```
 
 :::
 
-Each fold runs its own internal early-stopping split.
+Each fold runs its own internal early-stopping split. The R loop calls `$fit()` / `$predict()` per fold on a fresh booster, mirroring what `cross_val_predict` does in Python.
 
 ## Hyperparameter search
 
@@ -107,26 +111,31 @@ alpha_hat[:5]
 ## R
 
 ```{r}
-sk_ms <- reticulate::import("sklearn.model_selection", convert = FALSE)
-base  <- RieszBooster$new(
+grid <- expand.grid(
+  learning_rate = c(0.03, 0.05, 0.1),
+  max_depth     = c(3L, 4L, 5L)
+)
+make_booster <- function(lr, md) RieszBooster$new(
   estimand = ATE(),
   n_estimators = 300L,
   early_stopping_rounds = 20L,
-  validation_fraction = 0.2
+  validation_fraction = 0.2,
+  learning_rate = lr,
+  max_depth = md
 )
-grid <- sk_ms$GridSearchCV(
-  base$py,
-  param_grid = reticulate::dict(
-    learning_rate = c(0.03, 0.05, 0.1),
-    max_depth = list(3L, 4L, 5L)
-  ),
-  cv = 3L,
-  n_jobs = 1L
-)
-grid$fit(reticulate::r_to_py(df))
-cat("best params:\n"); print(reticulate::py_to_r(grid$best_params_))
-cat(sprintf("best score (neg squared Riesz loss): %.4f\n",
-            reticulate::py_to_r(grid$best_score_)))
+
+inner_splits <- vfold_cv(df, v = 3)$splits
+scores <- vapply(seq_len(nrow(grid)), function(i) {
+  mean(vapply(inner_splits, function(s) {
+    m <- make_booster(grid$learning_rate[i], grid$max_depth[i])
+    m$fit(analysis(s))
+    m$score(assessment(s))
+  }, numeric(1)))
+}, numeric(1))
+
+best <- grid[which.max(scores), ]
+cat("best params:\n"); print(best)
+cat(sprintf("best score (neg squared Riesz loss): %.4f\n", max(scores)))
 ```
 
 :::

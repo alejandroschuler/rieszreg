@@ -11,7 +11,14 @@ orchestrator.
     est.fit(X)
 """
 
-from .augmentation import AugmentedDataset, build_augmented
+from .augmentation import (
+    AugmentedDataset,
+    aug_grad_eta,
+    aug_hess_eta,
+    aug_loss_alpha,
+    aug_loss_eta,
+    build_augmented,
+)
 from .backends import (
     Backend,
     FitResult,
@@ -27,6 +34,7 @@ from .estimands import (
     AdditiveShift,
     Estimand,
     LinearForm,
+    LinearFormEstimand,
     LocalShift,
     StochasticIntervention,
     TSM,
@@ -39,6 +47,7 @@ from .losses import (
     BernoulliLoss,
     BoundedSquaredLoss,
     KLLoss,
+    Loss,
     LossSpec,
     SquaredLoss,
     loss_from_spec,
@@ -51,6 +60,10 @@ __all__ = [
     "AdditiveShift",
     "AugmentedDataset",
     "Backend",
+    "aug_grad_eta",
+    "aug_hess_eta",
+    "aug_loss_alpha",
+    "aug_loss_eta",
     "BernoulliLoss",
     "BoundedSquaredLoss",
     "Diagnostics",
@@ -58,7 +71,9 @@ __all__ = [
     "FitResult",
     "KLLoss",
     "LinearForm",
+    "LinearFormEstimand",
     "LocalShift",
+    "Loss",
     "LossSpec",
     "MomentBackend",
     "Predictor",

@@ -1,6 +1,6 @@
-"""Bregman-Riesz losses + LossSpec Protocol."""
+"""Bregman-Riesz losses."""
 
-from .base import LossSpec
+from .base import Loss, LossSpec
 from .bernoulli import BernoulliLoss
 from .bounded_squared import BoundedSquaredLoss
 from .kl import KLLoss
@@ -10,14 +10,15 @@ __all__ = [
     "BernoulliLoss",
     "BoundedSquaredLoss",
     "KLLoss",
+    "Loss",
     "LossSpec",
     "SquaredLoss",
     "loss_from_spec",
 ]
 
 
-def loss_from_spec(spec: dict) -> LossSpec:
-    """Reconstruct a LossSpec from its `to_spec()` dict."""
+def loss_from_spec(spec: dict) -> Loss:
+    """Reconstruct a Loss from its `to_spec()` dict."""
     cls_name = spec["type"]
     args = spec.get("args", {})
     if cls_name == "SquaredLoss":
