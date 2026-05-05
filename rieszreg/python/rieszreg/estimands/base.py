@@ -2,19 +2,19 @@
 
 `Estimand` is the abstract base. Concrete usage goes through `FiniteEvalEstimand`,
 the subclass for estimands whose `m` reduces to a finite linear combination of
-point evaluations of `alpha` (ATE, ATT, TSM, additive shifts, finite-sample
-stochastic interventions, ...). Every built-in factory returns a
-`FiniteEvalEstimand`; the tracer, augmentation engine, and orchestrator only
-accept `FiniteEvalEstimand`.
+point evaluations of `alpha` (ATE, ATT, TSM, additive shifts, ...). Every
+built-in factory returns a `FiniteEvalEstimand`; the tracer, augmentation
+engine, and orchestrator only accept `FiniteEvalEstimand`.
 
 The class carries (1) the column names alpha is indexed by (`feature_keys`),
-(2) per-row payload columns that aren't fit-time inputs but are referenced by
-m (`extra_keys`, e.g. "shift_samples" for stochastic interventions), and (3)
-the opaque `m(alpha)(z)` operator itself.
+and (2) the opaque `m(alpha)(z, y)` operator itself.
 
 `m` is an operator: it takes a candidate function `alpha` and returns a function
-of the row `z`. The orchestrator calls `m(alpha)(z)` row-by-row, passing a
-`Tracer` for `alpha` to extract the linear-form structure.
+of the row `z` and the per-row outcome `y`. The orchestrator calls
+`m(alpha)(z, y)` row-by-row, passing a `Tracer` for `alpha` to extract the
+linear-form structure. `Y` flows in sklearn-style: separate from `X` at every
+layer (no outcome column inside the row dict). When the user's `m` doesn't read
+`y` (the case for every built-in), the inner closure ignores its second arg.
 """
 
 from __future__ import annotations
@@ -37,14 +37,13 @@ class Estimand:
 
 @dataclass(eq=False)
 class FiniteEvalEstimand(Estimand):
-    """Estimand whose `m(alpha)(z)` is a finite linear combination of point
+    """Estimand whose `m(alpha)(z, y)` is a finite linear combination of point
     evaluations of `alpha`. The tracer extracts the (coefficient, point) pairs;
     the augmentation engine uses them to build the augmented dataset.
     """
 
     feature_keys: tuple[str, ...]
     m: Callable[..., Any]
-    extra_keys: tuple[str, ...] = ()
     name: str = "custom"
     # If set, identifies a built-in factory + ctor args so the estimand can be
     # reconstructed from JSON or pickle. Custom user-supplied m()s leave this
@@ -64,7 +63,6 @@ class FiniteEvalEstimand(Estimand):
         # Custom estimands fall back to identity-on-`m` plus structural fields.
         return (
             self.feature_keys == other.feature_keys
-            and self.extra_keys == other.extra_keys
             and self.name == other.name
             and self.m is other.m
         )
@@ -74,7 +72,7 @@ class FiniteEvalEstimand(Estimand):
             # factory_spec is JSON-serializable by design; use that as the key.
             import json
             return hash(json.dumps(self.factory_spec, sort_keys=True, default=str))
-        return hash((self.feature_keys, self.extra_keys, self.name, id(self.m)))
+        return hash((self.feature_keys, self.name, id(self.m)))
 
     def __reduce__(self):
         """Round-trip via the factory_spec for built-in estimands.
@@ -89,26 +87,25 @@ class FiniteEvalEstimand(Estimand):
             return (estimand_from_spec, (self.factory_spec,))
         return (
             _rebuild_custom_estimand,
-            (self.feature_keys, self.m, self.extra_keys, self.name),
+            (self.feature_keys, self.m, self.name),
         )
 
 
-def _rebuild_custom_estimand(feature_keys, m, extra_keys, name):
+def _rebuild_custom_estimand(feature_keys, m, name):
     return FiniteEvalEstimand(
         feature_keys=feature_keys,
         m=m,
-        extra_keys=extra_keys,
         name=name,
         factory_spec=None,
     )
 
 
 def ATE(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> FiniteEvalEstimand:
-    """Average treatment effect: m(α)(z) = α(1, x) − α(0, x)."""
+    """Average treatment effect: m(α)(z, y) = α(1, x) − α(0, x)."""
     cov = tuple(covariates)
 
     def m(alpha):
-        def inner(z):
+        def inner(z, y=None):
             x_kwargs = {k: z[k] for k in cov}
             return alpha(**{treatment: 1, **x_kwargs}) - alpha(**{treatment: 0, **x_kwargs})
         return inner
@@ -120,7 +117,7 @@ def ATE(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> FiniteEvalE
 
 
 def ATT(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> FiniteEvalEstimand:
-    """ATT *partial-estimand* surface: m(α)(z) = a · (α(1, x) − α(0, x)).
+    """ATT *partial-estimand* surface: m(α)(z, y) = a · (α(1, x) − α(0, x)).
 
     Full ATT divides by P(A=1) and is not a Riesz functional — combine
     α̂_partial with a delta-method EIF (Hubbard 2011) downstream.
@@ -128,7 +125,7 @@ def ATT(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> FiniteEvalE
     cov = tuple(covariates)
 
     def m(alpha):
-        def inner(z):
+        def inner(z, y=None):
             a = z[treatment]
             x_kwargs = {k: z[k] for k in cov}
             return a * (
@@ -143,11 +140,11 @@ def ATT(treatment: str = "a", covariates: Sequence[str] = ("x",)) -> FiniteEvalE
 
 
 def TSM(level, treatment: str = "a", covariates: Sequence[str] = ("x",)) -> FiniteEvalEstimand:
-    """Treatment-specific mean: m(α)(z) = α(level, x)."""
+    """Treatment-specific mean: m(α)(z, y) = α(level, x)."""
     cov = tuple(covariates)
 
     def m(alpha):
-        def inner(z):
+        def inner(z, y=None):
             x_kwargs = {k: z[k] for k in cov}
             return alpha(**{treatment: level, **x_kwargs})
         return inner
@@ -161,11 +158,11 @@ def TSM(level, treatment: str = "a", covariates: Sequence[str] = ("x",)) -> Fini
 def AdditiveShift(
     delta: float, treatment: str = "a", covariates: Sequence[str] = ("x",)
 ) -> FiniteEvalEstimand:
-    """Additive shift effect: m(α)(z) = α(a + δ, x) − α(a, x)."""
+    """Additive shift effect: m(α)(z, y) = α(a + δ, x) − α(a, x)."""
     cov = tuple(covariates)
 
     def m(alpha):
-        def inner(z):
+        def inner(z, y=None):
             a = z[treatment]
             x_kwargs = {k: z[k] for k in cov}
             return alpha(**{treatment: a + delta, **x_kwargs}) - alpha(
@@ -185,14 +182,14 @@ def LocalShift(
     treatment: str = "a",
     covariates: Sequence[str] = ("x",),
 ) -> FiniteEvalEstimand:
-    """LASE *partial-estimand* surface: m(α)(z) = 1(a < threshold) · (α(a+δ, x) − α(a, x)).
+    """LASE *partial-estimand* surface: m(α)(z, y) = 1(a < threshold) · (α(a+δ, x) − α(a, x)).
 
     Full LASE divides by P(A < threshold) and is not a Riesz functional.
     """
     cov = tuple(covariates)
 
     def m(alpha):
-        def inner(z):
+        def inner(z, y=None):
             a = z[treatment]
             if a >= threshold:
                 return 0
@@ -217,36 +214,13 @@ def StochasticIntervention(
 ) -> FiniteEvalEstimand:
     """Stochastic intervention via Monte Carlo samples per row.
 
-    Each row carries `z[samples_key]` = sequence of treatment values drawn
-    from the intervention density. `m(α)(z) = (1/K) Σ_k α(a' = sample_k, x)`.
-    Once the per-row samples are fixed, this is a finite linear combination
-    of K point evaluations of α, so the estimand is a `FiniteEvalEstimand`.
-
-    Pre-sample once before fit:
-
-        rng = np.random.default_rng(0)
-        df["shift_samples"] = [rng.normal(a + delta, sigma, K) for a in df["a"]]
+    Currently being rewritten — the previous implementation relied on an
+    `extra_keys` payload mechanism that has been removed. A reintroduction
+    will land in a follow-up that establishes how per-row samples flow into
+    `m(alpha)(z, y)` without the payload-column shortcut.
     """
-    cov = tuple(covariates)
-
-    def m(alpha):
-        def inner(z):
-            x_kwargs = {k: z[k] for k in cov}
-            samples = z[samples_key]
-            K = len(samples)
-            if K == 0:
-                return 0
-            return sum(
-                alpha(**{treatment: float(s), **x_kwargs}) for s in samples
-            ) / K
-        return inner
-
-    return FiniteEvalEstimand(
-        feature_keys=(treatment, *cov),
-        m=m,
-        extra_keys=(samples_key,),
-        name=f"StochasticIntervention(samples_key={samples_key!r})",
-        factory_spec={"factory": "StochasticIntervention", "args": {"samples_key": samples_key, "treatment": treatment, "covariates": list(cov)}},
+    raise NotImplementedError(
+        "StochasticIntervention is being rewritten; will be re-added in a future PR."
     )
 
 
@@ -257,7 +231,6 @@ _FACTORY_REGISTRY = {
     "TSM": TSM,
     "AdditiveShift": AdditiveShift,
     "LocalShift": LocalShift,
-    "StochasticIntervention": StochasticIntervention,
 }
 
 

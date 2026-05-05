@@ -33,11 +33,22 @@ class AugmentedDataset:
 def build_augmented(
     rows: Sequence[dict[str, Any]],
     estimand: FiniteEvalEstimand,
+    ys: Sequence[Any] | None = None,
 ) -> AugmentedDataset:
+    """Build the augmented dataset by tracing `m(alpha)(z, y)` on each row.
+
+    `ys` is the per-row outcome aligned with `rows`; pass `None` (the default)
+    when the estimand's `m` doesn't read y. When provided, its length must
+    match `len(rows)`.
+    """
     if not isinstance(estimand, FiniteEvalEstimand):
         raise TypeError(
             f"build_augmented() requires a FiniteEvalEstimand; got "
             f"{type(estimand).__name__}."
+        )
+    if ys is not None and len(ys) != len(rows):
+        raise ValueError(
+            f"len(ys)={len(ys)} does not match len(rows)={len(rows)}."
         )
     feature_keys = estimand.feature_keys
 
@@ -47,11 +58,12 @@ def build_augmented(
     origin: list[int] = []
 
     for i, z in enumerate(rows):
+        y_i = ys[i] if ys is not None else None
         acc: dict[tuple, tuple[float, float]] = {}
         z_key = tuple(z[k] for k in feature_keys)
         acc[z_key] = (1.0, 0.0)
 
-        for coef, point in trace(estimand, z):
+        for coef, point in trace(estimand, z, y_i):
             missing = [k for k in feature_keys if k not in point]
             if missing:
                 raise ValueError(

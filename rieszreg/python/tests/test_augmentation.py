@@ -3,8 +3,15 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
-from rieszreg import ATE, AdditiveShift, AugmentedDataset, build_augmented
+from rieszreg import (
+    ATE,
+    AdditiveShift,
+    AugmentedDataset,
+    FiniteEvalEstimand,
+    build_augmented,
+)
 
 
 def test_ate_augmentation_shape():
@@ -66,3 +73,34 @@ def test_origin_index_groups_rows():
     counts = np.bincount(aug.origin_index)
     assert (counts > 0).all()
     assert counts.sum() == aug.features.shape[0]
+
+
+def test_y_dependent_m_is_plumbed_through():
+    """`build_augmented(rows, estimand, ys)` passes y into m(alpha)(z, y)."""
+    tau = 0.0
+
+    def m(alpha):
+        def inner(z, y):
+            indicator = 1.0 if y > tau else 0.0
+            return indicator * (alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"]))
+        return inner
+
+    estimand = FiniteEvalEstimand(feature_keys=("a", "x"), m=m, name="upper-half-ate")
+    rows = [{"a": 0.0, "x": 0.5}, {"a": 1.0, "x": 0.5}]
+
+    # y > tau on row 0 → row 0 generates ATE-style augmentation.
+    # y ≤ tau on row 1 → row 1 collapses to just the original observation.
+    ys = [1.0, -1.0]
+    aug = build_augmented(rows, estimand, ys)
+
+    counts_per_row = {}
+    for i in aug.origin_index.tolist():
+        counts_per_row[i] = counts_per_row.get(i, 0) + 1
+    assert counts_per_row[0] == 2  # two augmented rows for the active subject
+    assert counts_per_row[1] == 1  # one (original-only) for the inactive subject
+
+
+def test_y_length_mismatch_raises():
+    rows = [{"a": 0.0, "x": 0.5}, {"a": 1.0, "x": 0.5}]
+    with pytest.raises(ValueError, match="does not match"):
+        build_augmented(rows, ATE(), ys=[1.0])

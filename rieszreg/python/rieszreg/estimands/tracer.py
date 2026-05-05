@@ -1,9 +1,10 @@
 """Symbolic tracer that extracts (coefficient, point) terms from a user's m().
 
-The user writes m as an operator: it takes alpha and returns a function of z.
+The user writes m as an operator: it takes alpha and returns a function of
+the row z and the per-row outcome y.
 
     def m_ate(alpha):
-        def inner(z):
+        def inner(z, y=None):
             return alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"])
         return inner
 
@@ -106,23 +107,27 @@ class LinearForm:
 
 class Tracer:
     """Stand-in for `alpha` during tracing. The trace step calls
-    `m(Tracer())(z)`; each `alpha(...)` call inside the user's m records a
+    `m(Tracer())(z, y)`; each `alpha(...)` call inside the user's m records a
     single-term LinearForm, and the user's m composes these via +/-/scalar*."""
 
     def __call__(self, **kwargs) -> LinearForm:
         return LinearForm.single(_Point.from_kwargs(kwargs), 1.0)
 
 
-def trace(estimand: FiniteEvalEstimand, z) -> list[tuple[float, dict[str, Any]]]:
-    """Run the estimand's m as `m(Tracer())(z)` on a single row z and return the
-    (coef, point) pair list. Raises if m leaves the linear-form algebra."""
+def trace(
+    estimand: FiniteEvalEstimand, z, y=None
+) -> list[tuple[float, dict[str, Any]]]:
+    """Run the estimand's m as `m(Tracer())(z, y)` on a single row and return
+    the (coef, point) pair list. Raises if m leaves the linear-form algebra.
+    `y` is the per-row outcome; estimands whose m doesn't read y can leave it
+    unset."""
     if not isinstance(estimand, FiniteEvalEstimand):
         raise TypeError(
             f"trace() requires a FiniteEvalEstimand; got {type(estimand).__name__}. "
             "Construct your estimand via a built-in factory (ATE, ATT, TSM, ...) "
             "or wrap your m in `FiniteEvalEstimand(feature_keys=..., m=...)`."
         )
-    result = estimand.m(Tracer())(z)
+    result = estimand.m(Tracer())(z, y)
     if isinstance(result, (int, float)):
         if result == 0:
             return []

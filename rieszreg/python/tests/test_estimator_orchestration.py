@@ -124,14 +124,44 @@ def test_dataframe_missing_columns_raises():
         est.fit(df)
 
 
-def test_ndarray_with_extra_keys_raises():
-    from rieszreg import StochasticIntervention
+def test_fit_accepts_y_and_ignores_when_unused():
+    """Built-in estimands ignore y; passing it is a no-op."""
+    df = pd.DataFrame({"a": [0.0, 1.0, 0.0, 1.0], "x": [0.1, 0.2, 0.3, 0.4]})
+    y = np.array([0.5, -0.2, 1.1, 0.0])
     est = RieszEstimator(
-        estimand=StochasticIntervention(samples_key="shift_samples"),
-        backend=_StubBackend(),
-    )
-    with pytest.raises(ValueError, match="per-row payload"):
-        est.fit(np.zeros((2, 2)))
+        estimand=ATE(), backend=_StubBackend(), loss=SquaredLoss(),
+    ).fit(df, y)
+    assert est.predict(df).shape == (4,)
+
+
+def test_fit_y_dependent_custom_estimand():
+    """A custom Y-dependent m runs through fit / score / predict."""
+    tau = 0.0
+
+    def m(alpha):
+        def inner(z, y):
+            indicator = 1.0 if y > tau else 0.0
+            return indicator * (alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"]))
+        return inner
+
+    from rieszreg import FiniteEvalEstimand
+    estimand = FiniteEvalEstimand(feature_keys=("a", "x"), m=m, name="upper-half-ate")
+
+    df = pd.DataFrame({"a": [0.0, 1.0, 0.0, 1.0], "x": [0.1, 0.2, 0.3, 0.4]})
+    y = np.array([0.5, -0.2, 1.1, -0.5])
+
+    est = RieszEstimator(
+        estimand=estimand, backend=_StubBackend(), loss=SquaredLoss(),
+    ).fit(df, y)
+    assert est.predict(df).shape == (4,)
+
+
+def test_fit_y_length_mismatch_raises():
+    df = pd.DataFrame({"a": [0.0, 1.0], "x": [0.1, 0.2]})
+    y = np.array([1.0, 2.0, 3.0])  # too long
+    est = RieszEstimator(estimand=ATE(), backend=_StubBackend())
+    with pytest.raises(ValueError, match="does not match"):
+        est.fit(df, y)
 
 
 def test_sklearn_clone_round_trip():

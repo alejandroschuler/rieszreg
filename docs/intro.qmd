@@ -181,7 +181,7 @@ The four learner families produce different $\hat\alpha$, but all are minimizers
 
 A scikit-learn-style learner (and an R6 mirror) that:
 
-- Fits $\hat\alpha$ for `ATE`, `ATT`, `TSM`, `AdditiveShift`, `LocalShift`, `StochasticIntervention`, or [your own estimand](estimands.qmd).
+- Fits $\hat\alpha$ for `ATE`, `ATT`, `TSM`, `AdditiveShift`, `LocalShift`, or [your own estimand](estimands.qmd).
 - Composes with `cross_val_predict`, `GridSearchCV`, `Pipeline`.
 - Surfaces near-positivity and outlier-extrapolation warnings via `.diagnose(X)`.
 

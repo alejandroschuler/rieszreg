@@ -7,7 +7,6 @@ from .base import (
     Estimand,
     FiniteEvalEstimand,
     LocalShift,
-    StochasticIntervention,
     TSM,
     estimand_from_spec,
 )
@@ -21,7 +20,6 @@ __all__ = [
     "FiniteEvalEstimand",
     "LinearForm",
     "LocalShift",
-    "StochasticIntervention",
     "TSM",
     "Tracer",
     "estimand_from_spec",

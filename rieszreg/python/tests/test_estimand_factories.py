@@ -12,11 +12,11 @@ from rieszreg import (
     AdditiveShift,
     FiniteEvalEstimand,
     LocalShift,
-    StochasticIntervention,
     TSM,
     estimand_from_spec,
     trace,
 )
+from rieszreg.estimands.base import StochasticIntervention
 
 
 @pytest.mark.parametrize(
@@ -33,9 +33,9 @@ def test_factory_feature_keys(estimand, expected_keys):
     assert estimand.feature_keys == expected_keys
 
 
-def test_stochastic_intervention_extra_keys():
-    est = StochasticIntervention(samples_key="shift_samples")
-    assert est.extra_keys == ("shift_samples",)
+def test_stochastic_intervention_stub_raises():
+    with pytest.raises(NotImplementedError, match="being rewritten"):
+        StochasticIntervention()
 
 
 @pytest.mark.parametrize(
@@ -85,10 +85,33 @@ def test_local_shift_zero_above_threshold():
 
 def test_custom_estimand_pickle_uses_factory_spec_when_set():
     def m(alpha):
-        def inner(z):
+        def inner(z, y=None):
             return alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"])
         return inner
 
     est = FiniteEvalEstimand(feature_keys=("a", "x"), m=m, name="custom")
     # No factory_spec → falls back to default reduce; tested elsewhere.
     assert est.factory_spec is None
+
+
+def test_custom_estimand_can_read_y():
+    """Y-dependent custom m: m(α)(z, y) = 1{y > τ} · (α(1, x) − α(0, x))."""
+    tau = 0.5
+
+    def m(alpha):
+        def inner(z, y):
+            indicator = 1.0 if y > tau else 0.0
+            return indicator * (alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"]))
+        return inner
+
+    est = FiniteEvalEstimand(feature_keys=("a", "x"), m=m, name="upper-half-ate")
+
+    # y > tau: indicator = 1, two non-zero coefficients.
+    pairs_above = trace(est, {"a": 0.0, "x": 1.5}, y=0.9)
+    points_above = {tuple(sorted(p.items())): c for c, p in pairs_above}
+    assert points_above[(("a", 1), ("x", 1.5))] == pytest.approx(1.0)
+    assert points_above[(("a", 0), ("x", 1.5))] == pytest.approx(-1.0)
+
+    # y ≤ tau: indicator = 0, all coefficients zero (returned as []).
+    pairs_below = trace(est, {"a": 0.0, "x": 1.5}, y=0.2)
+    assert pairs_below == []

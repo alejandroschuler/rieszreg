@@ -253,7 +253,6 @@ The pattern generalizes verbatim. Swap the estimand factory and the $m(\hat\mu)(
 | ATT | $A(\hat\mu(1, X) - \hat\mu(0, X))$, then divide by $\hat{P}(A=1)$ | `ATT(...)` |
 | TSM at $a^\star$ | $\hat\mu(a^\star, X)$ | `TSM(level=a_star)` |
 | Additive shift $\delta$ | $\hat\mu(A + \delta, X) - \hat\mu(A, X)$ | `AdditiveShift(delta)` |
-| Stochastic intervention | $\int \hat\mu(a', X)\,h(a' \mid X)\,da'$ | `StochasticIntervention(...)` |
 
 Worked examples for each: [`rieszboost/examples/`](https://github.com/rieszreg/rieszboost/tree/main/examples) (`tsm.py`, `stochastic_intervention.py`, `lee_schuler/binary_dgp.py`).
 

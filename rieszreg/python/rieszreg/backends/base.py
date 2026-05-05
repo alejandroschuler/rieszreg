@@ -102,8 +102,10 @@ class MomentBackend(Protocol):
     from per-row moment evaluation rather than the augmented (a, b) view.
 
     Same calling convention as ``Backend.fit_augmented``: data, ``base_score``,
-    ``random_state``, and ``hyperparams``. Learner-specific knobs live on the
-    concrete backend.
+    ``random_state``, and ``hyperparams``. ``ys_train`` / ``ys_valid`` carry
+    the per-row outcome (sklearn-style) for estimands whose ``m`` reads it;
+    they are ``None`` otherwise. Learner-specific knobs live on the concrete
+    backend.
     """
 
     def fit_rows(
@@ -116,6 +118,8 @@ class MomentBackend(Protocol):
         base_score: float,
         random_state: int,
         hyperparams: dict[str, Any],
+        ys_train: list | None = None,
+        ys_valid: list | None = None,
     ) -> FitResult:
         ...
 

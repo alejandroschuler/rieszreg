@@ -42,11 +42,11 @@ use_python_rieszreg <- function(python = NULL, required = TRUE) {
 }
 
 
-#' Convert an R data.frame to a pandas DataFrame, preserving list-columns.
+#' Convert an R data.frame to a pandas DataFrame.
 #'
-#' List-columns (e.g. `shift_samples` for stochastic-intervention estimands)
-#' contain a numeric vector per row; element-wise conversion keeps them as
-#' Python lists rather than collapsing them.
+#' Numeric columns flow through unchanged. Use this on the X side of
+#' `fit(X, y)` calls; the outcome `y` is passed separately as a numeric
+#' vector.
 #'
 #' @param data An R data.frame.
 #' @return A pandas DataFrame (Python object, `convert = FALSE`).
@@ -55,12 +55,7 @@ df_to_py <- function(data) {
   cols <- colnames(data)
   py_dict <- list()
   for (k in cols) {
-    v <- data[[k]]
-    if (is.list(v)) {
-      py_dict[[k]] <- lapply(v, function(x) reticulate::r_to_py(as.numeric(x)))
-    } else {
-      py_dict[[k]] <- as.numeric(v)
-    }
+    py_dict[[k]] <- as.numeric(data[[k]])
   }
   pd <- reticulate::import("pandas", convert = FALSE)
   pd$DataFrame(reticulate::r_to_py(py_dict))
@@ -123,11 +118,14 @@ LocalShift <- function(delta, threshold, treatment = "a", covariates = "x") {
 }
 
 
-#' Stochastic intervention via pre-computed Monte Carlo samples per row.
-#' Pass a data.frame with a list-column under `samples_key` containing
-#' numeric vectors of shift samples.
+#' Stochastic intervention estimand (currently being rewritten).
+#'
+#' Calling this raises `NotImplementedError` from the Python side. Downstream
+#' R packages still import this name so their NAMESPACE files keep working;
+#' the factory will be reintroduced in a future PR.
 #' @inheritParams ATE
-#' @param samples_key Column holding the per-row sample vectors.
+#' @param samples_key Column holding the per-row sample vectors (currently
+#'   unused while the factory is stubbed).
 #' @export
 StochasticIntervention <- function(samples_key = "shift_samples",
                                    treatment = "a", covariates = "x") {
@@ -215,33 +213,48 @@ RieszEstimatorR6 <- R6::R6Class(
       invisible(self)
     },
 
-    #' Fit the estimator on a data.frame.
-    #' @param data Training data (R data.frame; converted to pandas).
-    #' @param eval_set Optional held-out data for early stopping / λ selection.
-    fit = function(data, eval_set = NULL) {
-      X <- df_to_py(data)
-      args <- list(X = X)
+    #' Fit the estimator on a feature data.frame and an outcome vector.
+    #' @param X Training feature data (R data.frame; converted to pandas).
+    #' @param y Training outcome vector (numeric). Required by the sklearn
+    #'   convention; built-in estimands ignore it, custom Y-dependent
+    #'   estimands read it via `m(alpha)(z, y)`.
+    #' @param eval_set Optional held-out feature data.frame for early stopping
+    #'   / λ selection.
+    #' @param eval_y Optional outcome vector aligned with `eval_set`.
+    fit = function(X, y = NULL, eval_set = NULL, eval_y = NULL) {
+      X_py <- df_to_py(X)
+      args <- list(X = X_py)
+      if (!is.null(y)) args$y <- as.numeric(y)
       if (!is.null(eval_set)) {
         args$eval_set <- df_to_py(eval_set)
+        if (!is.null(eval_y)) args$eval_y <- as.numeric(eval_y)
       }
       do.call(self$py$fit, args)
       invisible(self)
     },
 
-    #' Predict α̂ on a data.frame. Returns a numeric vector.
-    predict = function(data) {
-      preds <- self$py$predict(df_to_py(data))
+    #' Predict α̂ on a feature data.frame. Returns a numeric vector.
+    predict = function(X) {
+      preds <- self$py$predict(df_to_py(X))
       as.numeric(reticulate::py_to_r(preds))
     },
 
-    #' Negative held-out Riesz loss on a data.frame (sklearn higher-is-better).
-    score = function(data) {
-      reticulate::py_to_r(self$py$score(df_to_py(data)))
+    #' Negative held-out Riesz loss (sklearn higher-is-better).
+    #' @param X Held-out feature data.frame.
+    #' @param y Optional held-out outcome vector for Y-dependent estimands.
+    score = function(X, y = NULL) {
+      args <- list(df_to_py(X))
+      if (!is.null(y)) args$y <- as.numeric(y)
+      reticulate::py_to_r(do.call(self$py$score, args))
     },
 
     #' Held-out per-row Riesz loss.
-    riesz_loss = function(data) {
-      reticulate::py_to_r(self$py$riesz_loss(df_to_py(data)))
+    #' @param X Held-out feature data.frame.
+    #' @param y Optional held-out outcome vector for Y-dependent estimands.
+    riesz_loss = function(X, y = NULL) {
+      args <- list(df_to_py(X))
+      if (!is.null(y)) args$y <- as.numeric(y)
+      reticulate::py_to_r(do.call(self$py$riesz_loss, args))
     },
 
     #' Save the fitted estimator to a directory.
@@ -251,8 +264,9 @@ RieszEstimatorR6 <- R6::R6Class(
     },
 
     #' Diagnostics. Returns a list mirroring the Python `Diagnostics` dataclass.
-    diagnose = function(data, ...) {
-      d <- self$py$diagnose(df_to_py(data), ...)
+    #' @param X Held-out feature data.frame.
+    diagnose = function(X, ...) {
+      d <- self$py$diagnose(df_to_py(X), ...)
       list(
         n = reticulate::py_to_r(d$n),
         rms = reticulate::py_to_r(d$rms),
