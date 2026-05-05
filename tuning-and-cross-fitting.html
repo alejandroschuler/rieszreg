@@ -750,7 +750,7 @@ window.Quarto = {
 <span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"best loss:"</span>, grid.best_params_[<span class="st">"loss"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>best loss: &lt;rieszreg.losses.squared.SquaredLoss object at 0x7f3087d28910&gt;</code></pre>
+<pre><code>best loss: &lt;rieszreg.losses.squared.SquaredLoss object at 0x7f55fc288c10&gt;</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"best score: </span><span class="sc">{</span>grid<span class="sc">.</span>best_score_<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
@@ -884,7 +884,7 @@ window.Quarto = {
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"first 5 values:          </span><span class="sc">{</span>alpha_oof[:<span class="dv">5</span>]<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>first 5 values:          [-3.49636817 -1.45712292 -0.90962327 -0.85112917  1.53748775]</code></pre>
+<pre><code>first 5 values:          [-3.49636817 -1.45712268 -0.90962332 -0.85112947  1.53748786]</code></pre>
 </div>
 </div>
 <p>The call to <code>cross_val_predict</code> is identical to the single-learner case. The only addition is the <code>Pipeline</code> wrapper and the list-valued <code>param_grid</code> entry — everything else is standard sklearn.</p>
@@ -944,7 +944,7 @@ window.Quarto = {
 <pre><code>[1] 2000</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1]  1.2938672  4.7251339  2.0876782 -3.0029769  0.7939973</code></pre>
+<pre><code>[1]  1.2938672  4.7251339  2.0906787 -3.0069799  0.7939973</code></pre>
 </div>
 </div>
 <p><code>ForestRieszRegressor</code> requires loading <code>forestriesz</code> and <code>riesznet</code> is needed for the neural candidates; load those R packages alongside <code>rieszreg</code> and <code>rieszboost</code> per the <a href="./install.html">install</a> instructions.</p>
