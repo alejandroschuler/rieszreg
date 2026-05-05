@@ -12,7 +12,6 @@ from riesznet import (
     AdditiveShift,
     LocalShift,
     RieszNet,
-    StochasticIntervention,
     TSM,
 )
 
@@ -34,17 +33,6 @@ def df_continuous():
     x = rng.normal(size=n)
     a = rng.normal(0.5 * x, 1.0)
     return pd.DataFrame({"a": a, "x": x})
-
-
-@pytest.fixture
-def df_stochastic():
-    rng = np.random.default_rng(0)
-    n = 300
-    x = rng.normal(size=n)
-    pi = 1.0 / (1.0 + np.exp(-0.5 * x))
-    a = (rng.uniform(size=n) < pi).astype(float)
-    shift_samples = [list(rng.normal(size=3)) for _ in range(n)]
-    return pd.DataFrame({"a": a, "x": x, "shift_samples": shift_samples})
 
 
 def _make(estimand, **overrides):
@@ -83,7 +71,3 @@ def test_additive_shift(df_continuous):
 
 def test_local_shift(df_continuous):
     _check(_make(LocalShift(delta=0.5, threshold=0.0)), df_continuous)
-
-
-def test_stochastic_intervention(df_stochastic):
-    _check(_make(StochasticIntervention(samples_key="shift_samples")), df_stochastic)

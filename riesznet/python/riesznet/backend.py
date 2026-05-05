@@ -110,9 +110,14 @@ def _factory_from_metadata(meta: dict) -> Callable:
 
 
 def _prepare_rows(
-    rows: list[dict[str, Any]], estimand: Estimand
+    rows: list[dict[str, Any]],
+    estimand: Estimand,
+    ys: list | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Trace each row once; return packed arrays.
+
+    ``ys`` is the sklearn-style per-row outcome; pass ``None`` when the
+    estimand's m doesn't depend on Y.
 
     Returns
     -------
@@ -139,7 +144,8 @@ def _prepare_rows(
     coef_list: list[float] = []
     p2r_list: list[int] = []
     for i, row in enumerate(rows):
-        for coef, point in trace(estimand, row):
+        y_i = ys[i] if ys is not None else None
+        for coef, point in trace(estimand, row, y_i):
             missing = [k for k in feature_keys if k not in point]
             if missing:
                 raise ValueError(
@@ -355,6 +361,8 @@ class TorchBackend:
         base_score: float,
         random_state: int,
         hyperparams: dict[str, Any],
+        ys_train: list | None = None,
+        ys_valid: list | None = None,
     ) -> FitResult:
         del hyperparams  # torch backend has no string-keyed passthrough
 
@@ -362,11 +370,11 @@ class TorchBackend:
 
         # ---- precompute traces ----
         train_x, train_pts, train_coefs, train_p2r = _prepare_rows(
-            rows_train, estimand
+            rows_train, estimand, ys_train
         )
         if rows_valid:
             valid_x, valid_pts, valid_coefs, valid_p2r = _prepare_rows(
-                rows_valid, estimand
+                rows_valid, estimand, ys_valid
             )
         else:
             valid_x = valid_pts = valid_coefs = valid_p2r = None

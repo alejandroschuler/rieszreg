@@ -99,7 +99,7 @@ Custom torch architectures are Python-only.
 
 ## What works today (v0.0.1)
 
-- All six built-in estimands (`ATE`, `ATT`, `TSM`, `AdditiveShift`, `LocalShift`, `StochasticIntervention`) plus custom estimands.
+- All five built-in estimands (`ATE`, `ATT`, `TSM`, `AdditiveShift`, `LocalShift`) plus custom estimands. `StochasticIntervention` is currently stubbed in rieszreg and will be reintroduced.
 - All four built-in losses (`SquaredLoss`, `KLLoss`, `BernoulliLoss`, `BoundedSquaredLoss`) with autograd-checked gradient parity to the analytic loss spec.
 - Architecture flexibility via `TorchBackend(module_factory=..., optimizer_factory=...)`.
 - sklearn composition: `clone`, `GridSearchCV`, `cross_val_predict`, `Pipeline`.

@@ -53,7 +53,6 @@ def test_namespace_exports_match_design():
         "LocalShift",
         "LossSpec",
         "SquaredLoss",
-        "StochasticIntervention",
         "TSM",
         "Tracer",
         "trace",
