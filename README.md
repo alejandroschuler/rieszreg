@@ -60,28 +60,32 @@ python3 -m venv .venv
 
 ## Quickstart
 
-```python
-from rieszboost import RieszBooster
-from rieszreg import ATE
-
-booster = RieszBooster(estimand=ATE(), n_estimators=200, early_stopping_rounds=20,
-                       validation_fraction=0.2)
-booster.fit(df)
-alpha_hat = booster.predict(df)
-```
-
-Or compose explicitly:
+Pick any learner package and compose it with `RieszEstimator`:
 
 ```python
-from rieszreg import RieszEstimator, ATE, SquaredLoss
+from rieszreg import RieszEstimator, ATE
+
+# Gradient boosting
+from rieszboost.backends import XGBoostBackend
+est = RieszEstimator(estimand=ATE(), backend=XGBoostBackend())
+
+# Kernel ridge
 from krrr import KernelRidgeBackend, Gaussian
+est = RieszEstimator(estimand=ATE(), backend=KernelRidgeBackend(kernel=Gaussian()))
 
-est = RieszEstimator(
-    estimand=ATE(), loss=SquaredLoss(),
-    backend=KernelRidgeBackend(kernel=Gaussian(length_scale="median")),
-)
+# Random forest
+from forestriesz import ForestRieszBackend
+est = RieszEstimator(estimand=ATE(), backend=ForestRieszBackend(n_estimators=500))
+
+# Neural network
+from riesznet import TorchBackend
+est = RieszEstimator(estimand=ATE(), backend=TorchBackend(epochs=200))
+
 est.fit(df)
+alpha_hat = est.predict(df)
 ```
+
+Each learner package also ships a convenience subclass (`RieszBooster`, `KernelRieszRegressor`, `ForestRieszRegressor`, `RieszNet`) with backend-specific hyperparameters on the constructor. See the [backends comparison](https://rieszreg.github.io/rieszreg/backends/) to choose.
 
 ## Status
 

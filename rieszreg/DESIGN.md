@@ -5,7 +5,7 @@ This document does two things:
 1. **Part A** designs a shared meta-package — `rieszreg`, in the spirit of sklearn — that holds every cross-cutting abstraction so each implementation package depends on it instead of duplicating code or cross-importing.
 2. **Part B** is the detailed checklist + design directive that a new "learner" implementation package (rieszboost, krrr, future) MUST follow to plug into the ecosystem.
 
-Two packages exist today: `rieszboost` (gradient boosting; the most-developed) and `krrr` (kernel ridge; depends on rieszboost for shared abstractions). More packages are planned.
+Four learner packages exist today: `rieszboost` (gradient boosting), `krrr` (kernel ridge), `forestriesz` (random forests), and `riesznet` (neural networks). Each depends only on `rieszreg`.
 
 Reference paper: Lee & Schuler 2025 ([arXiv:2501.04871](https://arxiv.org/abs/2501.04871)). Part A moves the shared `reference/` to the meta-project level.
 

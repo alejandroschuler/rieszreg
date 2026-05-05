@@ -146,7 +146,8 @@ def load_predictor(kind: str, dir_path, *, base_score, loss, best_iteration):
     if kind not in _PREDICTOR_LOADERS:
         raise ValueError(
             f"No loader registered for predictor kind {kind!r}. "
-            f"Import the implementation package (e.g. `import rieszboost`) "
+            f"Import a learner package (e.g. `import rieszboost`, `import krrr`, "
+            f"`import forestriesz`, `import riesznet`) "
             f"before calling .load(...). Registered kinds: {sorted(_PREDICTOR_LOADERS)}."
         )
     return _PREDICTOR_LOADERS[kind](
