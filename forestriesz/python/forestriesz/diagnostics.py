@@ -20,13 +20,13 @@ class ForestDiagnostics(Diagnostics):
     n_leaves_mean: float = float("nan")
 
 
-def diagnose_forest(estimator, X, **kwargs) -> ForestDiagnostics:
+def diagnose_forest(estimator, Z, **kwargs) -> ForestDiagnostics:
     """Run base diagnostics and tack on forest-specific summaries.
 
     Falls back gracefully when extras can't be computed (e.g. predictor was
     loaded without OOB info or feature_importances unavailable).
     """
-    base = diagnose(estimator=estimator, X=X, **kwargs)
+    base = diagnose(estimator=estimator, Z=Z, **kwargs)
 
     forest = getattr(estimator.predictor_, "forest", None)
     importances = np.zeros(0)
