@@ -196,7 +196,7 @@ Per-backend binary payload, plus `metadata.json` containing:
 - `predictor_kind`: `"xgboost"` (rieszboost), `"sklearn"` (rieszboost), `"krrr"` (krrr), `"forestriesz"` (forestriesz moment-style), `"aug-forestriesz"` (forestriesz augmentation-style), or `"riesznet"` (riesznet).
 - `loss`: `{"type": "SquaredLoss" | "KLLoss" | …, "args": {…}}` — re-instantiated with `loss_from_spec(...)` on load.
 - `estimand_factory_spec`: `{"factory": "ATE" | …}` for built-ins, `null` for custom.
-- `feature_keys` / `extra_keys`, `base_score`, `best_iteration`, `best_score`.
+- `feature_keys`, `base_score`, `best_iteration`, `best_score`.
 - `estimator_class` and `hyperparameters` — informational; lets `get_params(deep=False)` on the loaded estimator mirror what you fit with.
 
 The JSON is plain text and diffable; if the file format ever changes, `rieszreg_format_version` lets us migrate.

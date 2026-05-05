@@ -74,10 +74,13 @@ The orchestrator's `fit` chooses between two tier-2 services based on which Prot
 ```python
 # tier-1 dispatch logic inside RieszEstimator.fit
 if hasattr(backend, "fit_rows") and not hasattr(backend, "fit_augmented"):
-    result = backend.fit_rows(rows_train, rows_valid, self.estimand, loss, **common_kwargs)
+    result = backend.fit_rows(
+        rows_train, rows_valid, self.estimand, loss,
+        ys_train=ys_train, ys_valid=ys_valid, **common_kwargs,
+    )
 else:
-    aug_train = build_augmented(rows_train, self.estimand)             # tier-2 service
-    aug_valid = build_augmented(rows_valid, self.estimand) if rows_valid else None
+    aug_train = build_augmented(rows_train, self.estimand, ys_train)   # tier-2 service
+    aug_valid = build_augmented(rows_valid, self.estimand, ys_valid) if rows_valid else None
     result = backend.fit_augmented(aug_train, aug_valid, loss, **common_kwargs)
 ```
 
@@ -93,7 +96,7 @@ A correct tier-1 abstraction reads cleanly under any plausible new backend you m
 ```
 rieszreg/
 ├── estimands/
-│   ├── __init__.py        # ATE, ATT, TSM, AdditiveShift, LocalShift, StochasticIntervention
+│   ├── __init__.py        # ATE, ATT, TSM, AdditiveShift, LocalShift
 │   ├── base.py            # Estimand dataclass, factory_spec registry
 │   └── tracer.py          # LinearForm, Tracer, trace
 ├── losses/
@@ -201,8 +204,8 @@ This is the contract every implementation package must meet. Section structure f
 ## 1. Theoretical / statistical capabilities
 
 ### 1.1 Estimands
-- **[from rieszreg]** Import the abstract `Estimand` base, the concrete `FiniteEvalEstimand` subclass, and the six built-in factories (`ATE`, `ATT`, `TSM(level)`, `AdditiveShift(delta)`, `LocalShift(delta, threshold)`, `StochasticIntervention(samples_key)`). All factories return `FiniteEvalEstimand`. Reference: [base.py](rieszreg/python/rieszreg/estimands/base.py).
-- **[from rieszreg]** Support custom estimands via user-supplied `m(alpha)(z) -> LinearForm` wrapped in a `FiniteEvalEstimand`. Do not bypass the tracer; linearity violations must raise.
+- **[from rieszreg]** Import the abstract `Estimand` base, the concrete `FiniteEvalEstimand` subclass, and the five built-in factories (`ATE`, `ATT`, `TSM(level)`, `AdditiveShift(delta)`, `LocalShift(delta, threshold)`). All factories return `FiniteEvalEstimand`. Reference: [base.py](rieszreg/python/rieszreg/estimands/base.py). `StochasticIntervention` previously appeared here; it is currently stubbed (raises `NotImplementedError`) and will be reintroduced.
+- **[from rieszreg]** Support custom estimands via user-supplied `m(alpha)(z, y) -> LinearForm` wrapped in a `FiniteEvalEstimand`. Do not bypass the tracer; linearity violations must raise. The per-row outcome `y` flows in sklearn-style: separate from `X` everywhere. `m`'s inner closure declares `def inner(z, y=None)`; built-ins ignore the second arg.
 - **[from rieszreg]** `trace()`, `build_augmented()`, and `RieszEstimator.fit()` accept only `FiniteEvalEstimand`. The base `Estimand` class is reserved for future subclasses outside the finite-evaluation algebra.
 - **[from rieszreg]** Honor the partial-parameter distinction (ATT and LocalShift fit partial representers; full ATT/LASE require delta-method downstream). Document this in any examples.
 - **[design rule]** If a new estimand factory belongs in the family at large, contribute it back to `rieszreg.estimands`, not to your package. A learner package never owns an `Estimand` factory.
@@ -229,7 +232,7 @@ This is the contract every implementation package must meet. Section structure f
 ### 2.1 Backend Protocol
 - **[your package]** Implement *at least one* of two Protocols from `rieszreg.backends.base`. Both return `FitResult(predictor, best_iteration, best_score, history)`. Pick whichever fits your learner's natural loss decomposition:
   - `Backend.fit_augmented(aug_train, aug_valid, loss, ...)` — for learners whose loss decomposes naturally over the augmented `(a, b)` evaluation points (kernel ridge, gradient boosting). Implementations: `KernelRidgeBackend` (krrr), `XGBoostBackend` / `SklearnBackend` (rieszboost).
-  - `MomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, ...)` — for learners whose loss decomposes per original sample row (random forests, neural nets). Such backends compute per-row moments via `rieszreg.trace(estimand, row)` directly, avoiding the augmentation blow-up. The `estimand` argument is a `FiniteEvalEstimand`. Implementations: `ForestRieszBackend` (forestriesz).
+  - `MomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, *, ys_train=None, ys_valid=None, ...)` — for learners whose loss decomposes per original sample row (random forests, neural nets). Such backends compute per-row moments via `rieszreg.trace(estimand, row, y)` directly, avoiding the augmentation blow-up. The `estimand` argument is a `FiniteEvalEstimand`. `ys_train` / `ys_valid` carry the per-row outcome (sklearn-style) for estimands whose `m` reads it; they are `None` otherwise. Implementations: `ForestRieszBackend` (forestriesz).
 - **[design rule]** The orchestrator dispatches at fit time: if the backend exposes `fit_rows` and not `fit_augmented`, the moment path is used; otherwise the augmented path. Backends implementing both default to `fit_augmented` for back-compat.
 - **[your package]** Return a `Predictor` with `predict_eta()` and `predict_alpha()` (link applied). Inherit base interface from rieszreg; storage format is your choice.
 - **[your package]** `FitResult` shape must match the protocol so `RieszEstimator` can orchestrate uniformly.
@@ -259,7 +262,7 @@ This is the contract every implementation package must meet. Section structure f
 
 ### 3.1 sklearn-compatibility (load-bearing)
 - **[design rule]** Inherit `BaseEstimator`. `get_params`/`set_params`, `clone`, `Pipeline`, `GridSearchCV`, `cross_val_predict` must all compose. Anything that breaks composition is a regression.
-- **[design rule]** `.fit(X, y=None)` accepts ndarray (columns matched to `estimand.feature_keys`) or DataFrame (columns matched by name; `extra_keys` pulled through).
+- **[design rule]** `.fit(X, y=None)` accepts ndarray (columns matched to `estimand.feature_keys`) or DataFrame (columns matched by name). `y` is a separate per-row outcome vector (sklearn convention); the orchestrator plumbs it into `m(alpha)(z, y)` and the augmentation / moment paths. Built-in estimands ignore `y`; custom Y-dependent estimands read it.
 - **[design rule]** `.predict(X)` returns shape `(n,)` array of α̂.
 - **[design rule]** `.score(X, y=None)` returns `−mean(Riesz loss)`.
 - **[your package]** Acceptance gates in tests for `clone`, `GridSearchCV`, `cross_val_predict` (re-use `rieszreg.testing.conformance`).
@@ -297,9 +300,9 @@ This is the contract every implementation package must meet. Section structure f
 ## 4. R / Python parity
 
 - **[design rule]** Python is primary; R is a thin reticulate wrapper.
-- **[design rule]** R6 class API: `<Pkg>Estimator$new(...)$fit(df)$predict(df)$score(df)$diagnose(df)`. NOT functional `fit_riesz()` shims.
+- **[design rule]** R6 class API: `<Pkg>Estimator$new(...)$fit(X, y)$predict(X)$score(X)$diagnose(X)`. NOT functional `fit_riesz()` shims. `X` is a feature data.frame; `y` is a separate numeric outcome vector (sklearn convention).
 - **[from rieszreg]** Subclass `rieszreg::RieszEstimatorR6`. Bake your backend / defaults via `initialize()`. Goal: ~50 lines per package R wrapper.
-- **[from rieszreg]** Inherit `df_to_py()` (preserves list-columns like `shift_samples`).
+- **[from rieszreg]** Inherit `df_to_py()` to convert the X data.frame to a pandas DataFrame.
 - **[from rieszreg]** Estimand and loss factories are exposed from rieszreg's R package; expose your backend-specific factories on top.
 - **[design rule]** No R-side custom `m()`. The `LinearForm` tracer is Python-only by design. R users needing custom functionals write `m()` in Python and call from R via reticulate.
 - **[your package]** Add `r/<pkg>/tests/testthat/test-parity.R` confirming bitwise-identical predictions Python ↔ R.
@@ -313,7 +316,7 @@ This is the contract every implementation package must meet. Section structure f
 - pytest (Python), testthat (R).
 
 ### 5.2 Required test suites
-- **Per-estimand smoke tests** against the six built-in factories.
+- **Per-estimand smoke tests** against the five built-in factories.
 - **Per-loss tests** if your backend supports non-squared losses (gradient/Hessian vs finite-diff).
 - **Tracer algebra and dedup** — usually inherited from rieszreg's test suite; re-run if you reach into the tracer.
 - **Diagnostics output and warnings** for any extras you add.

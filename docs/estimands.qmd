@@ -4,73 +4,372 @@ title: "Estimands"
 
 {{< include _setup.qmd >}}
 
-A `FiniteEvalEstimand` describes the linear functional you want to fit. It holds three pieces of information: the column names $\alpha$ is indexed by (`feature_keys`), any per-row payload columns $m$ needs such as pre-sampled treatments for stochastic interventions (`extra_keys`), and the `m(alpha)(z)` callable.
-
-`feature_keys` declares the input schema of $\alpha$ — the columns the underlying learner consumes when scoring a row. `extra_keys` declares non-feature columns that $m$ reaches into per row (for example, the list of pre-sampled treatments used by `StochasticIntervention`); they are passed through to $m$ as part of $z$ but are not features of $\alpha$.
-
-This page covers the six built-in factories and how to write your own. The factories live in `rieszreg`; `rieszboost`, `krrr`, and `forestriesz` all re-export them so `from rieszboost import ATE`, `from krrr import ATE`, and `from forestriesz import ATE` resolve to the same object.
-
-<!-- 
-I think we should more clearly differentiate between m() operators that reduce to a finite linear combination of point evaluations of \mu and other kinds of linear operators. For the former class things are quite clear and it seems like data augmentation can pretty generically handle things. For estimands that don't fit this pattern, like the stochastic intervention, or an average derivative effect, we can still handle them but with more restrictions on the learner. This needs to be clear in the docs but also in the code, i.e. there needs to be a subclass of estimand that represents the finite linear combination of point eval case and the tracer only needs to handle that subclass (I think). 
-
-There may be another subclass to handle integrals, and maybe another for derivatives would make sense. The integrals can be handled with sampling in which case they sort of get replaced by / transformed to a finite evals case with more data? Derivatives may also come down to a finite evals case after a transformation that gets handled by the learner (eg autodiff). Need help thinking through this (are there other classes? What else is a linear operator besides finite linear combination, integration, and differentiation?) and how the Estimands and code should be structured to make this clear and to enforce the right things.
-
-Whatever conclusion/structure we come to, it will have to be documented clearly.
--->
-
-## Finite-evaluation estimands
-
-While the Riesz representer theorem applies to any continuous linear functional, the estimands that are easiest to support computationally are those that reduce to a finite linear combination of point evaluations of $\mu$. For example, the ATE is $\mathbb{E}[\mu(1, X) - \mu(0, X)]$, which reduces to the two point evaluations $\mu(1, x)$ and $\mu(0, x)$ for each row's covariates $x$. Many of our built-in estimands fit this pattern. `rieszreg` can work with other estimands as well, but since they are more rarely of interest and come at a computational cost or are only supported by some backends, we first focus on the finite-evaluation class.
-
-We say an estimand $\psi = E[m(\mu)(Z,Y)]$ is of finite-evaluation type if there exist fixed functions $b: \mathbb R^k \times \mathcal Z \times \mathcal Y \to \mathbb R$ and $a: (\mathcal Z \times \mathcal Y) \to \mathcal Z^k$ such that
-
+An **estimand** is a scalar summary of the data-generating distribution that you want to estimate. The estimands `rieszreg` handles all share the form
 $$
-m(\mu)(z, y) = b(\vec\mu(a(z,y)), z, y)
+\psi = \mathbb{E}\!\left[\,m(\mu)(Z, Y)\,\right]
 $$
+where $\mu(z) = \mathbb{E}[Y \mid Z = z]$ is the outcome regression and $m$ is an *operator* — a rule that maps the function $\mu$ to another function $m(\mu)$ that can also depend on the row $(Z, Y)$. For the average treatment effect (ATE) with binary treatment $A$, $m(\mu)(Z, Y) = \mu(1, X) - \mu(0, X)$ — `m` ignores $Y$ and produces a contrast of two evaluations of $\mu$.
 
-Where $\vec\mu$ denotes elementwise application of $\mu$ to its vector-valued input. The function $a$ selects $k$ points at which to evaluate $\mu$, based on the values of $z$ and $y$. For example, for the ATE, $k=2$ and $a(z,y) = ((1, z_x), (0, z_x))$ selects the treated and control potential-covariate pairs. The function $b$ then forms the contrast $b(\mu_1, \mu_0, z, y) = \mu_1 - \mu_0$. 
+A `FiniteEvalEstimand` packages two things: the column names $\alpha$ is indexed by (`feature_keys`) and the operator itself (`m`). `m` is curried: it takes a candidate $\alpha$ and returns a function of one row $(z, y)$. The five built-in factories (`ATE`, `ATT`, `TSM`, `AdditiveShift`, `LocalShift`) cover most causal-inference targets; section [Custom estimands](#custom-estimands) shows how to write your own.
 
-The first observation we can make is that if an estimand is of this type (and $m$ is a linear operator, which we already must assume), it can be written as 
+The factories live in `rieszreg`; `rieszboost`, `krrr`, `forestriesz`, and `riesznet` all re-export them so `from rieszboost import ATE`, `from krrr import ATE`, `from forestriesz import ATE`, and `from riesznet import ATE` resolve to the same object.
 
+## Quickstart: ATE on the Lalonde NSW data
+
+The NSW (National Supported Work) demonstration is the canonical Lalonde dataset: a job-training experiment for disadvantaged workers, plus a CPS observational comparison group. The goal here is the average treatment effect on 1978 earnings.
+
+The columns we need:
+
+- `treat`: binary treatment indicator (1 = NSW trainee, 0 = CPS comparison).
+- `re78`: 1978 real earnings (the outcome $Y$).
+- `age`, `educ`, `black`, `hisp`, `marr`, `nodegree`, `re74`, `re75`: pre-treatment covariates.
+
+The estimand needs `treat` and the eight covariates. The outcome `re78` becomes `y` — a separate vector — at fit time.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+
+```{python}
+import numpy as np, pandas as pd
+from causaldata import nsw_mixtape, cps_mixtape
+from rieszreg import ATE
+from rieszboost import RieszBooster
+
+COVARIATES = ["age", "educ", "black", "hisp", "marr", "nodegree", "re74", "re75"]
+
+treated  = nsw_mixtape.load_pandas().data
+treated  = treated[treated["treat"] == 1].copy()
+controls = cps_mixtape.load_pandas().data
+df = pd.concat([treated, controls], ignore_index=True)
+df["treat"] = df["treat"].astype(float)
+
+X = df[["treat"] + COVARIATES]
+y = df["re78"].astype(float)
+print(f"n = {len(df)}  ({(df['treat']==1).sum()} treated, {(df['treat']==0).sum()} control)")
+```
+
+The estimand says exactly which dataframe columns feed $\alpha$: the treatment column and the eight covariates, in the order they appear in `feature_keys`.
+
+```{python}
+estimand = ATE(treatment="treat", covariates=tuple(COVARIATES))
+estimand.feature_keys
+```
+
+Fit the Riesz representer. `y` is passed because the sklearn convention says so; the ATE operator ignores it.
+
+```{python}
+booster = RieszBooster(
+    estimand=estimand,
+    n_estimators=300, learning_rate=0.05, max_depth=4, reg_lambda=10.0,
+    random_state=0,
+).fit(X, y)
+```
+
+Predict $\hat\alpha$ on the same rows and look at extreme-weight diagnostics.
+
+```{python}
+alpha_hat = booster.predict(X)
+print(f"min α̂ = {alpha_hat.min():.2f}, max α̂ = {alpha_hat.max():.2f}")
+booster.diagnose(X).summary()
+```
+
+To turn $\hat\alpha$ and a separately fit outcome regression $\hat\mu$ into a one-step or DML estimate of $\psi$, see the [DML / TMLE recipe](estimation/custom.qmd).
+
+## R
+
+```{r}
+library(reticulate)
+cd_py <- import("causaldata")
+COVARIATES <- c("age", "educ", "black", "hisp", "marr", "nodegree", "re74", "re75")
+
+treated  <- py_to_r(cd_py$nsw_mixtape$load_pandas()$data)
+treated  <- treated[treated$treat == 1, ]
+controls <- py_to_r(cd_py$cps_mixtape$load_pandas()$data)
+df <- rbind(treated, controls)
+df$treat <- as.numeric(df$treat)
+
+X <- df[, c("treat", COVARIATES)]
+y <- df$re78
+cat(sprintf("n = %d  (%d treated, %d control)\n",
+            nrow(df), sum(df$treat == 1), sum(df$treat == 0)))
+```
+
+```{r}
+booster <- RieszBooster$new(
+  estimand = ATE(treatment = "treat", covariates = COVARIATES),
+  n_estimators = 300L, learning_rate = 0.05, max_depth = 4L, reg_lambda = 10.0,
+  random_state = 0L
+)
+booster$fit(X, y)
+```
+
+```{r}
+alpha_hat <- booster$predict(X)
+cat(sprintf("min alpha = %.2f, max alpha = %.2f\n",
+            min(alpha_hat), max(alpha_hat)))
+booster$diagnose(X)$summary
+```
+
+:::
+
+## Built-in estimands
+
+| Estimand | $m(\mu)(z, y)$ | Notes |
+|---|---|---|
+| `ATE(treatment, covariates)` | $\mu(1, x) - \mu(0, x)$ | Average treatment effect — see [`rieszboost/examples/lee_schuler/binary_dgp.py`](https://github.com/rieszreg/rieszboost/blob/main/examples/lee_schuler/binary_dgp.py). |
+| `ATT(treatment, covariates)` | $a \cdot (\mu(1, x) - \mu(0, x))$ | ATT *partial-estimand* surface. Full ATT divides by $P(A=1)$ — combine with a delta-method EIF downstream. |
+| `TSM(level, treatment, covariates)` | $\mu(\text{level}, x)$ | Treatment-specific mean — see [`rieszboost/examples/tsm.py`](https://github.com/rieszreg/rieszboost/blob/main/examples/tsm.py). |
+| `AdditiveShift(delta, ...)` | $\mu(a + \delta, x) - \mu(a, x)$ | Continuous-treatment shift effect — see [`rieszboost/examples/lee_schuler/continuous_dgp.py`](https://github.com/rieszreg/rieszboost/blob/main/examples/lee_schuler/continuous_dgp.py). |
+| `LocalShift(delta, threshold, ...)` | $\mathbf{1}\{a < \text{threshold}\} \cdot (\mu(a + \delta, x) - \mu(a, x))$ | LASE *partial-estimand* surface; same caveat as ATT. |
+
+The R and Python factories take the same arguments.
+
+::: {.panel-tabset group="lang"}
+
+## Python
+
+```{python}
+from rieszreg import ATE, ATT, TSM, AdditiveShift, LocalShift
+ATE(treatment="a", covariates=("x",)).name
+TSM(level=1, treatment="a", covariates=("x",)).name
+LocalShift(delta=0.3, threshold=0.7).name
+```
+
+## R
+
+```{r}
+ATE(treatment = "a", covariates = "x")
+TSM(level = 1, treatment = "a", covariates = "x")
+LocalShift(delta = 0.3, threshold = 0.7)
+```
+
+:::
+
+## Mapping your dataframe to an estimand
+
+The two pieces a `FiniteEvalEstimand` carries:
+
+```python
+@dataclass
+class FiniteEvalEstimand(Estimand):
+    feature_keys: tuple[str, ...]   # column names α is indexed by
+    m: Callable[..., Any]           # the operator m(alpha)(z, y)
+    name: str = "custom"
+    factory_spec: dict | None = None
+```
+
+`feature_keys` declares the input schema of $\alpha$ — the columns the underlying learner consumes when scoring a row. The orchestrator slices these columns out of `X` per row to build the feature matrix the learner sees.
+
+The outcome `Y` is **not** part of `feature_keys`. It flows in the sklearn-style way: a separate vector passed as the second argument to `.fit(X, y)`. The orchestrator threads it through to `m(alpha)(z, y)`. Built-in estimands ignore `y`; pass it anyway when following sklearn convention.
+
+For the Lalonde quickstart above, the wiring looks like this:
+
+| Concept | Lalonde column | Where it goes |
+|---|---|---|
+| Treatment $A$ | `treat` | `ATE(treatment="treat", ...)` — a `feature_key`. |
+| Covariates $X$ | `age`, `educ`, `black`, `hisp`, `marr`, `nodegree`, `re74`, `re75` | `ATE(covariates=(...))` — also `feature_keys`. |
+| Outcome $Y$ | `re78` | `.fit(X, y=df["re78"])`. |
+
+The `X` dataframe must contain every name in `feature_keys`; extra columns are ignored. With an `ndarray`, columns are interpreted in `feature_keys` order.
+
+## Custom estimands
+
+To fit a finite-evaluation functional not covered by the built-ins, write the operator `m(alpha)(z, y)` and wrap it in a `FiniteEvalEstimand`. The tracer extracts the linear-form structure automatically.
+
+`m` must be a finite linear combination of point evaluations of $\alpha$, built with `+`, `-`, scalar `*`, and calls to `alpha(...)`. Squaring, adding constants, integrals, and other non-linear operations raise.
+
+::: {.callout-note title="Python-only"}
+Custom `m()` is Python-only. From R, define `m` in Python via `reticulate::py_run_string` and pass the resulting `FiniteEvalEstimand` to your estimator. See the [R interface page](r-interface.qmd) for the recipe.
+:::
+
+```{python}
+from rieszreg import FiniteEvalEstimand
+from rieszboost import RieszBooster
+import numpy as np, pandas as pd
+
+# A weighted contrast: 2x the ATE at level a=2 minus the level at a=1.
+def m_weighted_contrast(alpha):
+    def inner(z, y=None):
+        return 2.0 * (alpha(a=2, x=z["x"]) - alpha(a=0, x=z["x"])) \
+               - alpha(a=1, x=z["x"])
+    return inner
+
+est = FiniteEvalEstimand(
+    feature_keys=("a", "x"),
+    m=m_weighted_contrast,
+    name="WeightedContrast",
+)
+print(est)
+```
+
+The inner function takes `(z, y)` even when `y` is unused — that signature is the contract every custom `m` follows. Pass the estimand to any backend's estimator class:
+
+```{python}
+rng = np.random.default_rng(0)
+df = pd.DataFrame({
+    "a": rng.choice([0, 1, 2], size=500).astype(float),
+    "x": rng.uniform(0, 1, 500),
+})
+
+booster = RieszBooster(estimand=est, n_estimators=100, max_depth=3).fit(df)
+booster.predict(df)[:5]
+```
+
+### What the tracer rejects
+
+The errors point at the offending operation:
+
+```{python}
+#| error: true
+from rieszreg import FiniteEvalEstimand, trace
+
+def bad_squared(alpha):
+    return lambda z, y=None: alpha(a=1, x=z["x"]) ** 2  # nonlinear in alpha
+
+trace(FiniteEvalEstimand(feature_keys=("a", "x"), m=bad_squared), {"a": 0, "x": 0.5})
+```
+
+```{python}
+#| error: true
+def bad_constant(alpha):
+    return lambda z, y=None: alpha(a=1, x=z["x"]) + 1.0  # constant offset
+
+trace(FiniteEvalEstimand(feature_keys=("a", "x"), m=bad_constant), {"a": 0, "x": 0.5})
+```
+
+For estimands with integrals or derivatives of $\alpha$ (outside the finite-linear-form algebra), Monte-Carlo-sample and approximate as a finite sum.
+
+## Outcome-dependent `m`
+
+Some estimands need the per-row outcome $y$ to evaluate $m(\mu)(z, y)$. The most common pattern is a contrast multiplied by an indicator on $Y$ — for example, the average treatment effect *on rows with $Y$ above a fixed threshold $\tau$*:
 $$
-m(\mu)(z, y) = c(z,y)^\top \vec\mu(a(z,y))
+\psi = \mathbb{E}\!\left[\,\mathbf{1}\{Y > \tau\}\,\big(\mu(1, X) - \mu(0, X)\big)\,\right].
 $$
+This is a partial-estimand surface (same caveat as `ATT`). The corresponding operator reads `y`:
 
-for some function $c: (\mathcal Z \times \mathcal Y) \to \mathbb R^k$ by the linearity of $m$. In other words, $m$ must be a finite *linear combination* of point evaluations of $\mu$. In the ATE example, $c(z,y) = (1, -1)$ gives the contrast weights for the treated and control evaluations of $\mu$.
+```{python}
+import numpy as np, pandas as pd
+from rieszreg import FiniteEvalEstimand, trace
+from rieszboost import RieszBooster
 
-Therefore for these estimands we can rewrite the empirical Bregman-Riesz loss. Define the $k$ pseudo-datapoints $Z_{ij} = a_j(Z_i, Y_i)$ with coefficients $C_{ij} = c_j(Z_i, Y_i)$ for each row $i$. Then:
+tau = 0.0
 
+def m_upper_half_ate(alpha):
+    def inner(z, y):
+        indicator = 1.0 if y > tau else 0.0
+        return indicator * (alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"]))
+    return inner
+
+est = FiniteEvalEstimand(
+    feature_keys=("a", "x"),
+    m=m_upper_half_ate,
+    name="UpperHalfATE_partial",
+)
+```
+
+Trace it on a row with `y > tau` (active) and on a row with `y <= tau` (inactive):
+
+```{python}
+trace(est, {"a": 0.0, "x": 0.5}, y=0.9)
+```
+
+```{python}
+trace(est, {"a": 0.0, "x": 0.5}, y=-0.5)
+```
+
+The active row generates an ATE-style finite linear combination; the inactive row collapses to nothing because the indicator is zero. `build_augmented` and `RieszBooster.fit(X, y)` plumb `y` through automatically:
+
+```{python}
+rng = np.random.default_rng(0)
+n = 500
+x = rng.uniform(0, 1, n)
+a = rng.binomial(1, 0.5, n).astype(float)
+df = pd.DataFrame({"a": a, "x": x})
+y = rng.normal(0.0, 1.0, n)
+
+booster = RieszBooster(
+    estimand=est, n_estimators=100, max_depth=3, learning_rate=0.05,
+).fit(df, y)
+booster.predict(df)[:5]
+```
+
+::: {.callout-note title="Canonical literature examples"}
+Several papers (Hines & Miles, Chernozhukov, Kato) catalog functionals where $m$ depends on $Y$ directly. We will add a vetted reference example here once a paper PDF is in `reference/`.
+:::
+
+## Initialization
+
+Every `RieszEstimator` subclass takes an `init=` constructor arg that controls the α-space starting value of the model. The orchestrator converts `init` to an η-space `base_score` via `loss.alpha_to_eta`; backends use `base_score` as a prediction offset.
+
+The default — `init=None` — sets α to the **empirical loss-minimizing constant**. For any Bregman loss with strictly convex $h$, the constant $a^*$ that minimizes the per-row Riesz loss
+$$
+P_n L(a) \;=\; \tilde h(a) \;-\; h'(a) \cdot \bar m, \qquad \bar m = P_n[m(\alpha = 1)(Z, Y)]
+$$
+satisfies the FOC $\tilde h'(a) = h''(a) \bar m$. Using $\tilde h(t) = t h'(t) - h(t)$ we get $\tilde h'(t) = t h''(t)$, so the FOC collapses to $a^* = \bar m$. The result is **loss-independent** — the only loss-specific step is projecting $\bar m$ into the loss's α-domain when its codomain is restricted. Each `Loss` exposes `best_constant_init(m_bar)` for that projection.
+
+For the built-in estimands $\bar m$ is structurally constant (doesn't depend on the data realization):
+
+| Estimand | $m(\alpha = 1)(Z, Y)$ per row | $\bar m$ |
+|---|---|---|
+| `ATE`, `ATT`, `AdditiveShift`, `LocalShift` | $1 + (-1) = 0$ | $0$ |
+| `TSM(v)` | $1$ | $1$ |
+
+For custom estimands $\bar m$ can depend on the data; the orchestrator computes it from the training rows after the validation split (no peeking) by tracing each row and averaging the sum of trace coefficients.
+
+Override the default by passing a float:
+
+```python
+booster = RieszBooster(estimand=ATE(), init=0.0)        # explicit zero baseline
+booster = RieszBooster(estimand=TSM(level=1), init=2.5) # informed prior
+```
+
+::: {.callout-note title="Boundary cases"}
+For `BernoulliLoss` + `TSM` (or any density-ratio estimand with $\bar m = 1$) the loss-minimizing constant sits on the upper boundary, and the projection clips to $1 - \varepsilon$. The sigmoid is saturated at that init and gradients are tiny, so iterative training may stall. Pass `init=0.5` (or another interior value) when this matters. The `KLLoss` / `BoundedSquaredLoss` boundaries can hit the same issue when $\bar m$ lands exactly on a bound.
+:::
+
+## Theory: how the augmented dataset is derived
+
+This section explains the math that lets `rieszreg` evaluate the Riesz loss without ever materializing $\alpha_0$. Skip on a first read.
+
+While the Riesz representer theorem applies to any continuous linear functional, the estimands `rieszreg` supports are those whose $m$ reduces to a finite linear combination of point evaluations of $\mu$. For example, the ATE is $\mathbb{E}[\mu(1, X) - \mu(0, X)]$, which reduces to two point evaluations $\mu(1, x)$ and $\mu(0, x)$ for each row's covariates $x$. We call these **finite-evaluation estimands**.
+
+Formally, an estimand $\psi = \mathbb{E}[m(\mu)(Z, Y)]$ is finite-evaluation if there exist fixed functions $a: \mathcal Z \times \mathcal Y \to \mathcal Z^k$ (the **point generator**) and $c: \mathcal Z \times \mathcal Y \to \mathbb R^k$ (the **weight function**) such that
+$$
+m(\mu)(z, y) = c(z, y)^\top \vec\mu(a(z, y)),
+$$
+where $\vec\mu$ denotes elementwise application of $\mu$ to the vector-valued input. For ATE, $k = 2$, $a(z, y) = ((1, z_x), (0, z_x))$, and $c(z, y) = (1, -1)$.
+
+For these estimands the empirical Bregman-Riesz loss simplifies. Define the $k$ pseudo-datapoints $Z_{ij} = a_j(Z_i, Y_i)$ with coefficients $C_{ij} = c_j(Z_i, Y_i)$ for each row $i$. Then
 $$
 \begin{aligned}
 \mathcal L_{h,n}(\alpha)
-&= \sum_{i=1}^n \left[\tilde h(\alpha(Z_i)) - m(h' \circ \alpha)(Z_i,Y_i) \right] \\
-&= \sum_{i=1}^n \left[\tilde h(\alpha(Z_i)) - \sum_{j=1}^k C_{ij} \cdot h'(\alpha(Z_{ij}))  \right]
+&= \sum_{i=1}^n \left[\tilde h(\alpha(Z_i)) - m(h' \circ \alpha)(Z_i, Y_i)\right] \\
+&= \sum_{i=1}^n \left[\tilde h(\alpha(Z_i)) - \sum_{j=1}^k C_{ij} \cdot h'(\alpha(Z_{ij}))\right].
 \end{aligned}
 $$
 
-The loss depends on $\alpha$ only through its values at $\{Z_i\} \cup \{Z_{ij}\}$, at most $n(k+1)$ points. The coefficients $C_{ij}$ depend on data but not on $\alpha$ or on the potential function for the loss, so they can be computed once as a preprocessing step. The advantage of this is that, during fitting, evaluating the empirical loss only requires computing the values of $\alpha$ at these points. Methods that depend on a gradient of the empricial loss with respect to either some parameters of $\alpha$ (like `riesznet`) or $\alpha$ itself (`rieszboost`) inherit this, as do methods that depend on an analytic solution to the empirical loss minimization problem (`krrr`).
+The loss depends on $\alpha$ only through its values at $\{Z_i\} \cup \{Z_{ij}\}$, at most $n(k+1)$ points. The coefficients $C_{ij}$ depend on data but not on $\alpha$, so they can be computed once as a preprocessing step.
 
 ### The augmented dataset
 
-The easiest way to keep track of the loss, deriviatves, etc. during training is to create an augmented dataset consisting of the points $\{Z_i\} \cup \{Z_{ij}\}$, along with the appropriate coefficients $C_{ij}$.
+The cleanest way to keep track of the loss, derivatives, etc. during training is to materialize an **augmented dataset** of the points $\{Z_i\} \cup \{Z_{ij}\}$ along with the appropriate coefficients $C_{ij}$.
 
-Some pseudo-datapoints may coincide with the original observation. For ATE, $Z_{i1} = (1, x_i)$ and $Z_{i2} = (0, x_i)$. A treated unit ($a_i = 1$) has $Z_{i1} = Z_i$, so two of the three evaluation points are the same. Let $D_{ij} = \mathbf{1}[Z_{ij} = Z_i]$ indicate overlap. We can split the $h'$ sum into overlapping and non-overlapping terms:
-
+Some pseudo-datapoints coincide with the original observation. For ATE, $Z_{i1} = (1, x_i)$ and $Z_{i2} = (0, x_i)$. A treated unit ($a_i = 1$) has $Z_{i1} = Z_i$, so two of the three evaluation points are the same. Let $D_{ij} = \mathbf{1}[Z_{ij} = Z_i]$ indicate overlap. Splitting the $h'$ sum into overlapping and non-overlapping terms:
 $$
-\mathcal L_{h,n}(\alpha) = \sum_{i=1}^n \left[\tilde h(\alpha(Z_i)) - \sum_{j:\, D_{ij}=1} C_{ij}\, h'(\alpha(Z_i))\right] - \sum_{i=1}^n \sum_{j:\, D_{ij}=0} C_{ij}\, h'(\alpha(Z_{ij}))
+\mathcal L_{h,n}(\alpha) = \sum_{i=1}^n \left[\tilde h(\alpha(Z_i)) - \sum_{j:\, D_{ij}=1} C_{ij}\, h'(\alpha(Z_i))\right] - \sum_{i=1}^n \sum_{j:\, D_{ij}=0} C_{ij}\, h'(\alpha(Z_{ij})).
 $$
 
-At each distinct evaluation point, the loss combines a $\tilde h$-weight and an $h'$-weight into a single term. `build_augmented` collects these distinct points for each row and stores their coefficients. Let $r \in 1 \dots |\{Z_i\} \cup \{Z_{ij}\}|$ index an enumeration of the augmented data points. Each of the augmented data points $Z_r$ corresponds to either a $Z_{ij}$ or a $Z_i$, either of which corresponds to some original index row $i$. Write $i_r$ to index the origin row corresponding to augmented row $r$. The two weights for the augmented row are:
-
+At each distinct evaluation point, the loss combines a $\tilde h$-weight and an $h'$-weight into one term. `build_augmented` collects these distinct points for each row and stores their coefficients. Let $r$ index an enumeration of the augmented data points. Each augmented row $r$ corresponds to either a $Z_{ij}$ or a $Z_i$ for some original row $i$; write $i_r$ for that origin row. The two weights are
 $$
 D_r = \mathbf{1}[Z_r = Z_{i_r}],
 \qquad
 C_r = -\sum_{j \,:\, Z_{i_r, j} = Z_r} C_{i_r, j}.
 $$
 
-The $\tilde h$-weight $D_r$ is $1$ exactly when $Z_r$ is the original observation, and the $h'$-weight $C_r$ collects $-C_{ij}$ from every pseudo-datapoint of row $i_r$ that lands at $Z_r$ — an empty sum (giving $C_r = 0$) when no pseudo-datapoint coincides with $Z_{i_r}$. The per-row contribution to the empirical loss is then $L_r = D_r\, \tilde h(\alpha(Z_r)) + C_r\, h'(\alpha(Z_r))$, and $\mathcal L_{h,n}(\alpha) = \sum_r L_r$.
+The $\tilde h$-weight $D_r$ is $1$ exactly when $Z_r$ is the original observation; the $h'$-weight $C_r$ collects $-C_{ij}$ from every pseudo-datapoint of row $i_r$ that lands at $Z_r$ — an empty sum (giving $C_r = 0$) when no pseudo-datapoint coincides with $Z_{i_r}$. The per-row contribution to the empirical loss is $L_r = D_r\, \tilde h(\alpha(Z_r)) + C_r\, h'(\alpha(Z_r))$, and $\mathcal L_{h,n}(\alpha) = \sum_r L_r$.
 
-For ATE with an untreated unit ($a_i = 0$): before merging there are three evaluation points — $Z_i = (0, x_i)$ and pseudo-datapoints $(1, x_i)$, $(0, x_i)$. The pseudo-datapoint $(0, x_i)$ coincides with $Z_i$ ($D_{i2} = 1$), so they merge into one entry with $\tilde h$-weight 1 and $h'$-weight $-C_{i2} = +1$. The other pseudo-datapoint $(1, x_i)$ stays separate with $\tilde h$-weight 0 and $h'$-weight $-C_{i1} = -1$. The result is two augmented rows instead of three. A treated unit merges the other pseudo-datapoint instead, also producing two rows.
+For ATE with an untreated unit ($a_i = 0$): before merging there are three evaluation points — $Z_i = (0, x_i)$ and pseudo-datapoints $(1, x_i)$, $(0, x_i)$. The pseudo-datapoint $(0, x_i)$ coincides with $Z_i$ ($D_{i2} = 1$), so they merge into one entry with $\tilde h$-weight $1$ and $h'$-weight $-C_{i2} = +1$. The other pseudo-datapoint $(1, x_i)$ stays separate with $\tilde h$-weight $0$ and $h'$-weight $-C_{i1} = -1$. The result is two augmented rows instead of three. A treated unit merges the other pseudo-datapoint instead, also producing two rows.
 
 It can also happen that none of the pseudo-datapoints coincide with $Z_i$ — the union $\{Z_i\} \cup \{Z_{ij}\}$ then has $k+1$ distinct entries and no merging occurs. For example, `TSM(level=1)` on an untreated row ($a_i = 0$) has $Z_i = (0, x_i)$ and a single pseudo-datapoint $(1, x_i)$; they are distinct, so $Z_i$ enters the augmented dataset as its own row with $\tilde h$-weight $1$ and $h'$-weight $0$ (no pseudo-datapoint lands there), and $(1, x_i)$ enters as a separate row with $\tilde h$-weight $0$ and $h'$-weight $-C_{i1} = -1$. The general rule is the same in every case: include $Z_i$ once, then add each pseudo-datapoint $Z_{ij}$ — merging into an existing entry when $Z_{ij}$ matches a point already in the dataset for row $i$, otherwise as a new row.
 
@@ -94,7 +393,6 @@ For each row, the three evaluation points $\{Z_i,\, Z_{i1} = (1, X_i),\, Z_{i2} 
 | 3        | 0     | 0.8   | $0$   | $+1$  | $+h'(\alpha(0, 0.8))$ |
 
 Rows $i=2$ and $i=3$ are treated, so the merging happens on the $(1, X_i)$ pseudo-datapoint instead of $(0, X_i)$, flipping which row carries the $\tilde h$-weight. Summing the $L_r$ column recovers the empirical loss:
-
 $$
 \mathcal L_{h,n}(\alpha) = \sum_{r=1}^{6} L_r = \sum_{i=1}^{3} \big[\tilde h(\alpha(Z_i)) - h'(\alpha(1, X_i)) + h'(\alpha(0, X_i))\big].
 $$
@@ -139,216 +437,15 @@ aug_df["L_r"].sum()                              # empirical loss
 The same number drops out of the original row-wise form $\sum_i [\alpha(Z_i)^2 - 2\alpha(1, X_i) + 2\alpha(0, X_i)]$:
 
 ```{python}
-(df["a"] + df["x"])**2 - 2*(1 + df["x"]) + 2*(0 + df["x"])
-```
-
-```{python}
 ((df["a"] + df["x"])**2 - 2*(1 + df["x"]) + 2*(0 + df["x"])).sum()
 ```
 
-### Built-in Estimands
+## Estimand subclass taxonomy and future work
 
-| Estimand | $m(\alpha)(z)$ | Notes |
-|---|---|---|
-| `ATE(treatment, covariates)` | $\alpha(1, x) - \alpha(0, x)$ | Average treatment effect — see [`rieszboost/examples/lee_schuler/binary_dgp.py`](https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/lee_schuler/binary_dgp.py) |
-| `ATT(treatment, covariates)` | $a \cdot (\alpha(1, x) - \alpha(0, x))$ | ATT *partial-estimand* surface. Full ATT divides by $P(A=1)$ — combine with a delta-method EIF downstream. |
-| `TSM(level, treatment, covariates)` | $\alpha(\text{level}, x)$ | Treatment-specific mean — see [`rieszboost/examples/tsm.py`](https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/tsm.py) |
-| `AdditiveShift(delta, ...)` | $\alpha(a + \delta, x) - \alpha(a, x)$ | Continuous-treatment shift effect — see [`rieszboost/examples/lee_schuler/continuous_dgp.py`](https://github.com/rieszreg/rieszreg/blob/main/rieszboost/examples/lee_schuler/continuous_dgp.py) |
-| `LocalShift(delta, threshold, ...)` | $\mathbf{1}\{a < \text{threshold}\} \cdot (\alpha(a + \delta, x) - \alpha(a, x))$ | LASE *partial-estimand* surface; same caveat as ATT. |
+Today every estimand `rieszreg` handles is a `FiniteEvalEstimand`: $m$ reduces to a finite linear combination of point evaluations of $\mu$. The taxonomy of $m$-operators outside this class — integrals, derivatives, and others — is still being designed. Likely subclasses:
 
-The R and Python factories take the same arguments.
+- **Integrals.** $m(\mu)(z, y) = \int \mu(a', x)\,h(a' \mid z)\,da'$ for a known density $h$. The classic example is a stochastic-intervention policy. Approximate via Monte Carlo to reduce to the finite-evaluation case (with $K$ samples per row), or support natively via a backend that integrates $\alpha$ analytically.
+- **Derivatives.** $m(\mu)(z, y) = \partial_a \mu(a, x)\big|_{a = z_a}$. Finite-difference approximations reduce to the finite-evaluation case; backends with autodiff can support directly.
+- **Other linear operators on $\mu$.** Any $m$ that satisfies linearity on $\mu$ (additivity and scalar homogeneity) but doesn't fit the patterns above.
 
-::: {.panel-tabset group="lang"}
-
-## Python
-
-```{python}
-from rieszreg import (
-    ATE, ATT, TSM, AdditiveShift, LocalShift, StochasticIntervention,
-)
-ATE(treatment="a", covariates=("x",)).name
-TSM(level=1, treatment="a", covariates=("x",)).name
-LocalShift(delta=0.3, threshold=0.7).name
-```
-
-## R
-
-```{r}
-ATE(treatment = "a", covariates = "x")
-TSM(level = 1, treatment = "a", covariates = "x")
-LocalShift(delta = 0.3, threshold = 0.7)
-```
-
-:::
-
-## Other Estimands
-
-
-
-`StochasticIntervention` is a `FiniteEvalEstimand`: once each row's $K$ samples are fixed, the operator is the finite linear combination $m(\alpha)(z) = (1/K) \sum_k \alpha(a'_k, x)$. Pre-draw the samples once before fitting, and the estimand fits like any other.
-
-::: {.panel-tabset group="lang"}
-
-## Python
-
-```{python}
-import numpy as np, pandas as pd
-from rieszboost import RieszBooster
-from rieszreg import StochasticIntervention
-
-rng = np.random.default_rng(0)
-n = 1000
-x = rng.uniform(0, 1, n)
-a = rng.uniform(0, 1, n)
-df = pd.DataFrame({"a": a, "x": x})
-
-# Modified-treatment policy: a' ~ Normal(a + 0.1, 0.2), 20 samples per row
-df["shift_samples"] = [
-    rng.normal(a_i + 0.1, 0.2, size=20) for a_i in df["a"]
-]
-
-booster = RieszBooster(
-    estimand=StochasticIntervention(samples_key="shift_samples"),
-    n_estimators=200, learning_rate=0.05, max_depth=4,
-).fit(df)
-
-booster.predict(df).mean()
-```
-
-## R
-
-```{r}
-set.seed(0)
-n  <- 1000
-x  <- runif(n); a <- runif(n)
-df <- data.frame(a = a, x = x)
-
-# list-column with 20 samples per row from Normal(a + 0.1, 0.2)
-df$shift_samples <- lapply(df$a, function(a_i) rnorm(20, a_i + 0.1, 0.2))
-
-booster <- RieszBooster$new(
-  estimand = StochasticIntervention(samples_key = "shift_samples"),
-  n_estimators = 200L, learning_rate = 0.05, max_depth = 4L
-)
-booster$fit(df)
-mean(booster$predict(df))
-```
-
-:::
-
-`StochasticIntervention` sets `extra_keys=("shift_samples",)` so the estimator pulls that column through to `m` along with the features.
-
-## Custom estimands
-
-To fit a finite-evaluation functional not covered by the built-ins, write the operator `m(alpha)(z)` and wrap it in a `FiniteEvalEstimand`. The tracer extracts the linear-form structure automatically.
-
-`m` must be a finite linear combination of point evaluations of $\alpha$, built with `+`, `-`, scalar `*`, and calls to `alpha(...)`. Squaring, adding constants, integrals, and other non-linear operations raise.
-
-::: {.callout-note title="Python-only"}
-Custom `m()` is Python-only. From R, define `m` in Python via `reticulate::py_run_string` and pass the resulting `FiniteEvalEstimand` to your estimator. See the [R interface page](r-interface.qmd) for the recipe.
-:::
-
-```{python}
-from rieszreg import FiniteEvalEstimand
-from rieszboost import RieszBooster
-import numpy as np, pandas as pd
-
-# A weighted contrast: 2x the ATE at level a=2 minus the level at a=1.
-def m_weighted_contrast(alpha):
-    def inner(z):
-        return 2.0 * (alpha(a=2, x=z["x"]) - alpha(a=0, x=z["x"])) \
-               - alpha(a=1, x=z["x"])
-    return inner
-
-est = FiniteEvalEstimand(
-    feature_keys=("a", "x"),
-    m=m_weighted_contrast,
-    name="WeightedContrast",
-)
-print(est)
-```
-
-Pass the estimand to any backend's estimator class:
-
-```{python}
-rng = np.random.default_rng(0)
-df = pd.DataFrame({
-    "a": rng.choice([0, 1, 2], size=500).astype(float),
-    "x": rng.uniform(0, 1, 500),
-})
-
-booster = RieszBooster(estimand=est, n_estimators=100, max_depth=3).fit(df)
-booster.predict(df)[:5]
-```
-
-### What the tracer rejects
-
-The errors point at the offending operation:
-
-```{python}
-#| error: true
-from rieszreg import FiniteEvalEstimand, trace
-
-def bad_squared(alpha):
-    return lambda z: alpha(a=1, x=z["x"]) ** 2  # nonlinear in alpha
-
-trace(FiniteEvalEstimand(feature_keys=("a", "x"), m=bad_squared), {"a": 0, "x": 0.5})
-```
-
-```{python}
-#| error: true
-def bad_constant(alpha):
-    return lambda z: alpha(a=1, x=z["x"]) + 1.0  # constant offset
-
-trace(FiniteEvalEstimand(feature_keys=("a", "x"), m=bad_constant), {"a": 0, "x": 0.5})
-```
-
-For estimands with integrals or derivatives of $\alpha$ (outside the finite-linear-form algebra), Monte-Carlo-sample and use `StochasticIntervention` if applicable.
-
-## Feature keys, extra keys
-
-The `FiniteEvalEstimand` dataclass has these fields:
-
-```python
-@dataclass
-class FiniteEvalEstimand(Estimand):
-    feature_keys: tuple[str, ...]      # columns alpha is indexed by
-    m: Callable[..., Any]              # the linear functional, m(alpha)(z)
-    extra_keys: tuple[str, ...] = ()   # per-row payload columns (e.g. shift_samples)
-    name: str = "custom"
-    factory_spec: dict | None = None   # set by built-in factories so the estimand
-                                       # round-trips through save / load
-```
-
-The estimator reads `feature_keys` and `extra_keys` to assemble the row dicts passed to `m`. `feature_keys` is the input schema of $\alpha$ (the underlying learner needs a fixed feature set); `extra_keys` lets `m` reach payload columns that are not part of $\alpha$'s input space.
-
-## Initialization
-
-Every `RieszEstimator` subclass takes an `init=` constructor arg that controls the α-space starting value of the model. The orchestrator converts `init` to an η-space `base_score` via `loss.alpha_to_eta`; backends use `base_score` as a prediction offset.
-
-The default — `init=None` — sets α to the **empirical loss-minimizing constant**. For any Bregman loss with strictly convex $h$, the constant $a^*$ that minimizes the per-row Riesz loss
-$$
-P_n L(a) \;=\; \tilde h(a) \;-\; h'(a) \cdot \bar m, \qquad \bar m = P_n[m(\alpha = 1)(Z, Y)]
-$$
-satisfies the FOC $\tilde h'(a) = h''(a) \bar m$. Using $\tilde h(t) = t h'(t) - h(t)$ we get $\tilde h'(t) = t h''(t)$, so the FOC collapses to $a^* = \bar m$. The result is **loss-independent** — the only loss-specific step is projecting $\bar m$ into the loss's α-domain when its codomain is restricted. Each `Loss` exposes `best_constant_init(m_bar)` for that projection.
-
-For the built-in estimands $\bar m$ is structurally constant (doesn't depend on the data realization):
-
-| Estimand | $m(\alpha = 1)(Z, Y)$ per row | $\bar m$ |
-|---|---|---|
-| `ATE`, `ATT`, `AdditiveShift`, `LocalShift` | $1 + (-1) = 0$ | $0$ |
-| `TSM(v)` | $1$ | $1$ |
-| `StochasticIntervention` | $K \cdot (1/K) = 1$ | $1$ |
-
-For custom estimands $\bar m$ can depend on the data; the orchestrator computes it from the training rows after the validation split (no peeking) by tracing each row and averaging the sum of trace coefficients.
-
-Override the default by passing a float:
-
-```python
-booster = RieszBooster(estimand=ATE(), init=0.0)        # explicit zero baseline
-booster = RieszBooster(estimand=TSM(level=1), init=2.5) # informed prior
-```
-
-::: {.callout-note title="Boundary cases"}
-For `BernoulliLoss` + `TSM` (or any density-ratio estimand with $\bar m = 1$) the loss-minimizing constant sits on the upper boundary, and the projection clips to $1 - \varepsilon$. The sigmoid is saturated at that init and gradients are tiny, so iterative training may stall. Pass `init=0.5` (or another interior value) when this matters. The `KLLoss` / `BoundedSquaredLoss` boundaries can hit the same issue when $\bar m$ lands exactly on a bound.
-:::
+A previously released `StochasticIntervention` factory is currently stubbed (raises `NotImplementedError`). A reintroduction will land once the integral-vs-finite-evaluation distinction is wired into the type hierarchy.

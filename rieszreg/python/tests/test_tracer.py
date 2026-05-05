@@ -63,7 +63,7 @@ def test_constant_addition_raises():
 
 def test_squaring_raises():
     def m(alpha):
-        def inner(z):
+        def inner(z, y=None):
             return alpha(a=1, x=z["x"]) ** 2
         return inner
     est = FiniteEvalEstimand(feature_keys=("a", "x"), m=m)
@@ -73,7 +73,7 @@ def test_squaring_raises():
 
 def test_non_linearform_return_raises():
     def m(alpha):
-        def inner(z):
+        def inner(z, y=None):
             return "not a linear form"
         return inner
     est = FiniteEvalEstimand(feature_keys=("a", "x"), m=m)
@@ -83,7 +83,7 @@ def test_non_linearform_return_raises():
 
 def test_zero_scalar_return_yields_empty():
     def m(alpha):
-        def inner(z):
+        def inner(z, y=None):
             return 0
         return inner
     est = FiniteEvalEstimand(feature_keys=("a", "x"), m=m)
