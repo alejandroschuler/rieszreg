@@ -605,24 +605,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td><code>rieszboost.RieszBooster(estimand, ...)</code></td>
 </tr>
 <tr class="odd">
-<td>&nbsp;&nbsp;<code>$fit(X, y=, eval_set=, eval_y=)</code></td>
-<td><code>.fit(X, y=, eval_set=, eval_y=)</code></td>
+<td>&nbsp;&nbsp;<code>$fit(Z, y=, eval_set=, eval_y=)</code></td>
+<td><code>.fit(Z, y=, eval_set=, eval_y=)</code></td>
 </tr>
 <tr class="even">
-<td>&nbsp;&nbsp;<code>$predict(X)</code></td>
-<td><code>.predict(X)</code></td>
+<td>&nbsp;&nbsp;<code>$predict(Z)</code></td>
+<td><code>.predict(Z)</code></td>
 </tr>
 <tr class="odd">
-<td>&nbsp;&nbsp;<code>$score(X, y=)</code></td>
-<td><code>.score(X, y=)</code></td>
+<td>&nbsp;&nbsp;<code>$score(Z, y=)</code></td>
+<td><code>.score(Z, y=)</code></td>
 </tr>
 <tr class="even">
-<td>&nbsp;&nbsp;<code>$riesz_loss(X, y=)</code></td>
-<td><code>.riesz_loss(X, y=)</code></td>
+<td>&nbsp;&nbsp;<code>$riesz_loss(Z, y=)</code></td>
+<td><code>.riesz_loss(Z, y=)</code></td>
 </tr>
 <tr class="odd">
-<td>&nbsp;&nbsp;<code>$diagnose(X)</code></td>
-<td><code>.diagnose(X)</code> (returns a list with <code>$summary</code> as a string)</td>
+<td>&nbsp;&nbsp;<code>$diagnose(Z)</code></td>
+<td><code>.diagnose(Z)</code> (returns a list with <code>$summary</code> as a string)</td>
 </tr>
 <tr class="even">
 <td>&nbsp;&nbsp;<code>$save(path)</code></td>
@@ -675,15 +675,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="even">
 <td>&nbsp;&nbsp;<code>$fit(df, eval_set=)</code></td>
-<td><code>.fit(X, eval_set=)</code></td>
+<td><code>.fit(Z, eval_set=)</code></td>
 </tr>
 <tr class="odd">
 <td>&nbsp;&nbsp;<code>$predict(df)</code></td>
-<td><code>.predict(X)</code></td>
+<td><code>.predict(Z)</code></td>
 </tr>
 <tr class="even">
 <td>&nbsp;&nbsp;<code>$diagnose(df)</code></td>
-<td><code>.diagnose(X)</code></td>
+<td><code>.diagnose(Z)</code></td>
 </tr>
 </tbody>
 </table>
@@ -708,19 +708,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="even">
 <td>&nbsp;&nbsp;<code>$fit(df)</code></td>
-<td><code>.fit(X)</code></td>
+<td><code>.fit(Z)</code></td>
 </tr>
 <tr class="odd">
 <td>&nbsp;&nbsp;<code>$predict(df)</code></td>
-<td><code>.predict(X)</code></td>
+<td><code>.predict(Z)</code></td>
 </tr>
 <tr class="even">
 <td>&nbsp;&nbsp;<code>$predict_interval(df, alpha)</code></td>
-<td><code>.predict_interval(X, alpha=)</code> (single-basis fits with <code>honest=TRUE, inference=TRUE</code>)</td>
+<td><code>.predict_interval(Z, alpha=)</code> (single-basis fits with <code>honest=TRUE, inference=TRUE</code>)</td>
 </tr>
 <tr class="odd">
 <td>&nbsp;&nbsp;<code>$diagnose(df)</code></td>
-<td><code>.diagnose(X)</code></td>
+<td><code>.diagnose(Z)</code></td>
 </tr>
 <tr class="even">
 <td><code>load_forest_riesz_regressor(path)</code></td>
@@ -750,15 +750,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="even">
 <td>&nbsp;&nbsp;<code>$fit(df, eval_set=)</code></td>
-<td><code>.fit(X, eval_set=)</code></td>
+<td><code>.fit(Z, eval_set=)</code></td>
 </tr>
 <tr class="odd">
 <td>&nbsp;&nbsp;<code>$predict(df)</code></td>
-<td><code>.predict(X)</code></td>
+<td><code>.predict(Z)</code></td>
 </tr>
 <tr class="even">
 <td>&nbsp;&nbsp;<code>$diagnose(df)</code></td>
-<td><code>.diagnose(X)</code></td>
+<td><code>.diagnose(Z)</code></td>
 </tr>
 <tr class="odd">
 <td><code>load_riesz_net(path)</code></td>

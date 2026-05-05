@@ -730,7 +730,7 @@ L(\alpha) \;=\; \mathbb{E}\!\left[\,\alpha(Z)^2 \;-\; 2\,m(\alpha)(Z,Y)\,\right]
 <ul>
 <li>Fits <span class="math inline">\(\hat\alpha\)</span> for <code>ATE</code>, <code>ATT</code>, <code>TSM</code>, <code>AdditiveShift</code>, <code>LocalShift</code>, or <a href="./estimands.html">your own estimand</a>.</li>
 <li>Composes with <code>cross_val_predict</code>, <code>GridSearchCV</code>, <code>Pipeline</code>.</li>
-<li>Surfaces near-positivity and outlier-extrapolation warnings via <code>.diagnose(X)</code>.</li>
+<li>Surfaces near-positivity and outlier-extrapolation warnings via <code>.diagnose(Z)</code>.</li>
 </ul>
 <p>For a feature-by-feature comparison with similar tools (<code>genriesz</code>, <code>EconML</code>, <code>DoubleML</code>, <code>tlverse</code>), see <a href="./related.html">Related packages</a>.</p>
 

@@ -630,7 +630,7 @@ window.Quarto = {
 </section>
 <section id="hyperparameter-search" class="level2">
 <h2 class="anchored" data-anchor-id="hyperparameter-search">Hyperparameter search</h2>
-<p><code>.score(X)</code> returns the negative canonical squared Riesz loss — a fixed yardstick independent of the loss the estimator was trained with, in the spirit of R² for regressors. <code>GridSearchCV</code> selects the configuration with the highest score (lowest squared loss). To use a different yardstick, pass <code>scoring=riesz_scorer(loss=...)</code>.</p>
+<p><code>.score(Z)</code> returns the negative canonical squared Riesz loss — a fixed yardstick independent of the loss the estimator was trained with, in the spirit of R² for regressors. <code>GridSearchCV</code> selects the configuration with the highest score (lowest squared loss). To use a different yardstick, pass <code>scoring=riesz_scorer(loss=...)</code>.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -750,7 +750,7 @@ window.Quarto = {
 <span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"best loss:"</span>, grid.best_params_[<span class="st">"loss"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>best loss: &lt;rieszreg.losses.squared.SquaredLoss object at 0x141316d50&gt;</code></pre>
+<pre><code>best loss: &lt;rieszreg.losses.squared.SquaredLoss object at 0x7f022001cc10&gt;</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"best score: </span><span class="sc">{</span>grid<span class="sc">.</span>best_score_<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
@@ -884,7 +884,7 @@ window.Quarto = {
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"first 5 values:          </span><span class="sc">{</span>alpha_oof[:<span class="dv">5</span>]<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>first 5 values:          [-3.49542379 -1.45612025 -0.90857583 -0.85007745  1.53809094]</code></pre>
+<pre><code>first 5 values:          [-3.49636817 -1.45712268 -0.90962332 -0.85112947  1.53748786]</code></pre>
 </div>
 </div>
 <p>The call to <code>cross_val_predict</code> is identical to the single-learner case. The only addition is the <code>Pipeline</code> wrapper and the list-valued <code>param_grid</code> entry — everything else is standard sklearn.</p>
@@ -944,7 +944,7 @@ window.Quarto = {
 <pre><code>[1] 2000</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1]  1.2938672  4.7251339  2.0855660 -3.0003119  0.7939973</code></pre>
+<pre><code>[1]  1.2938672  4.7251339  2.0906787 -3.0069799  0.7939973</code></pre>
 </div>
 </div>
 <p><code>ForestRieszRegressor</code> requires loading <code>forestriesz</code> and <code>riesznet</code> is needed for the neural candidates; load those R packages alongside <code>rieszreg</code> and <code>rieszboost</code> per the <a href="./install.html">install</a> instructions.</p>

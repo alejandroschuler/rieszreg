@@ -626,11 +626,11 @@ window.Quarto = {
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>mu_model <span class="op">=</span> GradientBoostingRegressor(</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    n_estimators<span class="op">=</span><span class="dv">300</span>, learning_rate<span class="op">=</span><span class="fl">0.05</span>, max_depth<span class="op">=</span><span class="dv">3</span>, random_state<span class="op">=</span><span class="dv">0</span>,</span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>X_full <span class="op">=</span> df[[<span class="st">"a"</span>, <span class="st">"x"</span>]].to_numpy()</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>mu_oof <span class="op">=</span> cross_val_predict(mu_model, X_full, df[<span class="st">"y"</span>].to_numpy(), cv<span class="op">=</span>cv)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>Z_full <span class="op">=</span> df[[<span class="st">"a"</span>, <span class="st">"x"</span>]].to_numpy()</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>mu_oof <span class="op">=</span> cross_val_predict(mu_model, Z_full, df[<span class="st">"y"</span>].to_numpy(), cv<span class="op">=</span>cv)</span>
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Counterfactual predictions need a model fit on the full data.</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>mu_full <span class="op">=</span> mu_model.fit(X_full, df[<span class="st">"y"</span>].to_numpy())</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>mu_full <span class="op">=</span> mu_model.fit(Z_full, df[<span class="st">"y"</span>].to_numpy())</span>
 <span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>mu1 <span class="op">=</span> mu_full.predict(np.column_stack([np.ones(n), x]))</span>
 <span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>mu0 <span class="op">=</span> mu_full.predict(np.column_stack([np.zeros(n), x]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>

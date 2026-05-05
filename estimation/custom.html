@@ -617,14 +617,14 @@ window.Quarto = {
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>cv <span class="op">=</span> KFold(n_splits<span class="op">=</span><span class="dv">5</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span><span class="dv">0</span>)</span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Outcome regression μ̂(A, X)</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>X_full <span class="op">=</span> df[[<span class="st">"a"</span>] <span class="op">+</span> COVARIATES].to_numpy(dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>Z_full <span class="op">=</span> df[[<span class="st">"a"</span>] <span class="op">+</span> COVARIATES].to_numpy(dtype<span class="op">=</span><span class="bu">float</span>)</span>
 <span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>y      <span class="op">=</span> df[<span class="st">"y"</span>].to_numpy(dtype<span class="op">=</span><span class="bu">float</span>)</span>
 <span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>mu_hat <span class="op">=</span> xgb.XGBRegressor(</span>
 <span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    objective<span class="op">=</span><span class="st">"reg:squarederror"</span>, learning_rate<span class="op">=</span><span class="fl">0.05</span>,</span>
 <span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    max_depth<span class="op">=</span><span class="dv">4</span>, reg_lambda<span class="op">=</span><span class="fl">1.0</span>, n_estimators<span class="op">=</span><span class="dv">300</span>,</span>
 <span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    random_state<span class="op">=</span><span class="dv">0</span>, verbosity<span class="op">=</span><span class="dv">0</span>,</span>
 <span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>mu_oof <span class="op">=</span> cross_val_predict(mu_hat, X_full, y, cv<span class="op">=</span>cv)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>mu_oof <span class="op">=</span> cross_val_predict(mu_hat, Z_full, y, cv<span class="op">=</span>cv)</span>
 <span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Riesz representer α̂(A, X) for ATE</span></span>
 <span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>booster <span class="op">=</span> RieszBooster(</span>
@@ -635,11 +635,11 @@ window.Quarto = {
 <span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>alpha_hat <span class="op">=</span> cross_val_predict(booster, df[[<span class="st">"a"</span>] <span class="op">+</span> COVARIATES], cv<span class="op">=</span>cv)</span>
 <span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Counterfactual μ̂(1, X) and μ̂(0, X) need a model fit on the full data.</span></span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>mu_full <span class="op">=</span> mu_hat.fit(X_full, y)</span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>X1 <span class="op">=</span> np.column_stack([np.ones(<span class="bu">len</span>(df)),  df[COVARIATES].to_numpy(dtype<span class="op">=</span><span class="bu">float</span>)])</span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>X0 <span class="op">=</span> np.column_stack([np.zeros(<span class="bu">len</span>(df)), df[COVARIATES].to_numpy(dtype<span class="op">=</span><span class="bu">float</span>)])</span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>mu1 <span class="op">=</span> mu_full.predict(X1)</span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>mu0 <span class="op">=</span> mu_full.predict(X0)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>mu_full <span class="op">=</span> mu_hat.fit(Z_full, y)</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>Z1 <span class="op">=</span> np.column_stack([np.ones(<span class="bu">len</span>(df)),  df[COVARIATES].to_numpy(dtype<span class="op">=</span><span class="bu">float</span>)])</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>Z0 <span class="op">=</span> np.column_stack([np.zeros(<span class="bu">len</span>(df)), df[COVARIATES].to_numpy(dtype<span class="op">=</span><span class="bu">float</span>)])</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>mu1 <span class="op">=</span> mu_full.predict(Z1)</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>mu0 <span class="op">=</span> mu_full.predict(Z0)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
 <div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
@@ -1174,7 +1174,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                                        'black', 'hisp', 'marr',
                                                        'nodegree', 're74',
                                                        're75'),
-                                         m=&lt;function ATE.&lt;locals&gt;.m at 0x7ffa34f25440&gt;,
+                                         m=&lt;function ATE.&lt;locals&gt;.m at 0x7f71558eb4c0&gt;,
                                          name='ATE',
                                          factory_spec={'args': {'covariates': ['age',
                                                                                'educ',
@@ -1192,7 +1192,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                                                        'black', 'hisp', 'marr',
                                                        'nodegree', 're74',
                                                        're75'),
-                                         m=&lt;function ATE.&lt;locals&gt;.m at 0x7ffa34f25440&gt;,
+                                         m=&lt;function ATE.&lt;locals&gt;.m at 0x7f71558eb4c0&gt;,
                                          name='ATE',
                                          factory_spec={'args': {'covariates': ['age',
                                                                                'educ',
