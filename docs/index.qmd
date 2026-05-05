@@ -113,11 +113,11 @@ from sklearn.ensemble import GradientBoostingRegressor
 mu_model = GradientBoostingRegressor(
     n_estimators=300, learning_rate=0.05, max_depth=3, random_state=0,
 )
-X_full = df[["a", "x"]].to_numpy()
-mu_oof = cross_val_predict(mu_model, X_full, df["y"].to_numpy(), cv=cv)
+Z_full = df[["a", "x"]].to_numpy()
+mu_oof = cross_val_predict(mu_model, Z_full, df["y"].to_numpy(), cv=cv)
 
 # Counterfactual predictions need a model fit on the full data.
-mu_full = mu_model.fit(X_full, df["y"].to_numpy())
+mu_full = mu_model.fit(Z_full, df["y"].to_numpy())
 mu1 = mu_full.predict(np.column_stack([np.ones(n), x]))
 mu0 = mu_full.predict(np.column_stack([np.zeros(n), x]))
 ```

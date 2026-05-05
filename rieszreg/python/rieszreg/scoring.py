@@ -11,12 +11,12 @@ from __future__ import annotations
 import numpy as np
 
 from .augmentation import aug_loss_alpha, build_augmented
-from .estimator import _rows_from_X
+from .estimator import _rows_from_Z
 from .losses import LossSpec, SquaredLoss
 
 
 def riesz_scorer(loss: LossSpec | None = None):
-    """Return an sklearn-compatible scorer (`(estimator, X, y=None) -> float`).
+    """Return an sklearn-compatible scorer (`(estimator, Z, y=None) -> float`).
 
     Parameters
     ----------
@@ -35,12 +35,12 @@ def riesz_scorer(loss: LossSpec | None = None):
     """
     yardstick = loss if loss is not None else SquaredLoss()
 
-    def _scorer(estimator, X, y=None) -> float:
+    def _scorer(estimator, Z, y=None) -> float:
         if not hasattr(estimator, "predictor_"):
             raise RuntimeError(
                 f"{type(estimator).__name__} is not fitted yet."
             )
-        rows = _rows_from_X(X, estimator.estimand)
+        rows = _rows_from_Z(Z, estimator.estimand)
         aug = build_augmented(rows, estimator.estimand)
         eta = estimator.predictor_.predict_eta(aug.features)
         alpha_hat = estimator.loss_.link_to_alpha(eta)

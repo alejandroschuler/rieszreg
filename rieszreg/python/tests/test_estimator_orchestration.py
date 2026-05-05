@@ -65,11 +65,11 @@ def test_fit_predict_with_dataframe():
 
 
 def test_fit_predict_with_ndarray():
-    X = np.array([[0.0, 0.1], [1.0, 0.2], [0.0, 0.3]])
+    Z = np.array([[0.0, 0.1], [1.0, 0.2], [0.0, 0.3]])
     est = RieszEstimator(
         estimand=ATE(), backend=_StubBackend(), loss=SquaredLoss(),
-    ).fit(X)
-    pred = est.predict(X)
+    ).fit(Z)
+    pred = est.predict(Z)
     assert pred.shape == (3,)
 
 

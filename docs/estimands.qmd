@@ -10,7 +10,7 @@ $$
 $$
 where $\mu(z) = \mathbb{E}[Y \mid Z = z]$ is the outcome regression and $m$ is an *operator* — a rule that maps the function $\mu$ to another function $m(\mu)$ that can also depend on the row $(Z, Y)$. For the average treatment effect (ATE) with binary treatment $A$, $m(\mu)(Z, Y) = \mu(1, X) - \mu(0, X)$ — `m` ignores $Y$ and produces a contrast of two evaluations of $\mu$.
 
-A `FiniteEvalEstimand` packages two things: the column names $\alpha$ is indexed by (`feature_keys`) and the operator itself (`m`). `m` is curried: it takes a candidate $\alpha$ and returns a function of one row $(z, y)$. The five built-in factories (`ATE`, `ATT`, `TSM`, `AdditiveShift`, `LocalShift`) cover most causal-inference targets; section [Custom estimands](#custom-estimands) shows how to write your own.
+An estimand object packages two things: the column names $\alpha$ is indexed by (`feature_keys`) and the operator itself (`m`). `m` is curried: it takes a candidate $\alpha$ and returns a function of one row $(z, y)$. The five built-in factories (`ATE`, `ATT`, `TSM`, `AdditiveShift`, `LocalShift`) cover most causal-inference targets; section [Custom estimands](#custom-estimands) shows how to write your own.
 
 The factories live in `rieszreg`; `rieszboost`, `krrr`, `forestriesz`, and `riesznet` all re-export them so `from rieszboost import ATE`, `from krrr import ATE`, `from forestriesz import ATE`, and `from riesznet import ATE` resolve to the same object.
 
@@ -44,7 +44,7 @@ controls = cps_mixtape.load_pandas().data
 df = pd.concat([treated, controls], ignore_index=True)
 df["treat"] = df["treat"].astype(float)
 
-X = df[["treat"] + COVARIATES]
+Z = df[["treat"] + COVARIATES]
 y = df["re78"].astype(float)
 print(f"n = {len(df)}  ({(df['treat']==1).sum()} treated, {(df['treat']==0).sum()} control)")
 ```
@@ -63,15 +63,15 @@ booster = RieszBooster(
     estimand=estimand,
     n_estimators=300, learning_rate=0.05, max_depth=4, reg_lambda=10.0,
     random_state=0,
-).fit(X, y)
+).fit(Z, y)
 ```
 
 Predict $\hat\alpha$ on the same rows and look at extreme-weight diagnostics.
 
 ```{python}
-alpha_hat = booster.predict(X)
+alpha_hat = booster.predict(Z)
 print(f"min α̂ = {alpha_hat.min():.2f}, max α̂ = {alpha_hat.max():.2f}")
-booster.diagnose(X).summary()
+booster.diagnose(Z).summary()
 ```
 
 To turn $\hat\alpha$ and a separately fit outcome regression $\hat\mu$ into a one-step or DML estimate of $\psi$, see the [DML / TMLE recipe](estimation/custom.qmd).
@@ -89,7 +89,7 @@ controls <- py_to_r(cd_py$cps_mixtape$load_pandas()$data)
 df <- rbind(treated, controls)
 df$treat <- as.numeric(df$treat)
 
-X <- df[, c("treat", COVARIATES)]
+Z <- df[, c("treat", COVARIATES)]
 y <- df$re78
 cat(sprintf("n = %d  (%d treated, %d control)\n",
             nrow(df), sum(df$treat == 1), sum(df$treat == 0)))
@@ -101,14 +101,14 @@ booster <- RieszBooster$new(
   n_estimators = 300L, learning_rate = 0.05, max_depth = 4L, reg_lambda = 10.0,
   random_state = 0L
 )
-booster$fit(X, y)
+booster$fit(Z, y)
 ```
 
 ```{r}
-alpha_hat <- booster$predict(X)
+alpha_hat <- booster$predict(Z)
 cat(sprintf("min alpha = %.2f, max alpha = %.2f\n",
             min(alpha_hat), max(alpha_hat)))
-booster$diagnose(X)$summary
+booster$diagnose(Z)$summary
 ```
 
 :::
@@ -148,20 +148,11 @@ LocalShift(delta = 0.3, threshold = 0.7)
 
 ## Mapping your dataframe to an estimand
 
-The two pieces a `FiniteEvalEstimand` carries:
+An estimand object carries two pieces: the column names $\alpha$ is indexed by (`feature_keys`) and the operator `m(alpha)(z, y)`.
 
-```python
-@dataclass
-class FiniteEvalEstimand(Estimand):
-    feature_keys: tuple[str, ...]   # column names α is indexed by
-    m: Callable[..., Any]           # the operator m(alpha)(z, y)
-    name: str = "custom"
-    factory_spec: dict | None = None
-```
+`feature_keys` declares the input schema of $\alpha$ — the columns the underlying learner consumes when scoring a row. The orchestrator slices these columns out of `Z` per row to build the feature matrix the learner sees.
 
-`feature_keys` declares the input schema of $\alpha$ — the columns the underlying learner consumes when scoring a row. The orchestrator slices these columns out of `X` per row to build the feature matrix the learner sees.
-
-The outcome `Y` is **not** part of `feature_keys`. It flows in the sklearn-style way: a separate vector passed as the second argument to `.fit(X, y)`. The orchestrator threads it through to `m(alpha)(z, y)`. Built-in estimands ignore `y`; pass it anyway when following sklearn convention.
+The outcome `Y` is **not** part of `feature_keys`. It flows in the sklearn-style way: a separate vector passed as the second argument to `.fit(Z, y)`. The orchestrator threads it through to `m(alpha)(z, y)`. Built-in estimands ignore `y`; pass it anyway when following sklearn convention.
 
 For the Lalonde quickstart above, the wiring looks like this:
 
@@ -169,164 +160,9 @@ For the Lalonde quickstart above, the wiring looks like this:
 |---|---|---|
 | Treatment $A$ | `treat` | `ATE(treatment="treat", ...)` — a `feature_key`. |
 | Covariates $X$ | `age`, `educ`, `black`, `hisp`, `marr`, `nodegree`, `re74`, `re75` | `ATE(covariates=(...))` — also `feature_keys`. |
-| Outcome $Y$ | `re78` | `.fit(X, y=df["re78"])`. |
+| Outcome $Y$ | `re78` | `.fit(Z, y=df["re78"])`. |
 
-The `X` dataframe must contain every name in `feature_keys`; extra columns are ignored. With an `ndarray`, columns are interpreted in `feature_keys` order.
-
-## Custom estimands
-
-To fit a finite-evaluation functional not covered by the built-ins, write the operator `m(alpha)(z, y)` and wrap it in a `FiniteEvalEstimand`. The tracer extracts the linear-form structure automatically.
-
-`m` must be a finite linear combination of point evaluations of $\alpha$, built with `+`, `-`, scalar `*`, and calls to `alpha(...)`. Squaring, adding constants, integrals, and other non-linear operations raise.
-
-::: {.callout-note title="Python-only"}
-Custom `m()` is Python-only. From R, define `m` in Python via `reticulate::py_run_string` and pass the resulting `FiniteEvalEstimand` to your estimator. See the [R interface page](r-interface.qmd) for the recipe.
-:::
-
-```{python}
-from rieszreg import FiniteEvalEstimand
-from rieszboost import RieszBooster
-import numpy as np, pandas as pd
-
-# A weighted contrast: 2x the ATE at level a=2 minus the level at a=1.
-def m_weighted_contrast(alpha):
-    def inner(z, y=None):
-        return 2.0 * (alpha(a=2, x=z["x"]) - alpha(a=0, x=z["x"])) \
-               - alpha(a=1, x=z["x"])
-    return inner
-
-est = FiniteEvalEstimand(
-    feature_keys=("a", "x"),
-    m=m_weighted_contrast,
-    name="WeightedContrast",
-)
-print(est)
-```
-
-The inner function takes `(z, y)` even when `y` is unused — that signature is the contract every custom `m` follows. Pass the estimand to any backend's estimator class:
-
-```{python}
-rng = np.random.default_rng(0)
-df = pd.DataFrame({
-    "a": rng.choice([0, 1, 2], size=500).astype(float),
-    "x": rng.uniform(0, 1, 500),
-})
-
-booster = RieszBooster(estimand=est, n_estimators=100, max_depth=3).fit(df)
-booster.predict(df)[:5]
-```
-
-### What the tracer rejects
-
-The errors point at the offending operation:
-
-```{python}
-#| error: true
-from rieszreg import FiniteEvalEstimand, trace
-
-def bad_squared(alpha):
-    return lambda z, y=None: alpha(a=1, x=z["x"]) ** 2  # nonlinear in alpha
-
-trace(FiniteEvalEstimand(feature_keys=("a", "x"), m=bad_squared), {"a": 0, "x": 0.5})
-```
-
-```{python}
-#| error: true
-def bad_constant(alpha):
-    return lambda z, y=None: alpha(a=1, x=z["x"]) + 1.0  # constant offset
-
-trace(FiniteEvalEstimand(feature_keys=("a", "x"), m=bad_constant), {"a": 0, "x": 0.5})
-```
-
-For estimands with integrals or derivatives of $\alpha$ (outside the finite-linear-form algebra), Monte-Carlo-sample and approximate as a finite sum.
-
-## Outcome-dependent `m`
-
-Some estimands need the per-row outcome $y$ to evaluate $m(\mu)(z, y)$. The most common pattern is a contrast multiplied by an indicator on $Y$ — for example, the average treatment effect *on rows with $Y$ above a fixed threshold $\tau$*:
-$$
-\psi = \mathbb{E}\!\left[\,\mathbf{1}\{Y > \tau\}\,\big(\mu(1, X) - \mu(0, X)\big)\,\right].
-$$
-This is a partial-estimand surface (same caveat as `ATT`). The corresponding operator reads `y`:
-
-```{python}
-import numpy as np, pandas as pd
-from rieszreg import FiniteEvalEstimand, trace
-from rieszboost import RieszBooster
-
-tau = 0.0
-
-def m_upper_half_ate(alpha):
-    def inner(z, y):
-        indicator = 1.0 if y > tau else 0.0
-        return indicator * (alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"]))
-    return inner
-
-est = FiniteEvalEstimand(
-    feature_keys=("a", "x"),
-    m=m_upper_half_ate,
-    name="UpperHalfATE_partial",
-)
-```
-
-Trace it on a row with `y > tau` (active) and on a row with `y <= tau` (inactive):
-
-```{python}
-trace(est, {"a": 0.0, "x": 0.5}, y=0.9)
-```
-
-```{python}
-trace(est, {"a": 0.0, "x": 0.5}, y=-0.5)
-```
-
-The active row generates an ATE-style finite linear combination; the inactive row collapses to nothing because the indicator is zero. `build_augmented` and `RieszBooster.fit(X, y)` plumb `y` through automatically:
-
-```{python}
-rng = np.random.default_rng(0)
-n = 500
-x = rng.uniform(0, 1, n)
-a = rng.binomial(1, 0.5, n).astype(float)
-df = pd.DataFrame({"a": a, "x": x})
-y = rng.normal(0.0, 1.0, n)
-
-booster = RieszBooster(
-    estimand=est, n_estimators=100, max_depth=3, learning_rate=0.05,
-).fit(df, y)
-booster.predict(df)[:5]
-```
-
-::: {.callout-note title="Canonical literature examples"}
-Several papers (Hines & Miles, Chernozhukov, Kato) catalog functionals where $m$ depends on $Y$ directly. We will add a vetted reference example here once a paper PDF is in `reference/`.
-:::
-
-## Initialization
-
-Every `RieszEstimator` subclass takes an `init=` constructor arg that controls the α-space starting value of the model. The orchestrator converts `init` to an η-space `base_score` via `loss.alpha_to_eta`; backends use `base_score` as a prediction offset.
-
-The default — `init=None` — sets α to the **empirical loss-minimizing constant**. For any Bregman loss with strictly convex $h$, the constant $a^*$ that minimizes the per-row Riesz loss
-$$
-P_n L(a) \;=\; \tilde h(a) \;-\; h'(a) \cdot \bar m, \qquad \bar m = P_n[m(\alpha = 1)(Z, Y)]
-$$
-satisfies the FOC $\tilde h'(a) = h''(a) \bar m$. Using $\tilde h(t) = t h'(t) - h(t)$ we get $\tilde h'(t) = t h''(t)$, so the FOC collapses to $a^* = \bar m$. The result is **loss-independent** — the only loss-specific step is projecting $\bar m$ into the loss's α-domain when its codomain is restricted. Each `Loss` exposes `best_constant_init(m_bar)` for that projection.
-
-For the built-in estimands $\bar m$ is structurally constant (doesn't depend on the data realization):
-
-| Estimand | $m(\alpha = 1)(Z, Y)$ per row | $\bar m$ |
-|---|---|---|
-| `ATE`, `ATT`, `AdditiveShift`, `LocalShift` | $1 + (-1) = 0$ | $0$ |
-| `TSM(v)` | $1$ | $1$ |
-
-For custom estimands $\bar m$ can depend on the data; the orchestrator computes it from the training rows after the validation split (no peeking) by tracing each row and averaging the sum of trace coefficients.
-
-Override the default by passing a float:
-
-```python
-booster = RieszBooster(estimand=ATE(), init=0.0)        # explicit zero baseline
-booster = RieszBooster(estimand=TSM(level=1), init=2.5) # informed prior
-```
-
-::: {.callout-note title="Boundary cases"}
-For `BernoulliLoss` + `TSM` (or any density-ratio estimand with $\bar m = 1$) the loss-minimizing constant sits on the upper boundary, and the projection clips to $1 - \varepsilon$. The sigmoid is saturated at that init and gradients are tiny, so iterative training may stall. Pass `init=0.5` (or another interior value) when this matters. The `KLLoss` / `BoundedSquaredLoss` boundaries can hit the same issue when $\bar m$ lands exactly on a bound.
-:::
+The `Z` dataframe must contain every name in `feature_keys`; extra columns are ignored. With an `ndarray`, columns are interpreted in `feature_keys` order.
 
 ## Theory: how the augmented dataset is derived
 
@@ -439,6 +275,103 @@ The same number drops out of the original row-wise form $\sum_i [\alpha(Z_i)^2 -
 ```{python}
 ((df["a"] + df["x"])**2 - 2*(1 + df["x"]) + 2*(0 + df["x"])).sum()
 ```
+
+## Custom estimands
+
+To fit a finite-evaluation functional not covered by the built-ins, write the operator `m(alpha)(z, y)` and wrap it in a `FiniteEvalEstimand`. The tracer extracts the linear-form structure automatically.
+
+`m` must be a finite linear combination of point evaluations of $\alpha$, built with `+`, `-`, scalar `*`, and calls to `alpha(...)`. Squaring, adding constants, integrals, and other non-linear operations raise.
+
+::: {.callout-note title="Python-only"}
+Custom `m()` is Python-only. From R, define `m` in Python via `reticulate::py_run_string` and pass the resulting `FiniteEvalEstimand` to your estimator. See the [R interface page](r-interface.qmd) for the recipe.
+:::
+
+```{python}
+from rieszreg import FiniteEvalEstimand
+from rieszboost import RieszBooster
+import numpy as np, pandas as pd
+
+# A weighted contrast: 2x the ATE at level a=2 minus the level at a=1.
+def m_weighted_contrast(alpha):
+    def inner(z, y=None):
+        return 2.0 * (alpha(a=2, x=z["x"]) - alpha(a=0, x=z["x"])) \
+               - alpha(a=1, x=z["x"])
+    return inner
+
+est = FiniteEvalEstimand(
+    feature_keys=("a", "x"),
+    m=m_weighted_contrast,
+    name="WeightedContrast",
+)
+print(est)
+```
+
+The inner function takes `(z, y)` even when `y` is unused — that signature is the contract every custom `m` follows. Pass the estimand to any backend's estimator class:
+
+```{python}
+rng = np.random.default_rng(0)
+df = pd.DataFrame({
+    "a": rng.choice([0, 1, 2], size=500).astype(float),
+    "x": rng.uniform(0, 1, 500),
+})
+
+booster = RieszBooster(estimand=est, n_estimators=100, max_depth=3).fit(df)
+booster.predict(df)[:5]
+```
+
+### What the tracer rejects
+
+The errors point at the offending operation:
+
+```{python}
+#| error: true
+from rieszreg import FiniteEvalEstimand, trace
+
+def bad_squared(alpha):
+    return lambda z, y=None: alpha(a=1, x=z["x"]) ** 2  # nonlinear in alpha
+
+trace(FiniteEvalEstimand(feature_keys=("a", "x"), m=bad_squared), {"a": 0, "x": 0.5})
+```
+
+```{python}
+#| error: true
+def bad_constant(alpha):
+    return lambda z, y=None: alpha(a=1, x=z["x"]) + 1.0  # constant offset
+
+trace(FiniteEvalEstimand(feature_keys=("a", "x"), m=bad_constant), {"a": 0, "x": 0.5})
+```
+
+For estimands with integrals or derivatives of $\alpha$ (outside the finite-linear-form algebra), Monte-Carlo-sample and approximate as a finite sum.
+
+## Initialization
+
+Every `RieszEstimator` subclass takes an `init=` constructor arg that controls the α-space starting value of the model. The orchestrator converts `init` to an η-space `base_score` via `loss.alpha_to_eta`; backends use `base_score` as a prediction offset.
+
+The default — `init=None` — sets α to the **empirical loss-minimizing constant**. For any Bregman loss with strictly convex $h$, the constant $a^*$ that minimizes the per-row Riesz loss
+$$
+P_n L(a) \;=\; \tilde h(a) \;-\; h'(a) \cdot \bar m, \qquad \bar m = P_n[m(\alpha = 1)(Z, Y)]
+$$
+satisfies the FOC $\tilde h'(a) = h''(a) \bar m$. Using $\tilde h(t) = t h'(t) - h(t)$ we get $\tilde h'(t) = t h''(t)$, so the FOC collapses to $a^* = \bar m$. The result is **loss-independent** — the only loss-specific step is projecting $\bar m$ into the loss's α-domain when its codomain is restricted. Each `Loss` exposes `best_constant_init(m_bar)` for that projection.
+
+For the built-in estimands $\bar m$ is structurally constant (doesn't depend on the data realization):
+
+| Estimand | $m(\alpha = 1)(Z, Y)$ per row | $\bar m$ |
+|---|---|---|
+| `ATE`, `ATT`, `AdditiveShift`, `LocalShift` | $1 + (-1) = 0$ | $0$ |
+| `TSM(v)` | $1$ | $1$ |
+
+For custom estimands $\bar m$ can depend on the data; the orchestrator computes it from the training rows after the validation split (no peeking) by tracing each row and averaging the sum of trace coefficients.
+
+Override the default by passing a float:
+
+```python
+booster = RieszBooster(estimand=ATE(), init=0.0)        # explicit zero baseline
+booster = RieszBooster(estimand=TSM(level=1), init=2.5) # informed prior
+```
+
+::: {.callout-note title="Boundary cases"}
+For `BernoulliLoss` + `TSM` (or any density-ratio estimand with $\bar m = 1$) the loss-minimizing constant sits on the upper boundary, and the projection clips to $1 - \varepsilon$. The sigmoid is saturated at that init and gradients are tiny, so iterative training may stall. Pass `init=0.5` (or another interior value) when this matters. The `KLLoss` / `BoundedSquaredLoss` boundaries can hit the same issue when $\bar m$ lands exactly on a bound.
+:::
 
 ## Estimand subclass taxonomy and future work
 

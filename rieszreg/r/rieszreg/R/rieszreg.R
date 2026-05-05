@@ -213,17 +213,19 @@ RieszEstimatorR6 <- R6::R6Class(
       invisible(self)
     },
 
-    #' Fit the estimator on a feature data.frame and an outcome vector.
-    #' @param X Training feature data (R data.frame; converted to pandas).
+    #' Fit the estimator on a predictor data.frame and an outcome vector.
+    #' @param Z Training predictor data (R data.frame; converted to pandas).
+    #'   Holds the treatment column(s) plus covariates in the estimand's
+    #'   `feature_keys` order.
     #' @param y Training outcome vector (numeric). Required by the sklearn
     #'   convention; built-in estimands ignore it, custom Y-dependent
     #'   estimands read it via `m(alpha)(z, y)`.
-    #' @param eval_set Optional held-out feature data.frame for early stopping
-    #'   / λ selection.
+    #' @param eval_set Optional held-out predictor data.frame for early
+    #'   stopping / λ selection.
     #' @param eval_y Optional outcome vector aligned with `eval_set`.
-    fit = function(X, y = NULL, eval_set = NULL, eval_y = NULL) {
-      X_py <- df_to_py(X)
-      args <- list(X = X_py)
+    fit = function(Z, y = NULL, eval_set = NULL, eval_y = NULL) {
+      Z_py <- df_to_py(Z)
+      args <- list(Z = Z_py)
       if (!is.null(y)) args$y <- as.numeric(y)
       if (!is.null(eval_set)) {
         args$eval_set <- df_to_py(eval_set)
@@ -233,26 +235,26 @@ RieszEstimatorR6 <- R6::R6Class(
       invisible(self)
     },
 
-    #' Predict α̂ on a feature data.frame. Returns a numeric vector.
-    predict = function(X) {
-      preds <- self$py$predict(df_to_py(X))
+    #' Predict α̂ on a predictor data.frame. Returns a numeric vector.
+    predict = function(Z) {
+      preds <- self$py$predict(df_to_py(Z))
       as.numeric(reticulate::py_to_r(preds))
     },
 
     #' Negative held-out Riesz loss (sklearn higher-is-better).
-    #' @param X Held-out feature data.frame.
+    #' @param Z Held-out predictor data.frame.
     #' @param y Optional held-out outcome vector for Y-dependent estimands.
-    score = function(X, y = NULL) {
-      args <- list(df_to_py(X))
+    score = function(Z, y = NULL) {
+      args <- list(df_to_py(Z))
       if (!is.null(y)) args$y <- as.numeric(y)
       reticulate::py_to_r(do.call(self$py$score, args))
     },
 
     #' Held-out per-row Riesz loss.
-    #' @param X Held-out feature data.frame.
+    #' @param Z Held-out predictor data.frame.
     #' @param y Optional held-out outcome vector for Y-dependent estimands.
-    riesz_loss = function(X, y = NULL) {
-      args <- list(df_to_py(X))
+    riesz_loss = function(Z, y = NULL) {
+      args <- list(df_to_py(Z))
       if (!is.null(y)) args$y <- as.numeric(y)
       reticulate::py_to_r(do.call(self$py$riesz_loss, args))
     },
@@ -264,9 +266,9 @@ RieszEstimatorR6 <- R6::R6Class(
     },
 
     #' Diagnostics. Returns a list mirroring the Python `Diagnostics` dataclass.
-    #' @param X Held-out feature data.frame.
-    diagnose = function(X, ...) {
-      d <- self$py$diagnose(df_to_py(X), ...)
+    #' @param Z Held-out predictor data.frame.
+    diagnose = function(Z, ...) {
+      d <- self$py$diagnose(df_to_py(Z), ...)
       list(
         n = reticulate::py_to_r(d$n),
         rms = reticulate::py_to_r(d$rms),
