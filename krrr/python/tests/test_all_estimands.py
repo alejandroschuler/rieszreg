@@ -16,7 +16,6 @@ from krrr import (
     FiniteEvalEstimand,
     KernelRieszRegressor,
     LocalShift,
-    StochasticIntervention,
     TSM,
 )
 
@@ -41,23 +40,11 @@ def test_estimand_fits_and_predicts(continuous_a_data, estimand_factory, kwargs)
     assert np.all(np.isfinite(alpha))
 
 
-def test_stochastic_intervention(stochastic_intervention_data):
-    df = stochastic_intervention_data
-    krr = KernelRieszRegressor(
-        estimand=StochasticIntervention("shift_samples", "a", ("x",)),
-        lambda_grid=np.logspace(-3, 0, 6),
-        validation_fraction=0.2,
-    ).fit(df)
-    alpha = krr.predict(df)
-    assert alpha.shape == (len(df),)
-    assert np.all(np.isfinite(alpha))
-
-
 def test_custom_estimand(continuous_a_data):
     df = continuous_a_data
 
     def m_mix(alpha):
-        def inner(z):
+        def inner(z, y=None):
             return 0.6 * alpha(a=1, x=z["x"]) - 0.4 * alpha(a=0, x=z["x"])
         return inner
 

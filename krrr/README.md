@@ -76,7 +76,8 @@ Re-exported from rieszreg — same API, same semantics:
 | `TSM(level, treatment, covariates)` | α(level, x) | Treatment-specific mean |
 | `AdditiveShift(delta, ...)` | α(a + δ, x) − α(a, x) | Continuous-treatment shift |
 | `LocalShift(delta, threshold, ...)` | 1(a < threshold) · (α(a + δ, x) − α(a, x)) | LASE *partial-estimand* surface |
-| `StochasticIntervention(samples_key, ...)` | (1/K) Σₖ α(a'ₖ, x) | Stochastic interventions / IPSI |
+
+`StochasticIntervention` previously appeared here; it is currently being rewritten and will return.
 
 Custom `m()` works too (write the functional opaquely; `LinearForm` tracing extracts the points and coefficients):
 
