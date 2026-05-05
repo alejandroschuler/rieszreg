@@ -12,7 +12,7 @@ and (2) the opaque `m(alpha)(z, y)` operator itself.
 `m` is an operator: it takes a candidate function `alpha` and returns a function
 of the row `z` and the per-row outcome `y`. The orchestrator calls
 `m(alpha)(z, y)` row-by-row, passing a `Tracer` for `alpha` to extract the
-linear-form structure. `Y` flows in sklearn-style: separate from `X` at every
+linear-form structure. `Y` flows in sklearn-style: separate from `Z` at every
 layer (no outcome column inside the row dict). When the user's `m` doesn't read
 `y` (the case for every built-in), the inner closure ignores its second arg.
 """

@@ -44,9 +44,9 @@ use_python_rieszreg <- function(python = NULL, required = TRUE) {
 
 #' Convert an R data.frame to a pandas DataFrame.
 #'
-#' Numeric columns flow through unchanged. Use this on the X side of
-#' `fit(X, y)` calls; the outcome `y` is passed separately as a numeric
-#' vector.
+#' Numeric columns flow through unchanged. Use this on the predictor
+#' data.frame `Z` of `fit(Z, y)` calls; the outcome `y` is passed
+#' separately as a numeric vector.
 #'
 #' @param data An R data.frame.
 #' @return A pandas DataFrame (Python object, `convert = FALSE`).
