@@ -77,7 +77,7 @@ Estimand factories belong in `rieszreg.estimands.base`, not in the implementatio
 def MyEstimand(param, treatment="a", covariates=("x",)) -> FiniteEvalEstimand:
     cov = tuple(covariates)
     def m(alpha):
-        def inner(z):
+        def inner(z, y=None):
             x_kwargs = {k: z[k] for k in cov}
             return alpha(**{treatment: param, **x_kwargs})
         return inner

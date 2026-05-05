@@ -167,7 +167,7 @@ df = pd.DataFrame({"a": rng.binomial(1, 0.5, n).astype(float),
                    "x": rng.uniform(0, 1, n)})
 
 def m_custom(alpha):
-    def inner(z):
+    def inner(z, y=None):
         return alpha(a=1, x=z["x"]) - alpha(a=0, x=z["x"])
     return inner
 

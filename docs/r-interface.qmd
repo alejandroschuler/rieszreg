@@ -151,7 +151,7 @@ The `LinearForm` tracer is Python-only. To use a custom estimand or `LossSpec` s
 ```r
 reticulate::py_run_string("
 def m_my_thing(alpha):
-    def inner(z):
+    def inner(z, y=None):
         return 2.0 * (alpha(a=2, x=z['x']) - alpha(a=0, x=z['x']))
     return inner
 
