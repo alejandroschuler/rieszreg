@@ -111,7 +111,7 @@ For TSM1 with a Gaussian kernel and `a_k ≡ 1`, this recovers the closed form i
 ## What works today (v0.0.1)
 
 - **`KernelRieszRegressor(BaseEstimator)`** — sklearn-compatible. Composes with `GridSearchCV`, `cross_val_predict`, `clone`, `Pipeline`. Same `fit / predict / score / diagnose` surface as `RieszBooster`.
-- **All six built-in estimands** via the rieszboost re-exports: `ATE`, `ATT`, `TSM`, `AdditiveShift`, `LocalShift`, `StochasticIntervention`. Custom `Estimand`s also work (the augmentation engine is identical).
+- **All five built-in estimands** via the rieszreg re-exports: `ATE`, `ATT`, `TSM`, `AdditiveShift`, `LocalShift`. Custom `FiniteEvalEstimand`s also work (the augmentation engine is identical). `StochasticIntervention` is currently stubbed in rieszreg and will be reintroduced.
 - **Kernels**: `Gaussian`, `Matern(nu={0.5, 1.5, 2.5})`, `Linear`, `Polynomial`, `Tensor` (tensor product over disjoint feature subsets), `Sum`, `Product`, `Scaled`. Spec-round-trippable.
 - **Bandwidth selection**: `length_scale={float, "median", "scott", "silverman"}`. Median heuristic (default) resolves on `fit_data`.
 - **Solvers**: `direct`, `nystrom_cg`, `rff`, optional `falkon`. `solver="auto"` dispatches by n_aug.

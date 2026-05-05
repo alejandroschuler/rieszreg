@@ -47,7 +47,6 @@ from rieszreg import (
     LocalShift,
     LossSpec,
     SquaredLoss,
-    StochasticIntervention,
     TSM,
 )
 
@@ -84,6 +83,5 @@ __all__ = [
     "LocalShift",
     "LossSpec",
     "SquaredLoss",
-    "StochasticIntervention",
     "TSM",
 ]

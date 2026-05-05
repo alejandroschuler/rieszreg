@@ -1,5 +1,5 @@
 """Shared fixtures: a small binary-treatment ATE DGP and a continuous-A
-DGP for shift / stochastic-intervention tests."""
+DGP for shift / custom-estimand tests."""
 
 from __future__ import annotations
 
@@ -27,15 +27,4 @@ def continuous_a_data():
     x = rng.uniform(0, 1, n)
     a = rng.normal(x, 0.5, n)
     df = pd.DataFrame({"a": a, "x": x})
-    return df
-
-
-@pytest.fixture
-def stochastic_intervention_data():
-    rng = np.random.default_rng(2)
-    n = 200
-    x = rng.uniform(0, 1, n)
-    a = rng.normal(x, 0.5, n)
-    df = pd.DataFrame({"a": a, "x": x})
-    df["shift_samples"] = [rng.normal(ai + 0.5, 0.2, 10).tolist() for ai in df.a]
     return df
