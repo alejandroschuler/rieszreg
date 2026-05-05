@@ -142,9 +142,9 @@ class ForestRieszRegressor(RieszEstimator):
     # ---- inference passthroughs ----
 
     def predict_interval(
-        self, X, *, alpha: float = 0.05
+        self, Z, *, alpha: float = 0.05
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Return (lb, ub) arrays for α(X) at confidence 1 - alpha.
+        """Return (lb, ub) arrays for α(Z) at confidence 1 - alpha.
 
         Requires ``honest=True`` and ``inference=True`` at fit. Locally
         constant only in v1; sieve case raises NotImplementedError.
@@ -154,9 +154,9 @@ class ForestRieszRegressor(RieszEstimator):
                 f"{type(self).__name__} is not fitted yet. Call .fit() first."
             )
         from .estimator import ForestRieszRegressor  # noqa: F401 (self-ref ok)
-        from rieszreg.estimator import _features_from_rows, _rows_from_X
+        from rieszreg.estimator import _features_from_rows, _rows_from_Z
 
-        rows = _rows_from_X(X, self.estimand)
+        rows = _rows_from_Z(Z, self.estimand)
         feats = _features_from_rows(rows, self.estimand)
         return self.predictor_.predict_interval(feats, alpha=alpha)
 
