@@ -24,38 +24,38 @@ from .estimands.tracer import trace
 from .losses import LossSpec, SquaredLoss, loss_from_spec
 
 
-def _is_dataframe(X) -> bool:
-    return hasattr(X, "columns") and hasattr(X, "iloc")
+def _is_dataframe(Z) -> bool:
+    return hasattr(Z, "columns") and hasattr(Z, "iloc")
 
 
-def _rows_from_X(X, estimand: Estimand) -> list[dict]:
-    """Convert ndarray or DataFrame X into a list of row-dicts keyed by
+def _rows_from_Z(Z, estimand: Estimand) -> list[dict]:
+    """Convert ndarray or DataFrame Z into a list of row-dicts keyed by
     `estimand.feature_keys`. Ndarray input is interpreted column-by-column in
     `feature_keys` order; DataFrame columns are matched by name."""
-    if _is_dataframe(X):
+    if _is_dataframe(Z):
         cols_needed = list(estimand.feature_keys)
-        missing = [c for c in cols_needed if c not in X.columns]
+        missing = [c for c in cols_needed if c not in Z.columns]
         if missing:
             raise ValueError(
                 f"DataFrame is missing columns required by estimand "
                 f"{estimand.name!r}: {missing}"
             )
         rows = []
-        for i in range(len(X)):
+        for i in range(len(Z)):
             row = {}
             for k in cols_needed:
-                v = X[k].iloc[i]
+                v = Z[k].iloc[i]
                 row[k] = v
             rows.append(row)
         return rows
 
-    arr = np.asarray(X)
+    arr = np.asarray(Z)
     if arr.ndim == 1:
         arr = arr.reshape(-1, 1)
     if arr.shape[1] != len(estimand.feature_keys):
         raise ValueError(
             f"Estimand {estimand.name!r} expects {len(estimand.feature_keys)} "
-            f"feature columns ({estimand.feature_keys}), got X.shape[1]="
+            f"feature columns ({estimand.feature_keys}), got Z.shape[1]="
             f"{arr.shape[1]}."
         )
     return [
@@ -78,7 +78,7 @@ def _ys_from_y(y, n: int) -> list | None:
         y_arr = y_arr.reshape(-1)
     if len(y_arr) != n:
         raise ValueError(
-            f"len(y)={len(y_arr)} does not match number of rows in X ({n})."
+            f"len(y)={len(y_arr)} does not match number of rows in Z ({n})."
         )
     return list(y_arr)
 
@@ -89,30 +89,30 @@ def _features_from_rows(rows: Sequence[dict], estimand: Estimand) -> np.ndarray:
     )
 
 
-def _split_X(X, y, validation_fraction: float, random_state: int):
-    """Split (X, y) into train/valid by `validation_fraction`. `y=None` is
-    threaded through unchanged. Returns `(X_train, X_valid, y_train, y_valid)`
+def _split_Z(Z, y, validation_fraction: float, random_state: int):
+    """Split (Z, y) into train/valid by `validation_fraction`. `y=None` is
+    threaded through unchanged. Returns `(Z_train, Z_valid, y_train, y_valid)`
     where the validation halves are `None` when `validation_fraction <= 0`."""
-    n = len(X) if _is_dataframe(X) else len(np.asarray(X))
+    n = len(Z) if _is_dataframe(Z) else len(np.asarray(Z))
     if validation_fraction <= 0:
-        return X, None, y, None
+        return Z, None, y, None
     idx = np.arange(n)
     tr_idx, va_idx = train_test_split(
         idx, test_size=validation_fraction, random_state=random_state
     )
-    if _is_dataframe(X):
-        X_train, X_valid = X.iloc[tr_idx], X.iloc[va_idx]
+    if _is_dataframe(Z):
+        Z_train, Z_valid = Z.iloc[tr_idx], Z.iloc[va_idx]
     else:
-        arr = np.asarray(X)
-        X_train, X_valid = arr[tr_idx], arr[va_idx]
+        arr = np.asarray(Z)
+        Z_train, Z_valid = arr[tr_idx], arr[va_idx]
     if y is None:
-        return X_train, X_valid, None, None
+        return Z_train, Z_valid, None, None
     if hasattr(y, "iloc"):
         y_train, y_valid = y.iloc[tr_idx], y.iloc[va_idx]
     else:
         y_arr = np.asarray(y)
         y_train, y_valid = y_arr[tr_idx], y_arr[va_idx]
-    return X_train, X_valid, y_train, y_valid
+    return Z_train, Z_valid, y_train, y_valid
 
 
 class RieszEstimator(BaseEstimator):
@@ -174,19 +174,21 @@ class RieszEstimator(BaseEstimator):
 
     # ---- sklearn API ----
 
-    def fit(self, X, y=None, eval_set=None, eval_y=None) -> "RieszEstimator":
+    def fit(self, Z, y=None, eval_set=None, eval_y=None) -> "RieszEstimator":
         """Fit the Riesz representer.
 
-        `y` is sklearn-style: a separate per-row outcome vector. It is plumbed
-        into the estimand's `m(alpha)(z, y)` and into the augmentation /
-        moment backends. Built-in factories (`ATE`, `ATT`, `TSM`,
-        `AdditiveShift`, `LocalShift`) ignore `y`; pass it anyway when
-        following sklearn convention. Custom Y-dependent estimands require
-        `y` to be provided.
+        `Z` is the predictor matrix — treatment column(s) plus covariates
+        in `estimand.feature_keys` order. `y` is sklearn-style: a separate
+        per-row outcome vector. It is plumbed into the estimand's
+        `m(alpha)(z, y)` and into the augmentation / moment backends.
+        Built-in factories (`ATE`, `ATT`, `TSM`, `AdditiveShift`,
+        `LocalShift`) ignore `y`; pass it anyway when following sklearn
+        convention. Custom Y-dependent estimands require `y` to be
+        provided.
 
-        `eval_set` is the held-out X for early-stopping / λ-selection (when
-        the backend uses one); pair it with `eval_y` to feed an outcome
-        vector for the same rows.
+        `eval_set` is the held-out predictor matrix for early-stopping /
+        λ-selection (when the backend uses one); pair it with `eval_y` to
+        feed an outcome vector for the same rows.
         """
         loss = self._resolved_loss()
         backend = self._resolved_backend()
@@ -204,21 +206,21 @@ class RieszEstimator(BaseEstimator):
         # reads it via getattr and performs the split before augmentation.
         val_frac = float(getattr(backend, "validation_fraction", 0.0) or 0.0)
         if eval_set is not None:
-            X_train, X_valid = X, eval_set
+            Z_train, Z_valid = Z, eval_set
             y_train, y_valid = y, eval_y
         elif val_frac > 0:
-            X_train, X_valid, y_train, y_valid = _split_X(
-                X, y, val_frac, self.random_state
+            Z_train, Z_valid, y_train, y_valid = _split_Z(
+                Z, y, val_frac, self.random_state
             )
         else:
-            X_train, X_valid = X, None
+            Z_train, Z_valid = Z, None
             y_train, y_valid = y, None
 
-        rows_train = _rows_from_X(X_train, self.estimand)
+        rows_train = _rows_from_Z(Z_train, self.estimand)
         ys_train = _ys_from_y(y_train, len(rows_train))
         rows_valid = (
-            _rows_from_X(X_valid, self.estimand)
-            if X_valid is not None and len(X_valid) > 0
+            _rows_from_Z(Z_valid, self.estimand)
+            if Z_valid is not None and len(Z_valid) > 0
             else None
         )
         ys_valid = (
@@ -289,21 +291,21 @@ class RieszEstimator(BaseEstimator):
         self.feature_keys_ = self.estimand.feature_keys
         return self
 
-    def predict(self, X) -> np.ndarray:
+    def predict(self, Z) -> np.ndarray:
         if not hasattr(self, "predictor_"):
             raise RuntimeError(f"{type(self).__name__} is not fitted yet. Call .fit() first.")
-        rows = _rows_from_X(X, self.estimand)
+        rows = _rows_from_Z(Z, self.estimand)
         feats = _features_from_rows(rows, self.estimand)
         return self.predictor_.predict_alpha(feats)
 
-    def riesz_loss(self, X, y=None) -> float:
-        """Per-row empirical Riesz loss on X under this estimator's loss.
+    def riesz_loss(self, Z, y=None) -> float:
+        """Per-row empirical Riesz loss on Z under this estimator's loss.
 
         Pass `y` when the estimand's `m` reads it (most built-ins do not).
         """
         if not hasattr(self, "predictor_"):
             raise RuntimeError(f"{type(self).__name__} is not fitted yet.")
-        rows = _rows_from_X(X, self.estimand)
+        rows = _rows_from_Z(Z, self.estimand)
         ys = _ys_from_y(y, len(rows))
         aug = build_augmented(rows, self.estimand, ys)
         eta = self.predictor_.predict_eta(aug.features)
@@ -313,7 +315,7 @@ class RieszEstimator(BaseEstimator):
             / aug.n_rows
         )
 
-    def score(self, X, y=None) -> float:
+    def score(self, Z, y=None) -> float:
         """Return negative held-out canonical Riesz loss (squared loss).
 
         Following sklearn convention (R² for regressors, accuracy for
@@ -323,13 +325,13 @@ class RieszEstimator(BaseEstimator):
         estimators fit with different losses (e.g. KL vs squared).
 
         Pass `scoring=riesz_scorer(loss=...)` to sklearn CV utilities to use a
-        different yardstick. `riesz_loss(X)` remains available as the
+        different yardstick. `riesz_loss(Z)` remains available as the
         own-loss diagnostic. `y` is plumbed into `m(alpha)(z, y)` for
         Y-dependent custom estimands.
         """
         if not hasattr(self, "predictor_"):
             raise RuntimeError(f"{type(self).__name__} is not fitted yet.")
-        rows = _rows_from_X(X, self.estimand)
+        rows = _rows_from_Z(Z, self.estimand)
         ys = _ys_from_y(y, len(rows))
         aug = build_augmented(rows, self.estimand, ys)
         eta = self.predictor_.predict_eta(aug.features)
@@ -340,9 +342,9 @@ class RieszEstimator(BaseEstimator):
             / aug.n_rows
         )
 
-    def diagnose(self, X, **kwargs):
+    def diagnose(self, Z, **kwargs):
         from .diagnostics import diagnose
-        return diagnose(estimator=self, X=X, **kwargs)
+        return diagnose(estimator=self, Z=Z, **kwargs)
 
     # ---- serialization ----
 

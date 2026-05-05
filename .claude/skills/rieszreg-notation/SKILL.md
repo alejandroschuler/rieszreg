@@ -29,6 +29,8 @@ The English word for $\psi$ is **estimand** — uniformly across docs, READMEs, 
 
 The observed predictors are $Z = (A, X)$, where $A$ is the treatment (or any intervention, e.g. exposure level for a continuous shift) and $X$ are covariates. $Y$ is the outcome. $A$ at the front of the alphabet distinguishes it from the back-of-alphabet covariates $X$. This matches ML / TML conventions.
 
+This applies to **code identifiers** as well. The predictor frame in `fit / predict / score / riesz_loss / diagnose` signatures, in tests, in docs, and in user-supplied examples is `Z`, not `X`. Sklearn's idiomatic `X` parameter name does **not** override this — `Z` wins because in our world `X` is reserved for the covariate sub-block. A function whose entire input is just covariates (no treatment column) may keep `X`, but estimator entry points that take the full predictor matrix do not.
+
 ## 5. Reference distribution: $\alpha_0$ vs $\alpha$
 
 When a reference (true / population) distribution $\mathbb{P}_0$ is explicitly in scope, use $\alpha_0$, $\mu_0$ to denote the values of these functions at $\mathbb{P}_0$. When $\mathbb{P}_0$ is implicit, just use $\alpha$, $\mu$ — but **do not mix**. If you write $\alpha_0$ anywhere in a derivation, also write $\mu_0$. In user guide prose, prefer the unsubscripted form for visual cleanliness.

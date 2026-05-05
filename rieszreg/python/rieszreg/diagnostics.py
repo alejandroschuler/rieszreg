@@ -58,12 +58,12 @@ def diagnose(
     alpha_hat: np.ndarray | None = None,
     *,
     estimator=None,
-    X=None,
+    Z=None,
     extreme_threshold: float = 30.0,
     extreme_fraction_warn: float = 0.01,
 ) -> Diagnostics:
     """Compute diagnostics from either pre-computed ``alpha_hat`` or by
-    predicting with ``estimator.predict(X)``. If ``(estimator, X)`` is given,
+    predicting with ``estimator.predict(Z)``. If ``(estimator, Z)`` is given,
     the held-out Riesz loss is computed automatically via ``estimator.riesz_loss``.
 
     Parameters
@@ -73,13 +73,13 @@ def diagnose(
     estimator : RieszEstimator, optional
         A fitted estimator. Used to compute predictions and the held-out
         Riesz loss when ``alpha_hat`` is not supplied.
-    X : DataFrame or ndarray, optional
-        Eval data. Required when ``estimator`` is supplied.
+    Z : DataFrame or ndarray, optional
+        Eval predictor matrix. Required when ``estimator`` is supplied.
     """
     if alpha_hat is None:
-        if estimator is None or X is None:
-            raise ValueError("diagnose requires either alpha_hat or (estimator, X)")
-        alpha_hat = np.asarray(estimator.predict(X))
+        if estimator is None or Z is None:
+            raise ValueError("diagnose requires either alpha_hat or (estimator, Z)")
+        alpha_hat = np.asarray(estimator.predict(Z))
     alpha_hat = np.asarray(alpha_hat)
 
     abs_alpha = np.abs(alpha_hat)
@@ -88,8 +88,8 @@ def diagnose(
     extreme_fraction = float(n_extreme / len(alpha_hat))
 
     riesz_loss = None
-    if estimator is not None and X is not None and hasattr(estimator, "riesz_loss"):
-        riesz_loss = estimator.riesz_loss(X)
+    if estimator is not None and Z is not None and hasattr(estimator, "riesz_loss"):
+        riesz_loss = estimator.riesz_loss(Z)
 
     warnings: list[str] = []
     if extreme_fraction > extreme_fraction_warn:

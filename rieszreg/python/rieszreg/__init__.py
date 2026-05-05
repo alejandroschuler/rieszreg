@@ -8,7 +8,7 @@ orchestrator.
     from rieszreg import RieszEstimator, ATE, SquaredLoss
     from rieszboost.backends import XGBoostBackend
     est = RieszEstimator(estimand=ATE(), loss=SquaredLoss(), backend=XGBoostBackend())
-    est.fit(X)
+    est.fit(Z)
 """
 
 from .augmentation import (

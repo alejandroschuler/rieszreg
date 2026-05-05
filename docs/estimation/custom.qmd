@@ -68,14 +68,14 @@ from rieszboost import RieszBooster
 cv = KFold(n_splits=5, shuffle=True, random_state=0)
 
 # Outcome regression μ̂(A, X)
-X_full = df[["a"] + COVARIATES].to_numpy(dtype=float)
+Z_full = df[["a"] + COVARIATES].to_numpy(dtype=float)
 y      = df["y"].to_numpy(dtype=float)
 mu_hat = xgb.XGBRegressor(
     objective="reg:squarederror", learning_rate=0.05,
     max_depth=4, reg_lambda=1.0, n_estimators=300,
     random_state=0, verbosity=0,
 )
-mu_oof = cross_val_predict(mu_hat, X_full, y, cv=cv)
+mu_oof = cross_val_predict(mu_hat, Z_full, y, cv=cv)
 
 # Riesz representer α̂(A, X) for ATE
 booster = RieszBooster(
@@ -86,11 +86,11 @@ booster = RieszBooster(
 alpha_hat = cross_val_predict(booster, df[["a"] + COVARIATES], cv=cv)
 
 # Counterfactual μ̂(1, X) and μ̂(0, X) need a model fit on the full data.
-mu_full = mu_hat.fit(X_full, y)
-X1 = np.column_stack([np.ones(len(df)),  df[COVARIATES].to_numpy(dtype=float)])
-X0 = np.column_stack([np.zeros(len(df)), df[COVARIATES].to_numpy(dtype=float)])
-mu1 = mu_full.predict(X1)
-mu0 = mu_full.predict(X0)
+mu_full = mu_hat.fit(Z_full, y)
+Z1 = np.column_stack([np.ones(len(df)),  df[COVARIATES].to_numpy(dtype=float)])
+Z0 = np.column_stack([np.zeros(len(df)), df[COVARIATES].to_numpy(dtype=float)])
+mu1 = mu_full.predict(Z1)
+mu0 = mu_full.predict(Z0)
 ```
 
 ## R

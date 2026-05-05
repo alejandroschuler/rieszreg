@@ -171,14 +171,14 @@ Users compose either way — both are first-class:
 from rieszreg import RieszEstimator, ATE, SquaredLoss
 from rieszboost.backends import XGBoostBackend
 est = RieszEstimator(estimand=ATE(), loss=SquaredLoss(), backend=XGBoostBackend(n_estimators=200))
-est.fit(X)
+est.fit(Z)
 ```
 
 ```python
 # Or use the per-package convenience class with smart defaults baked in
 from rieszboost import RieszBooster
 booster = RieszBooster(estimand=ATE(), n_estimators=200)
-booster.fit(X)
+booster.fit(Z)
 ```
 
 Both routes must be tested and documented. The convenience class is just `RieszEstimator` with the backend defaulted.
@@ -262,9 +262,9 @@ This is the contract every implementation package must meet. Section structure f
 
 ### 3.1 sklearn-compatibility (load-bearing)
 - **[design rule]** Inherit `BaseEstimator`. `get_params`/`set_params`, `clone`, `Pipeline`, `GridSearchCV`, `cross_val_predict` must all compose. Anything that breaks composition is a regression.
-- **[design rule]** `.fit(X, y=None)` accepts ndarray (columns matched to `estimand.feature_keys`) or DataFrame (columns matched by name). `y` is a separate per-row outcome vector (sklearn convention); the orchestrator plumbs it into `m(alpha)(z, y)` and the augmentation / moment paths. Built-in estimands ignore `y`; custom Y-dependent estimands read it.
-- **[design rule]** `.predict(X)` returns shape `(n,)` array of α̂.
-- **[design rule]** `.score(X, y=None)` returns `−mean(Riesz loss)`.
+- **[design rule]** `.fit(Z, y=None)` accepts ndarray (columns matched to `estimand.feature_keys`) or DataFrame (columns matched by name). The predictor matrix is named `Z` (treatment + covariates); see notation rule 4. `y` is a separate per-row outcome vector (sklearn convention); the orchestrator plumbs it into `m(alpha)(z, y)` and the augmentation / moment paths. Built-in estimands ignore `y`; custom Y-dependent estimands read it.
+- **[design rule]** `.predict(Z)` returns shape `(n,)` array of α̂.
+- **[design rule]** `.score(Z, y=None)` returns `−mean(Riesz loss)`.
 - **[your package]** Acceptance gates in tests for `clone`, `GridSearchCV`, `cross_val_predict` (re-use `rieszreg.testing.conformance`).
 
 ### 3.2 Public-API rules
@@ -291,7 +291,7 @@ This is the contract every implementation package must meet. Section structure f
 - **[design rule]** Custom `m()` cannot be serialized in the metadata path; document as a limitation.
 
 ### 3.6 Data-flow conventions
-- **[design rule]** Honor the canonical data flow: construct estimand + loss + backend → orchestrator estimator → `.fit(X)` traces m row-wise into a LinearForm → `build_augmented` produces (a, b) coefficients → backend consumes → predictor returned → `.predict(X)` applies link → α̂.
+- **[design rule]** Honor the canonical data flow: construct estimand + loss + backend → orchestrator estimator → `.fit(Z)` traces m row-wise into a LinearForm → `build_augmented` produces (a, b) coefficients → backend consumes → predictor returned → `.predict(Z)` applies link → α̂.
 - **[design rule]** `m()` is JAX-style opaque; the tracer enforces linearity. Any non-linear op raises and signals slow-path dispatch.
 - **[design rule]** Fast path = augmentation + closed-form-friendly fitting. The slow general path (Friedman gradient boosting against arbitrary base learners for non-finite-point m) is on the roadmap; do not block on it.
 

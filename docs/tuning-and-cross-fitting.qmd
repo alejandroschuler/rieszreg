@@ -79,7 +79,7 @@ Each fold runs its own internal early-stopping split. The R loop calls `$fit()` 
 
 ## Hyperparameter search
 
-`.score(X)` returns the negative canonical squared Riesz loss — a fixed yardstick independent of the loss the estimator was trained with, in the spirit of R² for regressors. `GridSearchCV` selects the configuration with the highest score (lowest squared loss). To use a different yardstick, pass `scoring=riesz_scorer(loss=...)`.
+`.score(Z)` returns the negative canonical squared Riesz loss — a fixed yardstick independent of the loss the estimator was trained with, in the spirit of R² for regressors. `GridSearchCV` selects the configuration with the highest score (lowest squared loss). To use a different yardstick, pass `scoring=riesz_scorer(loss=...)`.
 
 ::: {.panel-tabset group="lang"}
 

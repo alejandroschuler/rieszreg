@@ -183,6 +183,6 @@ A scikit-learn-style learner (and an R6 mirror) that:
 
 - Fits $\hat\alpha$ for `ATE`, `ATT`, `TSM`, `AdditiveShift`, `LocalShift`, or [your own estimand](estimands.qmd).
 - Composes with `cross_val_predict`, `GridSearchCV`, `Pipeline`.
-- Surfaces near-positivity and outlier-extrapolation warnings via `.diagnose(X)`.
+- Surfaces near-positivity and outlier-extrapolation warnings via `.diagnose(Z)`.
 
 For a feature-by-feature comparison with similar tools (`genriesz`, `EconML`, `DoubleML`, `tlverse`), see [Related packages](related.qmd).

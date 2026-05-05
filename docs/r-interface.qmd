@@ -44,11 +44,11 @@ use_python_riesznet("/path/to/RieszReg/.venv/bin/python")
 | `XGBoostBackend(hessian_floor, gradient_only)` | `rieszboost.XGBoostBackend(...)` |
 | `SklearnBackend(base_learner_factory)` | `rieszboost.SklearnBackend(...)` |
 | `RieszBooster$new(estimand, ...)` | `rieszboost.RieszBooster(estimand, ...)` |
-| &nbsp;&nbsp;`$fit(X, y=, eval_set=, eval_y=)` | `.fit(X, y=, eval_set=, eval_y=)` |
-| &nbsp;&nbsp;`$predict(X)` | `.predict(X)` |
-| &nbsp;&nbsp;`$score(X, y=)` | `.score(X, y=)` |
-| &nbsp;&nbsp;`$riesz_loss(X, y=)` | `.riesz_loss(X, y=)` |
-| &nbsp;&nbsp;`$diagnose(X)` | `.diagnose(X)` (returns a list with `$summary` as a string) |
+| &nbsp;&nbsp;`$fit(Z, y=, eval_set=, eval_y=)` | `.fit(Z, y=, eval_set=, eval_y=)` |
+| &nbsp;&nbsp;`$predict(Z)` | `.predict(Z)` |
+| &nbsp;&nbsp;`$score(Z, y=)` | `.score(Z, y=)` |
+| &nbsp;&nbsp;`$riesz_loss(Z, y=)` | `.riesz_loss(Z, y=)` |
+| &nbsp;&nbsp;`$diagnose(Z)` | `.diagnose(Z)` (returns a list with `$summary` as a string) |
 | &nbsp;&nbsp;`$save(path)` | `.save(path)` |
 | `load_riesz_booster(path)` | `RieszBooster.load(path)` |
 | &nbsp;&nbsp;`$py` | the underlying Python object |
@@ -62,19 +62,19 @@ use_python_riesznet("/path/to/RieszReg/.venv/bin/python")
 | `Linear()` / `Polynomial(...)` | `krrr.Linear()` / `krrr.Polynomial(...)` |
 | `KernelRidgeBackend(kernel, lambda_grid, solver, ...)` | `krrr.KernelRidgeBackend(...)` |
 | `KernelRieszRegressor$new(estimand, kernel, ...)` | `krrr.KernelRieszRegressor(...)` |
-| &nbsp;&nbsp;`$fit(df, eval_set=)` | `.fit(X, eval_set=)` |
-| &nbsp;&nbsp;`$predict(df)` | `.predict(X)` |
-| &nbsp;&nbsp;`$diagnose(df)` | `.diagnose(X)` |
+| &nbsp;&nbsp;`$fit(df, eval_set=)` | `.fit(Z, eval_set=)` |
+| &nbsp;&nbsp;`$predict(df)` | `.predict(Z)` |
+| &nbsp;&nbsp;`$diagnose(df)` | `.diagnose(Z)` |
 
 ## API surface (forestriesz)
 
 | R | Python equivalent |
 |---|---|
 | `ForestRieszRegressor$new(estimand, n_estimators, max_depth, min_samples_leaf, honest, inference, ...)` | `forestriesz.ForestRieszRegressor(...)` |
-| &nbsp;&nbsp;`$fit(df)` | `.fit(X)` |
-| &nbsp;&nbsp;`$predict(df)` | `.predict(X)` |
-| &nbsp;&nbsp;`$predict_interval(df, alpha)` | `.predict_interval(X, alpha=)` (single-basis fits with `honest=TRUE, inference=TRUE`) |
-| &nbsp;&nbsp;`$diagnose(df)` | `.diagnose(X)` |
+| &nbsp;&nbsp;`$fit(df)` | `.fit(Z)` |
+| &nbsp;&nbsp;`$predict(df)` | `.predict(Z)` |
+| &nbsp;&nbsp;`$predict_interval(df, alpha)` | `.predict_interval(Z, alpha=)` (single-basis fits with `honest=TRUE, inference=TRUE`) |
+| &nbsp;&nbsp;`$diagnose(df)` | `.diagnose(Z)` |
 | `load_forest_riesz_regressor(path)` | `ForestRieszRegressor.load(path)` |
 
 The R wrapper exposes the moment-style `ForestRieszRegressor` (single-basis fits — handles ATE/ATT/TSM via the auto-resolved sieve in Python). The augmentation-style `AugForestRieszRegressor` is Python-only in v1; call it from R via reticulate when you need a fully estimand-agnostic forest fit.
@@ -84,9 +84,9 @@ The R wrapper exposes the moment-style `ForestRieszRegressor` (single-basis fits
 | R | Python equivalent |
 |---|---|
 | `RieszNet$new(estimand, hidden_sizes, activation, dropout, learning_rate, weight_decay, epochs, batch_size, device, dtype, ...)` | `riesznet.RieszNet(...)` |
-| &nbsp;&nbsp;`$fit(df, eval_set=)` | `.fit(X, eval_set=)` |
-| &nbsp;&nbsp;`$predict(df)` | `.predict(X)` |
-| &nbsp;&nbsp;`$diagnose(df)` | `.diagnose(X)` |
+| &nbsp;&nbsp;`$fit(df, eval_set=)` | `.fit(Z, eval_set=)` |
+| &nbsp;&nbsp;`$predict(df)` | `.predict(Z)` |
+| &nbsp;&nbsp;`$diagnose(df)` | `.diagnose(Z)` |
 | `load_riesz_net(path)` | `RieszNet.load(path)` |
 
 The R wrapper exposes the simple-MLP convenience surface only. Custom torch architectures (custom `nn.Module` factory, custom optimizer, custom scheduler) are Python-only — define the factory in Python at module top level and call into Python via reticulate. `TorchBackend` direct construction is also Python-only in v1.

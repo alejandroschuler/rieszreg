@@ -72,7 +72,7 @@ def _df(n: int = 40, seed: int = 0) -> pd.DataFrame:
 
 
 def test_scorer_default_matches_score_method():
-    """`riesz_scorer(loss=None)` matches `est.score(X)` (both squared yardstick)."""
+    """`riesz_scorer(loss=None)` matches `est.score(Z)` (both squared yardstick)."""
     df = _df()
     est = RieszEstimator(
         estimand=TSM(level=1), backend=_StubBackend(), loss=KLLoss(),
