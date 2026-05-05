@@ -205,7 +205,7 @@ This is the contract every implementation package must meet. Section structure f
 
 ### 1.1 Estimands
 - **[from rieszreg]** Import the abstract `Estimand` base, the concrete `FiniteEvalEstimand` subclass, and the five built-in factories (`ATE`, `ATT`, `TSM(level)`, `AdditiveShift(delta)`, `LocalShift(delta, threshold)`). All factories return `FiniteEvalEstimand`. Reference: [base.py](rieszreg/python/rieszreg/estimands/base.py). `StochasticIntervention` previously appeared here; it is currently stubbed (raises `NotImplementedError`) and will be reintroduced.
-- **[from rieszreg]** Support custom estimands via user-supplied `m(alpha)(z, y) -> LinearForm` wrapped in a `FiniteEvalEstimand`. Do not bypass the tracer; linearity violations must raise. The per-row outcome `y` flows in sklearn-style: separate from `X` everywhere. `m`'s inner closure declares `def inner(z, y=None)`; built-ins ignore the second arg.
+- **[from rieszreg]** Support custom estimands via user-supplied `m(alpha)(z, y) -> LinearForm` wrapped in a `FiniteEvalEstimand`. Do not bypass the tracer; linearity violations must raise. The per-row outcome `y` flows in sklearn-style: separate from `Z` everywhere. `m`'s inner closure declares `def inner(z, y=None)`; built-ins ignore the second arg.
 - **[from rieszreg]** `trace()`, `build_augmented()`, and `RieszEstimator.fit()` accept only `FiniteEvalEstimand`. The base `Estimand` class is reserved for future subclasses outside the finite-evaluation algebra.
 - **[from rieszreg]** Honor the partial-parameter distinction (ATT and LocalShift fit partial representers; full ATT/LASE require delta-method downstream). Document this in any examples.
 - **[design rule]** If a new estimand factory belongs in the family at large, contribute it back to `rieszreg.estimands`, not to your package. A learner package never owns an `Estimand` factory.
@@ -218,7 +218,7 @@ This is the contract every implementation package must meet. Section structure f
 ### 1.3 Identification / debiasing
 - **[from rieszreg]** `LinearForm` tracer ([tracer.py](rieszboost/python/rieszboost/tracer.py)) and `build_augmented` / `AugmentedDataset` ([augmentation.py](rieszboost/python/rieszboost/augmentation.py)) are inherited. Do not reimplement.
 - **[design rule]** Sample-splitting and cross-fitting use sklearn's `cross_val_predict`. Do not introduce a bespoke `crossfit()` function.
-- **[design rule]** `score(X)` returns `−mean(per-row Riesz loss)` (sklearn "higher is better").
+- **[design rule]** `score(Z)` returns `−mean(per-row Riesz loss)` (sklearn "higher is better").
 
 ### 1.4 Diagnostics
 - **[from rieszreg]** Inherit the base `Diagnostics` dataclass and the `diagnose(...)` function. Reference: [diagnostics.py](rieszboost/python/rieszboost/diagnostics.py).
@@ -300,9 +300,9 @@ This is the contract every implementation package must meet. Section structure f
 ## 4. R / Python parity
 
 - **[design rule]** Python is primary; R is a thin reticulate wrapper.
-- **[design rule]** R6 class API: `<Pkg>Estimator$new(...)$fit(X, y)$predict(X)$score(X)$diagnose(X)`. NOT functional `fit_riesz()` shims. `X` is a feature data.frame; `y` is a separate numeric outcome vector (sklearn convention).
+- **[design rule]** R6 class API: `<Pkg>Estimator$new(...)$fit(Z, y)$predict(Z)$score(Z)$diagnose(Z)`. NOT functional `fit_riesz()` shims. `Z` is a predictor data.frame (treatment + covariates, in `feature_keys` order); `y` is a separate numeric outcome vector (sklearn convention).
 - **[from rieszreg]** Subclass `rieszreg::RieszEstimatorR6`. Bake your backend / defaults via `initialize()`. Goal: ~50 lines per package R wrapper.
-- **[from rieszreg]** Inherit `df_to_py()` to convert the X data.frame to a pandas DataFrame.
+- **[from rieszreg]** Inherit `df_to_py()` to convert the predictor data.frame `Z` to a pandas DataFrame.
 - **[from rieszreg]** Estimand and loss factories are exposed from rieszreg's R package; expose your backend-specific factories on top.
 - **[design rule]** No R-side custom `m()`. The `LinearForm` tracer is Python-only by design. R users needing custom functionals write `m()` in Python and call from R via reticulate.
 - **[your package]** Add `r/<pkg>/tests/testthat/test-parity.R` confirming bitwise-identical predictions Python ↔ R.
