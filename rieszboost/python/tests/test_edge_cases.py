@@ -124,6 +124,6 @@ def test_predict_on_unseen_extreme_x():
 def test_ndarray_input_with_wrong_n_features_errors():
     df = _df(n=100, seed=6)
     booster = RieszBooster(estimand=ATE(), n_estimators=5).fit(df)
-    bad_X = np.random.default_rng(0).uniform(size=(10, 5))  # 5 cols, expected 2
+    bad_Z = np.random.default_rng(0).uniform(size=(10, 5))  # 5 cols, expected 2
     with pytest.raises(ValueError, match="feature columns"):
-        booster.predict(bad_X)
+        booster.predict(bad_Z)

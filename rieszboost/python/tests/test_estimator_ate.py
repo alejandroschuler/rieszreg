@@ -58,14 +58,14 @@ def test_ate_recovers_inverse_propensity_dataframe():
 def test_ate_recovers_inverse_propensity_ndarray():
     n = 4000
     x, a, pi = _simulate(n, seed=42)
-    X = np.column_stack([a, x]).astype(float)
+    Z = np.column_stack([a, x]).astype(float)
 
     booster = RieszBooster(
         estimand=rieszboost.ATE(),
         n_estimators=300, learning_rate=0.05, max_depth=4, random_state=0,
-    ).fit(X)
+    ).fit(Z)
 
-    alpha_hat = booster.predict(X)
+    alpha_hat = booster.predict(Z)
     alpha_true = a / pi - (1 - a) / (1 - pi)
     rmse = float(np.sqrt(np.mean((alpha_hat - alpha_true) ** 2)))
     assert rmse < 1.0
