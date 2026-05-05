@@ -28,7 +28,7 @@ class RieszNet(RieszEstimator):
     Parameters
     ----------
     estimand : rieszreg.Estimand
-        Carries ``feature_keys``, ``extra_keys``, and the ``m(alpha)(z)`` operator.
+        Carries ``feature_keys`` and the ``m(alpha)(z, y)`` operator.
     hidden_sizes : tuple of int, default (64, 64)
         MLP hidden-layer widths. Empty tuple gives a linear model.
     activation : {"relu", "tanh", "gelu", "elu", "silu", "leaky_relu"}, default "relu"
