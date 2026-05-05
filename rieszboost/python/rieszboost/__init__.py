@@ -5,8 +5,8 @@ estimand / loss / backend objects baked in at construction.
 
     from rieszboost import RieszBooster, ATE, SquaredLoss
     booster = RieszBooster(estimand=ATE(), n_estimators=200, learning_rate=0.05)
-    booster.fit(X)
-    alpha_hat = booster.predict(X)
+    booster.fit(Z)
+    alpha_hat = booster.predict(Z)
 """
 
 from .augmentation import AugmentedDataset, build_augmented
