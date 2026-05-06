@@ -126,6 +126,7 @@ def best_split_at(
     fast_loss_kind: int | None = None,
     bounded_lo: float = float("nan"),
     bounded_hi: float = float("nan"),
+    user_cfunc_addr: int = 0,
 ):
     """Best (gain, feature_index, split_payload) across all considered features.
 
@@ -159,6 +160,7 @@ def best_split_at(
                 loss_kind=fast_loss_kind,
                 bounded_lo=bounded_lo, bounded_hi=bounded_hi,
                 min_orig_leaf=min_orig_leaf,
+                user_cfunc_addr=user_cfunc_addr,
             )
         else:
             cand = best_split_continuous(
@@ -177,16 +179,19 @@ def best_split_at(
 
 def _resolve_fast_loss_args(
     splitter: str, loss
-) -> tuple[int | None, float, float]:
+) -> tuple[int | None, float, float, int]:
     """Decide whether the Cython splitter is usable for this fit.
 
-    Returns ``(loss_kind, bounded_lo, bounded_hi)``. ``loss_kind`` is
-    ``None`` when the user explicitly chose ``splitter='python'`` or
-    when ``loss`` is not one of the four built-ins (which triggers a
-    one-time UserWarning).
+    Returns ``(loss_kind, bounded_lo, bounded_hi, user_cfunc_addr)``.
+    ``loss_kind`` is ``None`` when the user explicitly chose
+    ``splitter='python'`` or when ``loss`` is neither a built-in nor
+    a user-registered fast solver (which triggers a one-time
+    UserWarning). For built-ins ``user_cfunc_addr`` is 0; for
+    user-registered losses ``loss_kind`` is ``LOSS_USER_CFUNC`` and
+    ``user_cfunc_addr`` carries the registered C-callable address.
     """
     if splitter == "python":
-        return None, float("nan"), float("nan")
+        return None, float("nan"), float("nan"), 0
     if splitter != "exact":
         raise ValueError(
             f"splitter={splitter!r}; expected 'exact' or 'python'."
@@ -194,9 +199,9 @@ def _resolve_fast_loss_args(
     resolved = loss_kind_for(loss)
     if resolved is None:
         warn_python_fallback(loss)
-        return None, float("nan"), float("nan")
-    kind, lo, hi = resolved
-    return int(kind), float(lo), float(hi)
+        return None, float("nan"), float("nan"), 0
+    kind, lo, hi, user_addr = resolved
+    return int(kind), float(lo), float(hi), int(user_addr)
 
 
 def _split_node_into_children(
@@ -307,7 +312,7 @@ def grow_depthwise(
         rows. Combined with ``min_orig_leaf`` via ``max(...)``.
     """
     leaf_loss, alpha_at_opt = make_leaf_solvers(loss)
-    fast_loss_kind, bounded_lo, bounded_hi = _resolve_fast_loss_args(splitter, loss)
+    fast_loss_kind, bounded_lo, bounded_hi, user_cfunc_addr = _resolve_fast_loss_args(splitter, loss)
 
     valid_features = D_v = C_v = None
     if aug_valid is not None:
@@ -353,6 +358,7 @@ def grow_depthwise(
             feature_indices=feat_idx,
             fast_loss_kind=fast_loss_kind,
             bounded_lo=bounded_lo, bounded_hi=bounded_hi,
+            user_cfunc_addr=user_cfunc_addr,
         )
         if best is None:
             return
@@ -416,7 +422,7 @@ def grow_leafwise(
     sklearn-parity hyperparameters: see :func:`grow_depthwise`.
     """
     leaf_loss, alpha_at_opt = make_leaf_solvers(loss)
-    fast_loss_kind, bounded_lo, bounded_hi = _resolve_fast_loss_args(splitter, loss)
+    fast_loss_kind, bounded_lo, bounded_hi, user_cfunc_addr = _resolve_fast_loss_args(splitter, loss)
     valid_features = D_v = C_v = None
     if aug_valid is not None:
         valid_features, D_v, C_v = aug_valid
@@ -454,6 +460,7 @@ def grow_leafwise(
             feature_indices=feat_idx,
             fast_loss_kind=fast_loss_kind,
             bounded_lo=bounded_lo, bounded_hi=bounded_hi,
+            user_cfunc_addr=user_cfunc_addr,
         )
         if best is None:
             return

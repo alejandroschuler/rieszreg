@@ -70,8 +70,9 @@ alpha_hat = est.predict(df)
 - **Diagnostics**: `TreeDiagnostics` extends `rieszreg.Diagnostics` with `n_leaves`, `max_depth_actual`, `mean_leaf_size`, `feature_importances` (per-feature normalised split-gain).
 - **R wrapper**: R6 mirror via reticulate.
 - **Cython prediction**: `predict` walks a flat-array tree (built once per fit) at C speed. The `Node` tree continues to back diagnostics, pruning, and serialization.
-- **Cython continuous-split sweep** (`splitter="exact"`, default): per-feature threshold sweep runs in a `cdef` inner loop over per-built-in leaf-loss kernels. `splitter="python"` keeps the original pure-Python path for debugging and for losses outside the four built-ins.
-- **91 Python tests** covering decoupling, Backend Protocol, growth policies, pruning, early stopping, categorical, sklearn integration, save/load round-trip per estimand, KL on TSM, BoundedSquared clipping, leaf-self-parity, sklearn-style hyperparameter parity, flat-tree predict parity, Cython↔Python splitter parity.
+- **Cython continuous-split sweep** (`splitter="exact"`, default): per-feature threshold sweep runs in a `cdef` inner loop over per-built-in leaf-loss kernels. `splitter="python"` keeps the original pure-Python path for debugging.
+- **Custom-loss extension hook**: `riesztree.fast.register_fast_leaf_solver(LossClass, leaf_loss_cfunc, alpha_at_opt)` plugs a Numba `@cfunc` (signature `float64(float64, float64)`) into the Cython splitter for any user `LossSpec` subclass.
+- **96 Python tests** covering decoupling, Backend Protocol, growth policies, pruning, early stopping, categorical, sklearn integration, save/load round-trip per estimand, KL on TSM, BoundedSquared clipping, leaf-self-parity, sklearn-style hyperparameter parity, flat-tree predict parity, Cython↔Python splitter parity, user-loss registration.
 
 ## Hyperparameters
 

@@ -145,6 +145,13 @@ def make_leaf_solvers(loss: Loss):
     """Return ``(loss_at_optimum, alpha_at_optimum)`` callables for ``loss``.
 
     Both signatures: ``f(D: float, C: float) -> float``.
+
+    Built-in dispatch covers ``SquaredLoss``, ``KLLoss``,
+    ``BernoulliLoss``, ``BoundedSquaredLoss``. Custom losses can plug
+    in via :func:`riesztree.fast.register_fast_leaf_solver`, which
+    contributes both a Cython-callable leaf-loss kernel (used by
+    ``splitter='exact'``) and a Python ``alpha_at_opt`` callable
+    (consumed here for the leaf-payload computation).
     """
     if isinstance(loss, SquaredLoss):
         return _leaf_loss_squared, _leaf_alpha_squared
@@ -158,11 +165,38 @@ def make_leaf_solvers(loss: Loss):
         loss_fn = lambda D, C, _lo=lo, _hi=hi: _leaf_loss_bounded_squared(D, C, _lo, _hi)
         alpha_fn = lambda D, C, _lo=lo, _hi=hi: _leaf_alpha_bounded_squared(D, C, _lo, _hi)
         return loss_fn, alpha_fn
+
+    # User-registered loss (Phase 5 hook). The user supplied a
+    # Cython-callable leaf_loss and a Python alpha_at_opt; we wrap the
+    # leaf_loss into a Python callable (cfuncs are themselves callable
+    # from Python) so it composes with the existing Python paths
+    # (pruning, _make_leaf, holdout-loss).
+    from .fast._splitter import _USER_LOSS_REGISTRY, _lookup_user_kernel
+    user_entry = _lookup_user_kernel(loss)
+    if user_entry is not None:
+        addr, alpha_at_opt = user_entry
+        # Find the cfunc object whose address matches `addr`. The user
+        # passed it to register_fast_leaf_solver; we keep a side mapping
+        # because Python can't dereference an integer back to a Python
+        # function. ``_USER_CFUNC_OBJECTS`` is populated by
+        # register_fast_leaf_solver below.
+        from .fast._splitter import _USER_CFUNC_OBJECTS
+        cfunc_obj = _USER_CFUNC_OBJECTS.get(addr)
+        if cfunc_obj is None:
+            raise RuntimeError(
+                "Internal: user loss has a registered C-callable address "
+                "but no associated Python wrapper. Re-register via "
+                "register_fast_leaf_solver."
+            )
+        return cfunc_obj, alpha_at_opt
+
     raise NotImplementedError(
         f"riesztree has no analytic leaf solver for loss type "
         f"{type(loss).__name__}. Built-in support: SquaredLoss, KLLoss, "
         "BernoulliLoss, BoundedSquaredLoss. To use a custom Loss subclass, "
-        "extend riesztree.splitter.make_leaf_solvers."
+        "either extend riesztree.splitter.make_leaf_solvers or register "
+        "a Cython-callable kernel via "
+        "riesztree.fast.register_fast_leaf_solver(MyLoss, leaf_loss_cfunc, alpha_at_opt)."
     )
 
 
