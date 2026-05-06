@@ -228,6 +228,7 @@ def best_split_at(
 
 
 _VALID_SPLITTERS = ("exact", "hist", "random", "python")
+_PYTHON_SPLITTER_WARNED = False
 
 
 def _resolve_fast_loss_args(
@@ -244,6 +245,26 @@ def _resolve_fast_loss_args(
     ``user_cfunc_addr`` carries the registered C-callable address.
     """
     if splitter == "python":
+        # Phase 10: deprecate explicit ``splitter='python'`` selection.
+        # The Cython exact / hist / random paths are byte-equivalent (up
+        # to floating-point) and significantly faster. This path is
+        # scheduled for removal in v0.0.3.
+        global _PYTHON_SPLITTER_WARNED
+        if not _PYTHON_SPLITTER_WARNED:
+            import warnings as _warnings
+            _warnings.warn(
+                "splitter='python' is deprecated and will be removed in "
+                "riesztree v0.0.3. Use splitter='exact' (the default) or "
+                "splitter='hist' for the Cython-backed paths; both are "
+                "byte-equivalent or numerically very close to the legacy "
+                "Python splitter on the four built-in losses. For custom "
+                "LossSpec subclasses, register a Cython kernel via "
+                "riesztree.fast.register_fast_leaf_solver(...) instead of "
+                "relying on the python fallback.",
+                DeprecationWarning,
+                stacklevel=4,
+            )
+            _PYTHON_SPLITTER_WARNED = True
         return None, float("nan"), float("nan"), 0
     if splitter not in ("exact", "hist", "random"):
         raise ValueError(
