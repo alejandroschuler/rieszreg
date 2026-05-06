@@ -31,6 +31,8 @@ On macOS, `xgboost` requires `libomp`:
 brew install libomp
 ```
 
+If you also use `riesznet` in the same Python process, the macOS pip wheels of `xgboost` and `torch` each bundle their own `libomp.dylib` and the two OpenMP runtimes can deadlock during a fit. Either install both via conda-forge or set `OMP_NUM_THREADS=1` before importing — see the [troubleshooting page](https://rieszreg.github.io/rieszreg/troubleshooting.html) in the user guide.
+
 ## Quickstart (Python) — ATE
 
 ```python
