@@ -11,9 +11,10 @@ This package depends on `rieszreg` for shared abstractions (`Estimand`, `LossSpe
 - `riesztree.fast` — compiled extensions:
   - `FlatTree` + Cython `predict_alpha` (`fast/_tree_c.pyx`).
   - `_loss_kernels.pyx` — built-in leaf-loss + alpha-at-opt kernels for the four Bregman losses.
-  - `_splitter_c.pyx` — Cython continuous-feature best-split sweep, used when `splitter="exact"` (the new default) is set on `RieszTreeRegressor`.
-  - `_splitter.py` — Python facade that maps a `LossSpec` to a loss-kind integer + bounded clip parameters; falls back to the pure-Python splitter for losses outside the four built-ins (with a one-time `UserWarning`).
-  Subsequent phases will add the histogram splitter (`_splitter_hist.pyx`) and Numba `cfunc` registration hook here.
+  - `_splitter_c.pyx` — Cython continuous-feature best-split sweep, used when `splitter="exact"` (the default). Includes the random-threshold variant for `splitter="random"`.
+  - `_splitter_hist.pyx` — Cython histogram splitter, used when `splitter="hist"`. Per-leaf histogram accumulation + sweep over bin boundaries; quantile pre-binning via `_binner.py`.
+  - `_binner.py` — quantile `BinMapper` for the histogram splitter (sklearn HGB-style; default 255 bins).
+  - `_splitter.py` — Python facade. Maps a `LossSpec` to a loss-kind integer + bounded clip parameters; dispatches to exact / hist / random Cython kernels; provides `register_fast_leaf_solver(LossClass, leaf_loss_cfunc, alpha_at_opt)` for users to plug a Numba `@cfunc` into the splitter for any custom `LossSpec`.
 - R6 wrapper subclassing `rieszreg::RieszEstimatorR6`.
 
 ## Living-doc rule (README + meta-project docs)
@@ -38,7 +39,8 @@ R-side mirrors this: R6 class `RieszTreeRegressor$new(estimand=, max_depth=, ...
 - `python/riesztree/` — `splitter.py` (per-loss leaf-loss + best-split sweep), `tree.py` (Node + traversal + serialisation), `grow.py` (depthwise + leafwise), `pruning.py` (cost-complexity), `backend.py` (`RieszTreeBackend`), `predictor.py` (`RieszTreePredictor` + loader registration), `estimator.py` (`RieszTreeRegressor` convenience subclass), `diagnostics.py` (`TreeDiagnostics`), `fast/` (`FlatTree` + Cython `predict` extension).
 - `r/riesztree/` — R6 wrapper via reticulate. `RieszTreeRegressor` subclasses `rieszreg::RieszEstimatorR6`.
 - `examples/` — runnable demonstrations of each built-in estimand (ATE, ATT, TSM, AdditiveShift, LocalShift).
-- `python/tests/` — 38 tests covering decoupling, Backend Protocol, growth policies, pruning, early stopping, categorical, sklearn integration, save/load round-trip per estimand, KL on TSM, BoundedSquared clipping, leaf-self-parity.
+- `python/tests/` — 122 tests covering decoupling, Backend Protocol, growth policies, pruning, early stopping, categorical, sklearn integration, save/load round-trip per estimand, KL on TSM, BoundedSquared clipping, leaf-self-parity, sklearn-style hyperparameter parity, flat-tree predict parity, Cython↔Python splitter parity, user-loss registration, histogram splitter parity, random splitter, deprecation of the python splitter.
+- `python/benchmarks/` — `bench_fit.py` (locked perf grid; baseline in `BENCH_BASELINE.md`) and `bench_compare.py` (sklearn DTR / HGB, LightGBM, XGBoost comparison).
 
 ## Run tests
 
