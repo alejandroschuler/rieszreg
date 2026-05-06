@@ -20,6 +20,7 @@ from typing import Sequence
 import numpy as np
 
 from .fast._splitter import (
+    best_split_at_hist,
     best_split_continuous_fast,
     loss_kind_for,
     warn_python_fallback,
@@ -127,54 +128,96 @@ def best_split_at(
     bounded_lo: float = float("nan"),
     bounded_hi: float = float("nan"),
     user_cfunc_addr: int = 0,
+    hist_payload: dict | None = None,
 ):
     """Best (gain, feature_index, split_payload) across all considered features.
 
     If ``feature_indices`` is given, only those columns are evaluated
     (sklearn-style ``max_features`` subsampling, drawn by the caller).
 
-    If ``fast_loss_kind`` is not ``None``, continuous-feature splits use
-    the Cython sweep in :mod:`riesztree.fast._splitter_c`; categorical
-    splits still go through the Python path (Phase 8 will Cythonize
-    those). When ``fast_loss_kind`` is ``None`` the entire sweep is
-    pure Python — used for ``splitter='python'`` and for losses outside
-    the four built-ins.
+    Three split-finding paths:
+
+    - ``hist_payload`` is non-None → Cython histogram sweep on
+      pre-binned continuous features. The kernel returns the global
+      best across all candidate continuous features; categorical
+      splits still go through the Python path and the higher-gain
+      result wins.
+    - Otherwise, ``fast_loss_kind`` non-None → Cython exact sweep
+      per continuous feature.
+    - Otherwise → pure-Python splitter (categoricals always; also
+      continuous when ``splitter='python'`` or for losses outside
+      the four built-ins).
     """
     cat_set = set(categorical_features) if categorical_features else set()
-    best = None
-    best_feat = None
-    cols = (
-        range(features.shape[1])
+    cols_all = (
+        list(range(features.shape[1]))
         if feature_indices is None
         else [int(j) for j in feature_indices]
     )
-    for j in cols:
-        if j in cat_set:
-            cand = best_split_categorical(
-                features[:, j], D, C, idx, leaf_loss, alpha_at_opt,
-                min_orig_leaf=min_orig_leaf,
-            )
-        elif fast_loss_kind is not None:
-            cand = best_split_continuous_fast(
-                features[:, j], D, C, idx,
-                loss_kind=fast_loss_kind,
-                bounded_lo=bounded_lo, bounded_hi=bounded_hi,
-                min_orig_leaf=min_orig_leaf,
-                user_cfunc_addr=user_cfunc_addr,
-            )
-        else:
-            cand = best_split_continuous(
-                features[:, j], D, C, idx, leaf_loss,
-                min_orig_leaf=min_orig_leaf,
-            )
+    cont_cols = [j for j in cols_all if j not in cat_set]
+    cat_cols = [j for j in cols_all if j in cat_set]
+
+    best = None
+    best_feat = None
+
+    # Continuous features.
+    if hist_payload is not None and cont_cols:
+        # Histogram path: one Cython call returns the best across all
+        # candidate continuous features. Returns
+        # (best_feat, gain, threshold, left_idx, right_idx) or None.
+        result = best_split_at_hist(
+            hist_payload["X_binned"], D, C, idx,
+            bin_thresholds=hist_payload["bin_thresholds"],
+            n_bins_per_feature=hist_payload["n_bins_per_feature"],
+            candidate_features=np.asarray(cont_cols, dtype=np.int32),
+            loss_kind=fast_loss_kind,
+            bounded_lo=bounded_lo, bounded_hi=bounded_hi,
+            min_orig_leaf=min_orig_leaf,
+            max_bins=hist_payload["max_bins"],
+        )
+        if result is not None:
+            feat_h, gain_h, thr_h, l_idx, r_idx = result
+            best = (gain_h, thr_h, l_idx, r_idx)
+            best_feat = feat_h
+    elif cont_cols:
+        for j in cont_cols:
+            if fast_loss_kind is not None:
+                cand = best_split_continuous_fast(
+                    features[:, j], D, C, idx,
+                    loss_kind=fast_loss_kind,
+                    bounded_lo=bounded_lo, bounded_hi=bounded_hi,
+                    min_orig_leaf=min_orig_leaf,
+                    user_cfunc_addr=user_cfunc_addr,
+                )
+            else:
+                cand = best_split_continuous(
+                    features[:, j], D, C, idx, leaf_loss,
+                    min_orig_leaf=min_orig_leaf,
+                )
+            if cand is None:
+                continue
+            if best is None or cand[0] > best[0]:
+                best = cand
+                best_feat = j
+
+    # Categorical features always go through the Python path.
+    for j in cat_cols:
+        cand = best_split_categorical(
+            features[:, j], D, C, idx, leaf_loss, alpha_at_opt,
+            min_orig_leaf=min_orig_leaf,
+        )
         if cand is None:
             continue
         if best is None or cand[0] > best[0]:
             best = cand
             best_feat = j
+
     if best is None:
         return None
     return best_feat, best
+
+
+_VALID_SPLITTERS = ("exact", "hist", "python")
 
 
 def _resolve_fast_loss_args(
@@ -192,9 +235,9 @@ def _resolve_fast_loss_args(
     """
     if splitter == "python":
         return None, float("nan"), float("nan"), 0
-    if splitter != "exact":
+    if splitter not in ("exact", "hist"):
         raise ValueError(
-            f"splitter={splitter!r}; expected 'exact' or 'python'."
+            f"splitter={splitter!r}; expected one of {_VALID_SPLITTERS}."
         )
     resolved = loss_kind_for(loss)
     if resolved is None:
@@ -287,6 +330,7 @@ def grow_depthwise(
     min_weight_fraction_leaf: float = 0.0,
     random_state: int = 0,
     splitter: str = "exact",
+    hist_payload: dict | None = None,
 ) -> Node:
     """Greedy recursive depth-first growth.
 
@@ -359,6 +403,7 @@ def grow_depthwise(
             fast_loss_kind=fast_loss_kind,
             bounded_lo=bounded_lo, bounded_hi=bounded_hi,
             user_cfunc_addr=user_cfunc_addr,
+            hist_payload=hist_payload,
         )
         if best is None:
             return
@@ -412,6 +457,7 @@ def grow_leafwise(
     min_weight_fraction_leaf: float = 0.0,
     random_state: int = 0,
     splitter: str = "exact",
+    hist_payload: dict | None = None,
 ) -> Node:
     """Best-first growth: at each step split the leaf whose best candidate
     split has the highest gain, anywhere in the tree.
@@ -461,6 +507,7 @@ def grow_leafwise(
             fast_loss_kind=fast_loss_kind,
             bounded_lo=bounded_lo, bounded_hi=bounded_hi,
             user_cfunc_addr=user_cfunc_addr,
+            hist_payload=hist_payload,
         )
         if best is None:
             return

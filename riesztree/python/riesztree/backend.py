@@ -115,6 +115,7 @@ class RieszTreeBackend:
     categorical_features: tuple[int, ...] = field(default_factory=tuple)
     random_state: int = 0
     splitter: str = "exact"
+    max_bins: int = 255      # used when splitter == "hist"
 
     def fit_augmented(
         self,
@@ -148,6 +149,25 @@ class RieszTreeBackend:
 
         cat_feats = tuple(int(i) for i in self.categorical_features)
 
+        # Histogram pre-binning (one-shot at fit start). Categorical
+        # columns are excluded from binning — they go through the
+        # Python categorical splitter regardless.
+        hist_payload = None
+        if self.splitter == "hist":
+            from .fast._binner import fit_bin_mapper, transform
+            mapper = fit_bin_mapper(
+                aug_train.features,
+                max_bins=self.max_bins,
+                random_state=self.random_state,
+            )
+            X_binned = transform(aug_train.features, mapper)
+            hist_payload = {
+                "X_binned": X_binned,
+                "bin_thresholds": mapper.bin_thresholds,
+                "n_bins_per_feature": mapper.n_bins,
+                "max_bins": int(self.max_bins),
+            }
+
         if self.growth_policy == "depthwise":
             tree = grow_depthwise(
                 features=aug_train.features,
@@ -165,6 +185,7 @@ class RieszTreeBackend:
                 min_weight_fraction_leaf=self.min_weight_fraction_leaf,
                 random_state=self.random_state,
                 splitter=self.splitter,
+                hist_payload=hist_payload,
             )
         else:
             tree = grow_leafwise(
@@ -184,6 +205,7 @@ class RieszTreeBackend:
                 min_weight_fraction_leaf=self.min_weight_fraction_leaf,
                 random_state=self.random_state,
                 splitter=self.splitter,
+                hist_payload=hist_payload,
             )
 
         if self.ccp_alpha > 0:

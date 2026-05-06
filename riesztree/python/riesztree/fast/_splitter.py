@@ -186,6 +186,39 @@ def loss_kind_for(
     return None
 
 
+def best_split_at_hist(
+    X_binned: np.ndarray,
+    D: np.ndarray,
+    C: np.ndarray,
+    idx: np.ndarray,
+    *,
+    bin_thresholds: list,
+    n_bins_per_feature: np.ndarray,
+    candidate_features: np.ndarray,
+    loss_kind: int,
+    bounded_lo: float,
+    bounded_hi: float,
+    min_orig_leaf: int,
+    max_bins: int,
+):
+    """Cython histogram-based best-split sweep across all candidate features.
+
+    Returns ``(best_feat, gain, threshold, left_idx, right_idx)`` or
+    ``None`` — same shape as the per-feature exact splitter, except
+    that ``best_feat`` is the global winner across the candidate
+    features (the per-feature dispatch loop happens inside the Cython
+    kernel for less overhead).
+    """
+    from . import _splitter_hist  # type: ignore[attr-defined]
+
+    return _splitter_hist.best_split_continuous_hist(
+        X_binned, D, C, idx,
+        n_bins_per_feature, candidate_features, bin_thresholds,
+        int(loss_kind), float(bounded_lo), float(bounded_hi),
+        int(min_orig_leaf), int(max_bins),
+    )
+
+
 def best_split_continuous_fast(
     feature_col: np.ndarray,
     D: np.ndarray,
