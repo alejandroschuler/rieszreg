@@ -1,0 +1,327 @@
+"""Tree growth: depthwise (default) and leafwise (best-first) strategies.
+
+Both strategies share the same per-node split-finding routine
+(``best_split_at``); they differ only in the order in which leaves are
+considered for splitting.
+
+Validation early stopping: when ``early_stopping_rounds`` is set, growth
+tracks the held-out augmented-loss of the partial tree at each split. If
+the held-out loss has not strictly improved for that many consecutive
+splits, growth halts (depthwise) or pops no further leaves (leafwise).
+"""
+
+from __future__ import annotations
+
+import heapq
+import itertools
+from typing import Sequence
+
+import numpy as np
+
+from .splitter import (
+    best_split_categorical,
+    best_split_continuous,
+    make_leaf_solvers,
+)
+from .tree import Node
+
+
+def _make_leaf(
+    D: np.ndarray,
+    C: np.ndarray,
+    idx: np.ndarray,
+    leaf_loss,
+    alpha_at_opt,
+    *,
+    depth: int,
+) -> Node:
+    D_sum = float(D[idx].sum())
+    C_sum = float(C[idx].sum())
+    n_orig = int((D[idx] > 0).sum())
+    return Node(
+        is_leaf=True,
+        D=D_sum,
+        C=C_sum,
+        n_orig=n_orig,
+        n_aug=int(idx.size),
+        depth=depth,
+        alpha=alpha_at_opt(D_sum, C_sum),
+        leaf_loss_value=leaf_loss(D_sum, C_sum),
+    )
+
+
+def best_split_at(
+    features: np.ndarray,
+    D: np.ndarray,
+    C: np.ndarray,
+    idx: np.ndarray,
+    *,
+    leaf_loss,
+    alpha_at_opt,
+    min_orig_leaf: int,
+    categorical_features: Sequence[int],
+):
+    """Best (gain, feature_index, split_payload) across all features."""
+    cat_set = set(categorical_features) if categorical_features else set()
+    best = None
+    best_feat = None
+    for j in range(features.shape[1]):
+        if j in cat_set:
+            cand = best_split_categorical(
+                features[:, j], D, C, idx, leaf_loss, alpha_at_opt,
+                min_orig_leaf=min_orig_leaf,
+            )
+        else:
+            cand = best_split_continuous(
+                features[:, j], D, C, idx, leaf_loss,
+                min_orig_leaf=min_orig_leaf,
+            )
+        if cand is None:
+            continue
+        if best is None or cand[0] > best[0]:
+            best = cand
+            best_feat = j
+    if best is None:
+        return None
+    return best_feat, best
+
+
+def _split_node_into_children(
+    node: Node,
+    best_feat: int,
+    best_split,
+    *,
+    is_categorical: bool,
+    features: np.ndarray,
+    D: np.ndarray,
+    C: np.ndarray,
+    leaf_loss,
+    alpha_at_opt,
+):
+    """Mutate ``node`` from leaf to internal; return (left_idx, right_idx)."""
+    gain = float(best_split[0])
+    if is_categorical:
+        _, left_levels, left_idx, right_idx = best_split
+        node.split_kind = "categorical"
+        node.split_left_levels = left_levels
+        node.split_threshold = None
+    else:
+        _, threshold, left_idx, right_idx = best_split
+        node.split_kind = "continuous"
+        node.split_threshold = threshold
+        node.split_left_levels = None
+    node.is_leaf = False
+    node.split_feature = best_feat
+    node.split_gain = gain
+    node.left = _make_leaf(
+        D, C, left_idx, leaf_loss, alpha_at_opt, depth=node.depth + 1
+    )
+    node.right = _make_leaf(
+        D, C, right_idx, leaf_loss, alpha_at_opt, depth=node.depth + 1
+    )
+    return left_idx, right_idx
+
+
+# ---------------------------------------------------------------------------
+# Holdout-loss bookkeeping for early stopping.
+
+def _holdout_loss(
+    root: Node,
+    aug_valid_features: np.ndarray | None,
+    aug_valid_D: np.ndarray | None,
+    aug_valid_C: np.ndarray | None,
+    loss,
+) -> float:
+    if aug_valid_features is None or len(aug_valid_features) == 0:
+        return float("nan")
+    from .tree import predict_array
+    alpha_hat = predict_array(root, aug_valid_features)
+    # Augmented α-space loss, summed and normalised by n_orig in valid set.
+    n_orig_valid = float((aug_valid_D > 0).sum())
+    if n_orig_valid <= 0:
+        return float("nan")
+    return float(
+        np.sum(
+            aug_valid_D * loss.tilde_potential(alpha_hat)
+            + aug_valid_C * loss.potential_deriv(alpha_hat)
+        )
+        / n_orig_valid
+    )
+
+
+# ---------------------------------------------------------------------------
+# Depthwise (recursive) growth.
+
+def grow_depthwise(
+    features: np.ndarray,
+    D: np.ndarray,
+    C: np.ndarray,
+    loss,
+    *,
+    max_depth: int,
+    min_samples_split: int,
+    min_orig_leaf: int,
+    categorical_features: Sequence[int] = (),
+    aug_valid: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
+    early_stopping_rounds: int | None = None,
+) -> Node:
+    """Greedy recursive depth-first growth.
+
+    Early stopping (if ``early_stopping_rounds`` is set) is approximate
+    here: we stop *expanding any further nodes* once the held-out loss
+    fails to strictly improve for that many consecutive accepted splits,
+    counting splits in DFS order. For most grids this is the same trees
+    leafwise growth would produce, but it interacts oddly with
+    depth-first ordering. Use ``growth_policy="leafwise"`` for textbook
+    early stopping behaviour.
+    """
+    leaf_loss, alpha_at_opt = make_leaf_solvers(loss)
+
+    valid_features = D_v = C_v = None
+    if aug_valid is not None:
+        valid_features, D_v, C_v = aug_valid
+
+    root = _make_leaf(
+        D, C, np.arange(features.shape[0]), leaf_loss, alpha_at_opt, depth=0
+    )
+
+    # Mutable counter passed by closure via list to support early-stop.
+    es_state = {
+        "best_loss": _holdout_loss(root, valid_features, D_v, C_v, loss),
+        "rounds_since_improve": 0,
+        "stop": False,
+    }
+
+    def _recurse(node: Node, idx: np.ndarray) -> None:
+        if es_state["stop"]:
+            return
+        if node.depth >= max_depth:
+            return
+        if node.n_orig < min_samples_split:
+            return
+        best = best_split_at(
+            features, D, C, idx,
+            leaf_loss=leaf_loss, alpha_at_opt=alpha_at_opt,
+            min_orig_leaf=min_orig_leaf,
+            categorical_features=categorical_features,
+        )
+        if best is None:
+            return
+        best_feat, best_split = best
+        if best_split[0] <= 1e-12:
+            return
+        is_cat = best_feat in (set(categorical_features) if categorical_features else set())
+        left_idx, right_idx = _split_node_into_children(
+            node, best_feat, best_split,
+            is_categorical=is_cat,
+            features=features, D=D, C=C,
+            leaf_loss=leaf_loss, alpha_at_opt=alpha_at_opt,
+        )
+
+        if early_stopping_rounds is not None and valid_features is not None:
+            cur = _holdout_loss(root, valid_features, D_v, C_v, loss)
+            if cur < es_state["best_loss"] - 1e-12:
+                es_state["best_loss"] = cur
+                es_state["rounds_since_improve"] = 0
+            else:
+                es_state["rounds_since_improve"] += 1
+                if es_state["rounds_since_improve"] >= early_stopping_rounds:
+                    es_state["stop"] = True
+                    return
+
+        _recurse(node.left, left_idx)
+        _recurse(node.right, right_idx)
+
+    _recurse(root, np.arange(features.shape[0]))
+    return root
+
+
+# ---------------------------------------------------------------------------
+# Leafwise (best-first) growth.
+
+def grow_leafwise(
+    features: np.ndarray,
+    D: np.ndarray,
+    C: np.ndarray,
+    loss,
+    *,
+    max_leaves: int,
+    max_depth: int,
+    min_samples_split: int,
+    min_orig_leaf: int,
+    categorical_features: Sequence[int] = (),
+    aug_valid: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
+    early_stopping_rounds: int | None = None,
+) -> Node:
+    """Best-first growth: at each step split the leaf whose best candidate
+    split has the highest gain, anywhere in the tree.
+
+    Termination: ``max_leaves`` reached, no positive-gain split remains, or
+    early stopping fires.
+    """
+    leaf_loss, alpha_at_opt = make_leaf_solvers(loss)
+    valid_features = D_v = C_v = None
+    if aug_valid is not None:
+        valid_features, D_v, C_v = aug_valid
+
+    root = _make_leaf(
+        D, C, np.arange(features.shape[0]), leaf_loss, alpha_at_opt, depth=0
+    )
+    n_features = features.shape[1]
+
+    # Heap entries: (-gain, tiebreaker, node_id, leaf_node, idx, best_feat, best_split, is_cat).
+    counter = itertools.count()
+    heap: list = []
+
+    def _push_best_split_for_leaf(leaf: Node, idx: np.ndarray) -> None:
+        if leaf.depth >= max_depth or leaf.n_orig < min_samples_split:
+            return
+        best = best_split_at(
+            features, D, C, idx,
+            leaf_loss=leaf_loss, alpha_at_opt=alpha_at_opt,
+            min_orig_leaf=min_orig_leaf,
+            categorical_features=categorical_features,
+        )
+        if best is None:
+            return
+        best_feat, best_split = best
+        if best_split[0] <= 1e-12:
+            return
+        is_cat = best_feat in (set(categorical_features) if categorical_features else set())
+        heapq.heappush(
+            heap,
+            (-float(best_split[0]), next(counter), id(leaf), leaf, idx, best_feat, best_split, is_cat),
+        )
+
+    _push_best_split_for_leaf(root, np.arange(features.shape[0]))
+
+    leaves_count = 1
+    es_best = _holdout_loss(root, valid_features, D_v, C_v, loss)
+    rounds_since_improve = 0
+
+    while heap and leaves_count < max_leaves:
+        neg_gain, _tb, node_id, leaf, idx, best_feat, best_split, is_cat = heapq.heappop(heap)
+        if id(leaf) != node_id or not leaf.is_leaf:
+            continue  # stale
+        left_idx, right_idx = _split_node_into_children(
+            leaf, best_feat, best_split,
+            is_categorical=is_cat,
+            features=features, D=D, C=C,
+            leaf_loss=leaf_loss, alpha_at_opt=alpha_at_opt,
+        )
+        leaves_count += 1
+
+        if early_stopping_rounds is not None and valid_features is not None:
+            cur = _holdout_loss(root, valid_features, D_v, C_v, loss)
+            if cur < es_best - 1e-12:
+                es_best = cur
+                rounds_since_improve = 0
+            else:
+                rounds_since_improve += 1
+                if rounds_since_improve >= early_stopping_rounds:
+                    break
+
+        _push_best_split_for_leaf(leaf.left, left_idx)
+        _push_best_split_for_leaf(leaf.right, right_idx)
+
+    return root
