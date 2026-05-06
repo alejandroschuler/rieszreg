@@ -8,3 +8,7 @@ dist/
 .DS_Store
 .Rhistory
 .Rproj.user/
+
+# Benchmark outputs are reproducible and would churn the repo on every run.
+# The locked baseline lives in BENCH_BASELINE.md; raw CSVs stay local.
+python/benchmarks/results/
