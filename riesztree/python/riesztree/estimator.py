@@ -96,6 +96,7 @@ class RieszTreeRegressor(RieszEstimator):
         init: float | None = None,
         random_state: int = 0,
         splitter: str = "exact",
+        max_bins: int = 255,
         # Deprecated aliases — keep at the end for backwards-compatible
         # positional behaviour. ``None`` sentinel → not user-supplied.
         pruning_alpha: float | None = None,
@@ -121,6 +122,7 @@ class RieszTreeRegressor(RieszEstimator):
         self.validation_fraction = validation_fraction
         self.categorical_features = categorical_features
         self.splitter = splitter
+        self.max_bins = max_bins
         # Deprecated aliases stored as-is so sklearn's clone() round-trips
         # through get_params / __init__. Resolution happens in
         # _resolved_backend at fit-time so set_params can still flip them.
@@ -183,6 +185,7 @@ class RieszTreeRegressor(RieszEstimator):
             categorical_features=cat,
             random_state=self.random_state,
             splitter=self.splitter,
+            max_bins=self.max_bins,
         )
 
     def fit(self, Z, y=None, eval_set=None, eval_y=None) -> "RieszTreeRegressor":
@@ -210,6 +213,7 @@ class RieszTreeRegressor(RieszEstimator):
             early_stopping_rounds=self.early_stopping_rounds,
             validation_fraction=self.validation_fraction,
             splitter=self.splitter,
+            max_bins=self.max_bins,
             categorical_features=(
                 list(int(i) for i in self.categorical_features)
                 if self.categorical_features is not None
@@ -247,4 +251,5 @@ class RieszTreeRegressor(RieszEstimator):
             init=hyperparameters.get("init"),
             random_state=hyperparameters.get("random_state", 0),
             splitter=hyperparameters.get("splitter", "exact"),
+            max_bins=hyperparameters.get("max_bins", 255),
         )
