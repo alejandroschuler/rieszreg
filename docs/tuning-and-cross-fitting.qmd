@@ -19,6 +19,8 @@ Plug-in $\hat\alpha$ in a one-step / TMLE / DML estimator must be out-of-fold. U
 ## Python
 
 ```{python}
+import os
+os.environ.update({"OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"})
 import numpy as np, pandas as pd
 from sklearn.model_selection import cross_val_predict
 from rieszboost import RieszBooster
@@ -203,7 +205,7 @@ Pick a yardstick whose domain accepts every candidate's α. `SquaredLoss` is alw
 
 ## Cross-fit ensemble selection
 
-Going further than two losses on one backend: the pattern below selects among five learner configurations — two boosting depths, two neural-net architectures, and a forest — using inner 3-fold CV inside each of five outer cross-fitting folds. The inner CV runs entirely on the training portion of each outer fold, so the model selection criterion never sees the held-out data that `cross_val_predict` predicts.
+Going further than two losses on one backend: the pattern below selects among five learner configurations — two boosting depths, two neural-net architectures, and a forest — using inner 2-fold CV inside each of three outer cross-fitting folds. The inner CV runs entirely on the training portion of each outer fold, so the model selection criterion never sees the held-out data that `cross_val_predict` predicts.
 
 This uses the `Pipeline` idiom for cross-estimator-type selection: wrap the estimator in a single-step `Pipeline` named `"riesz"`, then pass a list of fully configured instances as the value for that key. `GridSearchCV` calls `pipe.set_params(riesz=candidate)`, fits, and scores each one on the canonical squared yardstick.
 
@@ -219,18 +221,18 @@ candidates = [
     # Boosting — depth 3, early stopping
     RieszBooster(
         estimand=estimand,
-        n_estimators=2000,
+        n_estimators=200,
         max_depth=3,
-        early_stopping_rounds=20,
+        early_stopping_rounds=10,
         validation_fraction=0.2,
         learning_rate=0.05,
     ),
     # Boosting — depth 5, early stopping
     RieszBooster(
         estimand=estimand,
-        n_estimators=2000,
+        n_estimators=200,
         max_depth=5,
-        early_stopping_rounds=20,
+        early_stopping_rounds=10,
         validation_fraction=0.2,
         learning_rate=0.05,
     ),
@@ -238,22 +240,22 @@ candidates = [
     RieszNet(
         estimand=estimand,
         hidden_sizes=(64, 64),
-        epochs=500,
-        early_stopping_rounds=20,
+        epochs=100,
+        early_stopping_rounds=10,
         validation_fraction=0.2,
     ),
     # Neural net — larger MLP with early stopping
     RieszNet(
         estimand=estimand,
         hidden_sizes=(128, 64),
-        epochs=500,
-        early_stopping_rounds=20,
+        epochs=100,
+        early_stopping_rounds=10,
         validation_fraction=0.2,
     ),
     # Forest Riesz
     ForestRieszRegressor(
         estimand=estimand,
-        n_estimators=500,
+        n_estimators=100,
         min_samples_leaf=10,
         random_state=0,
     ),
@@ -262,20 +264,20 @@ candidates = [
 # Single-step Pipeline so GridSearchCV can swap in any candidate as the step.
 pipe = Pipeline([("riesz", candidates[0])])
 
-# Inner CV: 3 folds, selects the best learner+config from the five candidates.
+# Inner CV: 2 folds, selects the best learner+config from the five candidates.
 cv_inner = GridSearchCV(
     pipe,
     param_grid=[{"riesz": [c]} for c in candidates],
-    cv=3,
+    cv=2,
     n_jobs=1,
     refit=True,
 )
 
-# Outer CV: 5 cross-fitting folds. Each fold:
-#   1. Fits cv_inner on 4/5 of the data (inner CV happens here, on that 4/5).
-#   2. Predicts the held-out 1/5 using the winner from step 1.
+# Outer CV: 3 cross-fitting folds. Each fold:
+#   1. Fits cv_inner on 2/3 of the data (inner CV happens here, on that 2/3).
+#   2. Predicts the held-out 1/3 using the winner from step 1.
 # The inner model selection never touches the held-out slice.
-alpha_oof = cross_val_predict(cv_inner, df, cv=5)
+alpha_oof = cross_val_predict(cv_inner, df, cv=3)
 print(f"out-of-fold alpha shape: {alpha_oof.shape}")
 print(f"first 5 values:          {alpha_oof[:5]}")
 ```
@@ -299,32 +301,32 @@ suppressPackageStartupMessages(library(rsample))
 
 estimand <- ATE()
 make_boost_d3 <- function() RieszBooster$new(
-  estimand = estimand, n_estimators = 2000L, max_depth = 3L,
-  early_stopping_rounds = 20L, validation_fraction = 0.2, learning_rate = 0.05
+  estimand = estimand, n_estimators = 200L, max_depth = 3L,
+  early_stopping_rounds = 10L, validation_fraction = 0.2, learning_rate = 0.05
 )
 make_boost_d5 <- function() RieszBooster$new(
-  estimand = estimand, n_estimators = 2000L, max_depth = 5L,
-  early_stopping_rounds = 20L, validation_fraction = 0.2, learning_rate = 0.05
+  estimand = estimand, n_estimators = 200L, max_depth = 5L,
+  early_stopping_rounds = 10L, validation_fraction = 0.2, learning_rate = 0.05
 )
 make_net_64  <- function() RieszNet$new(
-  estimand = estimand, hidden_sizes = c(64L, 64L), epochs = 500L,
-  early_stopping_rounds = 20L, validation_fraction = 0.2
+  estimand = estimand, hidden_sizes = c(64L, 64L), epochs = 100L,
+  early_stopping_rounds = 10L, validation_fraction = 0.2
 )
 make_net_128 <- function() RieszNet$new(
-  estimand = estimand, hidden_sizes = c(128L, 64L), epochs = 500L,
-  early_stopping_rounds = 20L, validation_fraction = 0.2
+  estimand = estimand, hidden_sizes = c(128L, 64L), epochs = 100L,
+  early_stopping_rounds = 10L, validation_fraction = 0.2
 )
 make_forest  <- function() ForestRieszRegressor$new(
-  estimand = estimand, n_estimators = 500L, min_samples_leaf = 10L,
+  estimand = estimand, n_estimators = 100L, min_samples_leaf = 10L,
   random_state = 0L
 )
 candidates <- list(make_boost_d3, make_boost_d5, make_net_64, make_net_128, make_forest)
 
-cv_outer <- vfold_cv(df, v = 5)
+cv_outer <- vfold_cv(df, v = 3)
 alpha_oof <- numeric(nrow(df))
 for (split in cv_outer$splits) {
   tr <- analysis(split); te <- assessment(split); te_idx <- complement(split)
-  cv_inner <- vfold_cv(tr, v = 3)
+  cv_inner <- vfold_cv(tr, v = 2)
   scores <- vapply(candidates, function(make) {
     mean(vapply(cv_inner$splits, function(s) {
       m <- make(); m$fit(analysis(s)); m$score(assessment(s))
