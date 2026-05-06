@@ -19,6 +19,11 @@ from typing import Sequence
 
 import numpy as np
 
+from .fast._splitter import (
+    best_split_continuous_fast,
+    loss_kind_for,
+    warn_python_fallback,
+)
 from .splitter import (
     best_split_categorical,
     best_split_continuous,
@@ -118,11 +123,21 @@ def best_split_at(
     min_orig_leaf: int,
     categorical_features: Sequence[int],
     feature_indices: Sequence[int] | None = None,
+    fast_loss_kind: int | None = None,
+    bounded_lo: float = float("nan"),
+    bounded_hi: float = float("nan"),
 ):
     """Best (gain, feature_index, split_payload) across all considered features.
 
     If ``feature_indices`` is given, only those columns are evaluated
     (sklearn-style ``max_features`` subsampling, drawn by the caller).
+
+    If ``fast_loss_kind`` is not ``None``, continuous-feature splits use
+    the Cython sweep in :mod:`riesztree.fast._splitter_c`; categorical
+    splits still go through the Python path (Phase 8 will Cythonize
+    those). When ``fast_loss_kind`` is ``None`` the entire sweep is
+    pure Python — used for ``splitter='python'`` and for losses outside
+    the four built-ins.
     """
     cat_set = set(categorical_features) if categorical_features else set()
     best = None
@@ -138,6 +153,13 @@ def best_split_at(
                 features[:, j], D, C, idx, leaf_loss, alpha_at_opt,
                 min_orig_leaf=min_orig_leaf,
             )
+        elif fast_loss_kind is not None:
+            cand = best_split_continuous_fast(
+                features[:, j], D, C, idx,
+                loss_kind=fast_loss_kind,
+                bounded_lo=bounded_lo, bounded_hi=bounded_hi,
+                min_orig_leaf=min_orig_leaf,
+            )
         else:
             cand = best_split_continuous(
                 features[:, j], D, C, idx, leaf_loss,
@@ -151,6 +173,30 @@ def best_split_at(
     if best is None:
         return None
     return best_feat, best
+
+
+def _resolve_fast_loss_args(
+    splitter: str, loss
+) -> tuple[int | None, float, float]:
+    """Decide whether the Cython splitter is usable for this fit.
+
+    Returns ``(loss_kind, bounded_lo, bounded_hi)``. ``loss_kind`` is
+    ``None`` when the user explicitly chose ``splitter='python'`` or
+    when ``loss`` is not one of the four built-ins (which triggers a
+    one-time UserWarning).
+    """
+    if splitter == "python":
+        return None, float("nan"), float("nan")
+    if splitter != "exact":
+        raise ValueError(
+            f"splitter={splitter!r}; expected 'exact' or 'python'."
+        )
+    resolved = loss_kind_for(loss)
+    if resolved is None:
+        warn_python_fallback(loss)
+        return None, float("nan"), float("nan")
+    kind, lo, hi = resolved
+    return int(kind), float(lo), float(hi)
 
 
 def _split_node_into_children(
@@ -235,6 +281,7 @@ def grow_depthwise(
     min_impurity_decrease: float = 0.0,
     min_weight_fraction_leaf: float = 0.0,
     random_state: int = 0,
+    splitter: str = "exact",
 ) -> Node:
     """Greedy recursive depth-first growth.
 
@@ -260,6 +307,7 @@ def grow_depthwise(
         rows. Combined with ``min_orig_leaf`` via ``max(...)``.
     """
     leaf_loss, alpha_at_opt = make_leaf_solvers(loss)
+    fast_loss_kind, bounded_lo, bounded_hi = _resolve_fast_loss_args(splitter, loss)
 
     valid_features = D_v = C_v = None
     if aug_valid is not None:
@@ -303,6 +351,8 @@ def grow_depthwise(
             min_orig_leaf=eff_min_orig_leaf,
             categorical_features=categorical_features,
             feature_indices=feat_idx,
+            fast_loss_kind=fast_loss_kind,
+            bounded_lo=bounded_lo, bounded_hi=bounded_hi,
         )
         if best is None:
             return
@@ -355,6 +405,7 @@ def grow_leafwise(
     min_impurity_decrease: float = 0.0,
     min_weight_fraction_leaf: float = 0.0,
     random_state: int = 0,
+    splitter: str = "exact",
 ) -> Node:
     """Best-first growth: at each step split the leaf whose best candidate
     split has the highest gain, anywhere in the tree.
@@ -365,6 +416,7 @@ def grow_leafwise(
     sklearn-parity hyperparameters: see :func:`grow_depthwise`.
     """
     leaf_loss, alpha_at_opt = make_leaf_solvers(loss)
+    fast_loss_kind, bounded_lo, bounded_hi = _resolve_fast_loss_args(splitter, loss)
     valid_features = D_v = C_v = None
     if aug_valid is not None:
         valid_features, D_v, C_v = aug_valid
@@ -400,6 +452,8 @@ def grow_leafwise(
             min_orig_leaf=eff_min_orig_leaf,
             categorical_features=categorical_features,
             feature_indices=feat_idx,
+            fast_loss_kind=fast_loss_kind,
+            bounded_lo=bounded_lo, bounded_hi=bounded_hi,
         )
         if best is None:
             return

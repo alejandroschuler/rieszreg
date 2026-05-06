@@ -14,7 +14,8 @@ dist/
 python/benchmarks/results/
 
 # Cython build artifacts: the .c is regenerated from .pyx on every build,
-# the .so is platform-specific and rebuilt by `pip install -e .`.
-python/riesztree/fast/_tree_c.c
+# the .so is platform-specific and rebuilt by `pip install -e .`. The
+# .pxd / .pyx / .py are sources and stay tracked.
+python/riesztree/fast/*.c
 python/riesztree/fast/*.so
 python/riesztree/fast/*.html
