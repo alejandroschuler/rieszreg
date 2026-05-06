@@ -49,6 +49,13 @@ jobs:
           path: riesznet
         continue-on-error: true
 
+      - name: Checkout riesztree (sibling repo)
+        uses: actions/checkout@v4
+        with:
+          repository: rieszreg/riesztree
+          path: riesztree
+        continue-on-error: true
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -62,6 +69,7 @@ jobs:
           if [ -d krrr/python ]; then pip install -e krrr/python; fi
           if [ -d forestriesz/python ]; then pip install -e forestriesz/python; fi
           if [ -d riesznet/python ]; then pip install -e riesznet/python; fi
+          if [ -d riesztree/python ]; then pip install -e riesztree/python; fi
           pip install matplotlib pandas causaldata
 
       - uses: r-lib/actions/setup-r@v2
