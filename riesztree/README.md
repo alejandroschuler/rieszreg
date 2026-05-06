@@ -70,7 +70,8 @@ alpha_hat = est.predict(df)
 - **Diagnostics**: `TreeDiagnostics` extends `rieszreg.Diagnostics` with `n_leaves`, `max_depth_actual`, `mean_leaf_size`, `feature_importances` (per-feature normalised split-gain).
 - **R wrapper**: R6 mirror via reticulate.
 - **Cython prediction**: `predict` walks a flat-array tree (built once per fit) at C speed. The `Node` tree continues to back diagnostics, pruning, and serialization.
-- **79 Python tests** covering decoupling, Backend Protocol, growth policies, pruning, early stopping, categorical, sklearn integration, save/load round-trip per estimand, KL on TSM, BoundedSquared clipping, leaf-self-parity, sklearn-style hyperparameter parity, flat-tree predict parity.
+- **Cython continuous-split sweep** (`splitter="exact"`, default): per-feature threshold sweep runs in a `cdef` inner loop over per-built-in leaf-loss kernels. `splitter="python"` keeps the original pure-Python path for debugging and for losses outside the four built-ins.
+- **91 Python tests** covering decoupling, Backend Protocol, growth policies, pruning, early stopping, categorical, sklearn integration, save/load round-trip per estimand, KL on TSM, BoundedSquared clipping, leaf-self-parity, sklearn-style hyperparameter parity, flat-tree predict parity, Cython↔Python splitter parity.
 
 ## Hyperparameters
 
@@ -90,6 +91,7 @@ alpha_hat = est.predict(df)
 | `categorical_features` | None | Sequence of column indices treated as integer category labels. |
 | `loss` | `SquaredLoss()` | Bregman-Riesz loss. |
 | `random_state` | 0 | Seeds the per-split feature subsample under `max_features`. |
+| `splitter` | `"exact"` | `"exact"` routes continuous-feature splits through the Cython sweep; `"python"` keeps the legacy pure-Python path (fallback for losses outside the four built-ins, debugging). |
 
 The v0.0.1 names `max_leaves` and `pruning_alpha` are accepted as deprecated aliases for `max_leaf_nodes` and `ccp_alpha`; passing them emits a `FutureWarning` and behaves identically.
 

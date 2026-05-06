@@ -8,7 +8,12 @@ This package depends on `rieszreg` for shared abstractions (`Estimand`, `LossSpe
 - `RieszTreeRegressor` — convenience subclass of `rieszreg.RieszEstimator` with tree-specific hyperparameters mirroring `sklearn.tree.DecisionTreeRegressor` where the augmented Bregman-Riesz setting allows: `max_depth`, `min_samples_split`, `min_samples_leaf`, `min_weight_fraction_leaf`, `max_leaf_nodes`, `max_features`, `growth_policy`, `min_impurity_decrease`, `ccp_alpha`, `early_stopping_rounds`, `validation_fraction`, `categorical_features`. The v0.0.1 names `max_leaves`/`pruning_alpha` remain as deprecated aliases (emit `FutureWarning`).
 - `TreeDiagnostics` — extends `rieszreg.Diagnostics` with `n_leaves`, `max_depth_actual`, `mean_leaf_size`, `feature_importances`.
 - `RieszTreePredictor` — walks the tree to predict α; registers itself for `RieszEstimator.load` via `register_predictor_loader("riesztree", ...)`. Internally builds a Cython-backed flat-array companion (`riesztree.fast.FlatTree`) on first predict for a C-speed tight loop; the `Node` tree remains the source of truth for diagnostics, pruning, and serialization.
-- `riesztree.fast` — compiled extensions: `FlatTree` parallel-array tree representation and Cython `predict_alpha` (`fast/_tree_c.pyx`). Subsequent phases will add Cython splitters here.
+- `riesztree.fast` — compiled extensions:
+  - `FlatTree` + Cython `predict_alpha` (`fast/_tree_c.pyx`).
+  - `_loss_kernels.pyx` — built-in leaf-loss + alpha-at-opt kernels for the four Bregman losses.
+  - `_splitter_c.pyx` — Cython continuous-feature best-split sweep, used when `splitter="exact"` (the new default) is set on `RieszTreeRegressor`.
+  - `_splitter.py` — Python facade that maps a `LossSpec` to a loss-kind integer + bounded clip parameters; falls back to the pure-Python splitter for losses outside the four built-ins (with a one-time `UserWarning`).
+  Subsequent phases will add the histogram splitter (`_splitter_hist.pyx`) and Numba `cfunc` registration hook here.
 - R6 wrapper subclassing `rieszreg::RieszEstimatorR6`.
 
 ## Living-doc rule (README + meta-project docs)

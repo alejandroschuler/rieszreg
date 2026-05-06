@@ -93,6 +93,12 @@ class RieszTreeBackend:
     random_state
         Seeds the per-split feature subsample under ``max_features``.
         Default 0.
+    splitter
+        ``"exact"`` (default) routes continuous-feature splits through
+        the Cython sweep in :mod:`riesztree.fast._splitter_c`;
+        ``"python"`` keeps the original pure-Python splitter (kept for
+        debugging and as the fallback for losses outside the four
+        built-ins).
     """
 
     max_depth: int = 8
@@ -108,6 +114,7 @@ class RieszTreeBackend:
     validation_fraction: float = 0.0
     categorical_features: tuple[int, ...] = field(default_factory=tuple)
     random_state: int = 0
+    splitter: str = "exact"
 
     def fit_augmented(
         self,
@@ -157,6 +164,7 @@ class RieszTreeBackend:
                 min_impurity_decrease=self.min_impurity_decrease,
                 min_weight_fraction_leaf=self.min_weight_fraction_leaf,
                 random_state=self.random_state,
+                splitter=self.splitter,
             )
         else:
             tree = grow_leafwise(
@@ -175,6 +183,7 @@ class RieszTreeBackend:
                 min_impurity_decrease=self.min_impurity_decrease,
                 min_weight_fraction_leaf=self.min_weight_fraction_leaf,
                 random_state=self.random_state,
+                splitter=self.splitter,
             )
 
         if self.ccp_alpha > 0:

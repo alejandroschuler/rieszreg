@@ -23,6 +23,16 @@ extensions = [
         sources=["riesztree/fast/_tree_c.pyx"],
         include_dirs=[np.get_include()],
     ),
+    Extension(
+        "riesztree.fast._loss_kernels",
+        sources=["riesztree/fast/_loss_kernels.pyx"],
+        include_dirs=[np.get_include()],
+    ),
+    Extension(
+        "riesztree.fast._splitter_c",
+        sources=["riesztree/fast/_splitter_c.pyx"],
+        include_dirs=[np.get_include()],
+    ),
 ]
 
 setup(
