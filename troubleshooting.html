@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>External packages: DoubleML, EconML, tlverse – RieszReg</title>
+<title>Troubleshooting – RieszReg</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -61,30 +61,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="../site_libs/quarto-nav/headroom.min.js"></script>
-<script src="../site_libs/clipboard/clipboard.min.js"></script>
-<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="../site_libs/quarto-search/fuse.min.js"></script>
-<script src="../site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="../">
-<link href="../troubleshooting.html" rel="next">
-<link href="../estimation/custom.html" rel="prev">
-<link href="../logo.svg" rel="icon" type="image/svg+xml">
-<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../site_libs/quarto-html/popper.min.js"></script>
-<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="../site_libs/quarto-html/anchor.min.js"></script>
-<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-d0ae9245876894da5ac7e18953ecc5cc.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
-<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-21ff0d146334540f3fc50d0f21961610.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./developing.html" rel="next">
+<link href="./estimation/external.html" rel="prev">
+<link href="./logo.svg" rel="icon" type="image/svg+xml">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-d0ae9245876894da5ac7e18953ecc5cc.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-21ff0d146334540f3fc50d0f21961610.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -113,37 +113,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
-  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
-<script type="text/javascript">
-const typesetMath = (el) => {
-  if (window.MathJax) {
-    // MathJax Typeset
-    window.MathJax.typeset([el]);
-  } else if (window.katex) {
-    // KaTeX Render
-    var mathElements = el.getElementsByClassName("math");
-    var macros = [];
-    for (var i = 0; i < mathElements.length; i++) {
-      var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
-        window.katex.render(texText.data, mathElements[i], {
-          displayMode: mathElements[i].classList.contains('display'),
-          throwOnError: false,
-          macros: macros,
-          fleqn: false
-        });
-      }
-    }
-  }
-}
-window.Quarto = {
-  typesetMath
-};
-</script>
-
-<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="styles.css">
 </head>
 
 <body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
@@ -315,9 +286,9 @@ window.Quarto = {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a href="../index.html" class="navbar-brand navbar-brand-logo">
-    <img src="../logo.svg" alt="" class="navbar-logo light-content">
-    <img src="../logo.svg" alt="" class="navbar-logo dark-content">
+    <a href="./index.html" class="navbar-brand navbar-brand-logo">
+    <img src="./logo.svg" alt="" class="navbar-logo light-content">
+    <img src="./logo.svg" alt="" class="navbar-logo dark-content">
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -343,7 +314,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../estimation/index.html">Estimation</a></li><li class="breadcrumb-item"><a href="../estimation/external.html">External packages: DoubleML, EconML, tlverse</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./troubleshooting.html">Troubleshooting</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -357,19 +328,19 @@ window.Quarto = {
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../index.html" class="sidebar-item-text sidebar-link">
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">RieszReg</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../intro.html" class="sidebar-item-text sidebar-link">
+  <a href="./intro.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">What is Riesz Regression?</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../install.html" class="sidebar-item-text sidebar-link">
+  <a href="./install.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Install</span></a>
   </div>
 </li>
@@ -384,37 +355,37 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../losses.html" class="sidebar-item-text sidebar-link">
+  <a href="./losses.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Losses</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../estimands.html" class="sidebar-item-text sidebar-link">
+  <a href="./estimands.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Estimands</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../tuning-and-cross-fitting.html" class="sidebar-item-text sidebar-link">
+  <a href="./tuning-and-cross-fitting.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Tuning and Cross-Fitting</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../diagnostics.html" class="sidebar-item-text sidebar-link">
+  <a href="./diagnostics.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Diagnostics</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../save-and-load.html" class="sidebar-item-text sidebar-link">
+  <a href="./save-and-load.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Save and load</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../r-interface.html" class="sidebar-item-text sidebar-link">
+  <a href="./r-interface.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">R interface</span></a>
   </div>
 </li>
@@ -431,37 +402,37 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../backends/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./backends/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Backends</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../backends/boosting.html" class="sidebar-item-text sidebar-link">
+  <a href="./backends/boosting.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Boosting backend (rieszboost)</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../backends/kernel.html" class="sidebar-item-text sidebar-link">
+  <a href="./backends/kernel.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Kernel backend (krrr)</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../backends/forest.html" class="sidebar-item-text sidebar-link">
+  <a href="./backends/forest.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Forest backend (forestriesz)</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../backends/tree.html" class="sidebar-item-text sidebar-link">
+  <a href="./backends/tree.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Tree backend (riesztree)</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../backends/neural.html" class="sidebar-item-text sidebar-link">
+  <a href="./backends/neural.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Neural-network backend (riesznet)</span></a>
   </div>
 </li>
@@ -478,19 +449,19 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../estimation/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./estimation/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Estimation</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../estimation/custom.html" class="sidebar-item-text sidebar-link">
+  <a href="./estimation/custom.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Custom code: DML and TMLE</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../estimation/external.html" class="sidebar-item-text sidebar-link active">
+  <a href="./estimation/external.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">External packages: DoubleML, EconML, tlverse</span></a>
   </div>
 </li>
@@ -498,25 +469,25 @@ window.Quarto = {
   </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../troubleshooting.html" class="sidebar-item-text sidebar-link">
+  <a href="./troubleshooting.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Troubleshooting</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../developing.html" class="sidebar-item-text sidebar-link">
+  <a href="./developing.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Developing</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../related.html" class="sidebar-item-text sidebar-link">
+  <a href="./related.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Related packages</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../references.html" class="sidebar-item-text sidebar-link">
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">References</span></a>
   </div>
 </li>
@@ -530,11 +501,14 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#doubleml-python" id="toc-doubleml-python" class="nav-link active" data-scroll-target="#doubleml-python">DoubleML (Python)</a></li>
-  <li><a href="#doubleml-r" id="toc-doubleml-r" class="nav-link" data-scroll-target="#doubleml-r">DoubleML (R)</a></li>
-  <li><a href="#econml" id="toc-econml" class="nav-link" data-scroll-target="#econml">EconML</a></li>
-  <li><a href="#tlverse-r" id="toc-tlverse-r" class="nav-link" data-scroll-target="#tlverse-r">tlverse (R)</a></li>
-  <li><a href="#see-also" id="toc-see-also" class="nav-link" data-scroll-target="#see-also">See also</a></li>
+  <li><a href="#openmp-deadlock-when-both-rieszboost-and-riesznet-are-loaded" id="toc-openmp-deadlock-when-both-rieszboost-and-riesznet-are-loaded" class="nav-link active" data-scroll-target="#openmp-deadlock-when-both-rieszboost-and-riesznet-are-loaded">OpenMP deadlock when both rieszboost and riesznet are loaded</a>
+  <ul class="collapse">
+  <li><a href="#symptom" id="toc-symptom" class="nav-link" data-scroll-target="#symptom">Symptom</a></li>
+  <li><a href="#cause" id="toc-cause" class="nav-link" data-scroll-target="#cause">Cause</a></li>
+  <li><a href="#what-rieszreg-does-automatically" id="toc-what-rieszreg-does-automatically" class="nav-link" data-scroll-target="#what-rieszreg-does-automatically">What <code>rieszreg</code> does automatically</a></li>
+  <li><a href="#fixing-the-deadlock" id="toc-fixing-the-deadlock" class="nav-link" data-scroll-target="#fixing-the-deadlock">Fixing the deadlock</a></li>
+  <li><a href="#performance-cost" id="toc-performance-cost" class="nav-link" data-scroll-target="#performance-cost">Performance cost</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -542,9 +516,9 @@ window.Quarto = {
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../estimation/index.html">Estimation</a></li><li class="breadcrumb-item"><a href="../estimation/external.html">External packages: DoubleML, EconML, tlverse</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">External packages: DoubleML, EconML, tlverse</h1>
+<h1 class="title">Troubleshooting</h1>
 </div>
 
 
@@ -561,97 +535,68 @@ window.Quarto = {
 </header>
 
 
-<p>This page sketches how to wire <code>rieszreg</code>’s cross-fit <span class="math inline">\(\hat\alpha\)</span> into mature DML/TMLE libraries. The recipes use the synthetic ATE setup from the <a href="../index.html#quickstart">landing-page quickstart</a>. The code is illustrative — install the relevant external package locally and adapt to your data.</p>
-<section id="doubleml-python" class="level2">
-<h2 class="anchored" data-anchor-id="doubleml-python">DoubleML (Python)</h2>
-<p><code>DoubleML</code> separates the estimator class (<code>DoubleMLPLR</code>, <code>DoubleMLIRM</code>, …) from the nuisance learners. To use a <code>rieszreg</code>-fit Riesz representer, wrap the booster as a <code>predict_proba</code>-exposing classifier shim and hand it to <code>DoubleMLIRM</code>’s <code>ml_m</code> slot.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> doubleml <span class="im">as</span> dml</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np, pandas <span class="im">as</span> pd</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.ensemble <span class="im">import</span> GradientBoostingRegressor</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> KFold, cross_val_predict</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszreg <span class="im">import</span> ATE</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszboost <span class="im">import</span> RieszBooster</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Cross-fit α̂ via rieszreg.</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>cv      <span class="op">=</span> KFold(n_splits<span class="op">=</span><span class="dv">5</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span><span class="dv">0</span>)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>booster <span class="op">=</span> RieszBooster(</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>ATE(treatment<span class="op">=</span><span class="st">"a"</span>, covariates<span class="op">=</span>(<span class="st">"x"</span>,)),</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    n_estimators<span class="op">=</span><span class="dv">400</span>, learning_rate<span class="op">=</span><span class="fl">0.05</span>, max_depth<span class="op">=</span><span class="dv">3</span>,</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>booster.fit(df[[<span class="st">"a"</span>, <span class="st">"x"</span>]])</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Wrap booster as a propensity classifier: π̂(x) = 1 / α̂(a=1, x).</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> _RieszAsClassifier:</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, X, y): <span class="cf">return</span> <span class="va">self</span></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> predict_proba(<span class="va">self</span>, X):</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>        df_ <span class="op">=</span> pd.DataFrame({<span class="st">"a"</span>: np.ones(<span class="bu">len</span>(X)), <span class="st">"x"</span>: X[:, <span class="dv">0</span>]})</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>        alpha_1 <span class="op">=</span> booster.predict(df_)</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>        pi_hat  <span class="op">=</span> np.clip(<span class="fl">1.0</span> <span class="op">/</span> np.maximum(alpha_1, <span class="fl">1e-6</span>), <span class="fl">1e-6</span>, <span class="dv">1</span> <span class="op">-</span> <span class="fl">1e-6</span>)</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> np.column_stack([<span class="dv">1</span> <span class="op">-</span> pi_hat, pi_hat])</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Pass into DoubleMLIRM in place of a propensity learner.</span></span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>dml_data <span class="op">=</span> dml.DoubleMLData(df, y_col<span class="op">=</span><span class="st">"y"</span>, d_cols<span class="op">=</span><span class="st">"a"</span>, x_cols<span class="op">=</span>[<span class="st">"x"</span>])</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>plr <span class="op">=</span> dml.DoubleMLIRM(</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    dml_data,</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    ml_g<span class="op">=</span>GradientBoostingRegressor(n_estimators<span class="op">=</span><span class="dv">200</span>, max_depth<span class="op">=</span><span class="dv">3</span>, random_state<span class="op">=</span><span class="dv">0</span>),</span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    ml_m<span class="op">=</span>_RieszAsClassifier(),</span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    n_folds<span class="op">=</span><span class="dv">5</span>,</span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>plr.fit()</span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(plr.summary)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>plr.summary</code> reports point estimate, SE, and 95% CI. The wrap-around is needed because <code>DoubleMLIRM</code> expects a propensity classifier; for Riesz functionals where <span class="math inline">\(\hat\alpha\)</span> is not a simple inverse-propensity (continuous shifts, stochastic interventions), the cleaner integration is the <a href="../estimation/custom.html">custom-code</a> DML/TMLE pattern.</p>
+<section id="openmp-deadlock-when-both-rieszboost-and-riesznet-are-loaded" class="level2">
+<h2 class="anchored" data-anchor-id="openmp-deadlock-when-both-rieszboost-and-riesznet-are-loaded">OpenMP deadlock when both rieszboost and riesznet are loaded</h2>
+<section id="symptom" class="level3">
+<h3 class="anchored" data-anchor-id="symptom">Symptom</h3>
+<p>A fit hangs indefinitely. Sampling the Python process with <code>py-spy dump</code> (or attaching with <code>lldb</code>) shows the main thread stuck in OpenMP barrier code:</p>
+<pre><code>__kmp_join_barrier
+  kmp_flag_64&lt;false, true&gt;::wait
+    __kmp_suspend_64
+      _pthread_cond_wait
+        __psynch_cvwait</code></pre>
+<p>The same hang appears under R when <code>riesznet</code> runs through reticulate, and from RStudio / Jupyter / <code>quarto render</code> sessions that fit both backends in one process. The hang is non-deterministic: the same script may finish on one run and hang on the next.</p>
 </section>
-<section id="doubleml-r" class="level2">
-<h2 class="anchored" data-anchor-id="doubleml-r">DoubleML (R)</h2>
-<p>The R port has the same API. Pass the <code>RieszBooster</code> R6 wrapper through reticulate to provide <span class="math inline">\(\hat\alpha\)</span>, and let <code>DoubleML::DoubleMLIRM</code> handle the outcome learner via <a href="https://mlr3.mlr-org.com/"><code>mlr3</code></a>.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DoubleML)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mlr3)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mlr3learners)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> <span class="fu">ATE</span>(<span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> <span class="st">"x"</span>),</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_estimators =</span> <span class="dv">400</span>L, <span class="at">learning_rate =</span> <span class="fl">0.05</span>, <span class="at">max_depth =</span> <span class="dv">3</span>L</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">fit</span>(df)</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>alpha_hat <span class="ot">&lt;-</span> booster<span class="sc">$</span><span class="fu">predict</span>(df)</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>dml_data <span class="ot">&lt;-</span> DoubleMLData<span class="sc">$</span><span class="fu">new</span>(df, <span class="at">y_col =</span> <span class="st">"y"</span>, <span class="at">d_cols =</span> <span class="st">"a"</span>, <span class="at">x_cols =</span> <span class="st">"x"</span>)</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>ml_g     <span class="ot">&lt;-</span> <span class="fu">lrn</span>(<span class="st">"regr.ranger"</span>, <span class="at">num.trees =</span> <span class="dv">500</span>L)</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Wrap alpha_hat as a custom mlr3 PipeOp that returns it as predict_proba —</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># see the DoubleML tutorial on injecting precomputed nuisances for the recipe.</span></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>pi_hat   <span class="ot">&lt;-</span> <span class="fu">pmin</span>(<span class="fu">pmax</span>(<span class="dv">1</span> <span class="sc">/</span> <span class="fu">pmax</span>(alpha_hat[df<span class="sc">$</span>a <span class="sc">==</span> <span class="dv">1</span>], <span class="fl">1e-6</span>), <span class="fl">1e-6</span>), <span class="dv">1</span> <span class="sc">-</span> <span class="fl">1e-6</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="cause" class="level3">
+<h3 class="anchored" data-anchor-id="cause">Cause</h3>
+<p>xgboost’s macOS pip wheel (which <code>rieszboost</code> uses) and PyTorch’s macOS pip wheel (which <code>riesznet</code> uses) each ship their own copy of <code>libomp.dylib</code>. When both packages are loaded into the same Python process, dyld maps two distinct OpenMP runtimes into the address space. Their threadpool barriers can race, leading to the deadlock above.</p>
+<p>This is an upstream xgboost + PyTorch + macOS-wheel issue, not specific to <code>rieszreg</code>. See <a href="https://github.com/pytorch/pytorch/issues/44282">pytorch/pytorch#44282</a>, <a href="https://github.com/pytorch/pytorch/issues/98836">pytorch/pytorch#98836</a>, and <a href="https://github.com/dmlc/xgboost/issues/11500">dmlc/xgboost#11500</a>. The same underlying conflict can throttle threads silently on Linux pip installs without producing a deadlock.</p>
+<p>The deadlock is not guaranteed: many users who load both packages never see it. The trigger is OMP-parallel work in both runtimes during the same fit.</p>
 </section>
-<section id="econml" class="level2">
-<h2 class="anchored" data-anchor-id="econml">EconML</h2>
-<p>EconML’s <a href="https://econml.azurewebsites.net/"><code>automatic_debiased_ml</code></a> module ships its own Riesz learner (<code>RieszNet</code>, <code>ForestRiesz</code>). The <code>forestriesz</code> package in this family wraps EconML’s <code>BaseGRF</code> directly, so a forest-style fit is already EconML-native. For an estimand EconML doesn’t ship (e.g.&nbsp;a custom continuous-shift functional defined via the <code>LinearForm</code> tracer), use <code>rieszreg</code> end-to-end with the <a href="../estimation/custom.html">custom-code</a> DML/TMLE pattern — the integration there is full transparency, not chaining.</p>
+<section id="what-rieszreg-does-automatically" class="level3">
+<h3 class="anchored" data-anchor-id="what-rieszreg-does-automatically">What <code>rieszreg</code> does automatically</h3>
+<p>On import, <code>rieszreg/__init__.py</code> mirrors <code>sklearn/__init__.py</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>os.environ.setdefault(<span class="st">"KMP_DUPLICATE_LIB_OK"</span>, <span class="st">"True"</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>os.environ.setdefault(<span class="st">"KMP_INIT_AT_FORK"</span>, <span class="st">"FALSE"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This stops the second runtime from aborting on <code>OMP: Error #15</code> and avoids a <code>fork()</code> crash from the Intel OpenMP 2019.5 bug. <code>setdefault</code> means a value the user already exported wins.</p>
+<p>These two flags do <strong>not</strong> prevent the threadpool deadlock above. That requires limiting OMP threads.</p>
+<p><code>rieszboost</code> and <code>riesznet</code> defer their <code>import xgboost</code> and <code>import torch</code> until the first attribute access, so <code>import rieszboost; import riesznet</code> (without instantiating estimators from both) does not load both <code>libomp</code> copies.</p>
+<p>When <code>RieszEstimator.fit()</code> runs and detects both <code>torch</code> and <code>xgboost</code> already loaded, it emits a one-time <code>RuntimeWarning</code> describing the situation.</p>
 </section>
-<section id="tlverse-r" class="level2">
-<h2 class="anchored" data-anchor-id="tlverse-r">tlverse (R)</h2>
-<p><code>tmle3</code> from <a href="https://tlverse.org/">tlverse</a> is TMLE-native and accepts pre-fit nuisances through its <code>Likelihood_factor</code> API. Pass cross-fit <span class="math inline">\(\hat\alpha\)</span> as a fixed treatment-mechanism factor, and <code>tmle3</code> performs the targeting step.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tmle3)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> <span class="fu">ATE</span>(<span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> <span class="st">"x"</span>),</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_estimators =</span> <span class="dv">400</span>L, <span class="at">learning_rate =</span> <span class="fl">0.05</span>, <span class="at">max_depth =</span> <span class="dv">3</span>L</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">fit</span>(df)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>alpha_hat <span class="ot">&lt;-</span> booster<span class="sc">$</span><span class="fu">predict</span>(df)</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Wrap alpha_hat in a tmle3 Likelihood_factor that returns the precomputed</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co"># values when queried, and pass it to tmle3_Spec_TMLE_ATE() in place of the</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># default sl3-trained propensity learner. See the tmle3 vignette on custom</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Likelihood_factor implementations for the full recipe.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="fixing-the-deadlock" class="level3">
+<h3 class="anchored" data-anchor-id="fixing-the-deadlock">Fixing the deadlock</h3>
+<p>The env vars that prevent the deadlock are read by the OpenMP runtime when <code>libomp</code> is first loaded. Setting them after <code>import torch</code> or <code>import xgboost</code> is too late. So all three workarounds below assume a fresh Python process.</p>
+<p><strong>Option 1 — set <code>OMP_NUM_THREADS=1</code> in the shell:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OMP_NUM_THREADS</span><span class="op">=</span>1</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MKL_NUM_THREADS</span><span class="op">=</span>1</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> my_script.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Option 2 — set in Python before the imports:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>os.environ[<span class="st">"OMP_NUM_THREADS"</span>] <span class="op">=</span> <span class="st">"1"</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>os.environ[<span class="st">"MKL_NUM_THREADS"</span>] <span class="op">=</span> <span class="st">"1"</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># only after the env is set:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> rieszboost, riesznet</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This is the form used at the top of <code>index.qmd</code> and <code>tuning-and-cross-fitting.qmd</code> in this user guide.</p>
+<p><strong>Option 3 — limit threads at fit time with <code>threadpoolctl</code>:</strong></p>
+<p><code>threadpoolctl</code> is a sklearn dependency and is already installed. It manages thread counts on already-loaded OMP runtimes:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> threadpoolctl <span class="im">import</span> threadpool_limits</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> threadpool_limits(limits<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    booster.fit(df)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    net.fit(df)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This is the right tool when only one fit (or one pipeline stage) needs to run single-threaded.</p>
+<p><strong>Option 4 — install via conda-forge:</strong></p>
+<p>conda-forge enforces a single shared <code>llvm-openmp</code> runtime across all packages in the environment via <code>_openmp_mutex</code>. The conflict cannot occur:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> conda-forge xgboost pytorch</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-e</span> rieszreg/python rieszboost/python riesznet/python</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="see-also" class="level2">
-<h2 class="anchored" data-anchor-id="see-also">See also</h2>
-<ul>
-<li><a href="../estimation/custom.html">Estimation → custom code</a> — no-dependency DML/TMLE walk-through.</li>
-<li><a href="https://docs.doubleml.org/stable/index.html"><code>DoubleML</code> user guide</a>.</li>
-<li><a href="https://tlverse.org/tmle3/articles/intro_tmle3.html"><code>tmle3</code> introduction</a>.</li>
-</ul>
+<section id="performance-cost" class="level3">
+<h3 class="anchored" data-anchor-id="performance-cost">Performance cost</h3>
+<p><code>OMP_NUM_THREADS=1</code> disables OpenMP intra-op parallelism for both xgboost and torch. On the dataset sizes typical for Riesz regression (<code>n</code> in the thousands to low hundreds of thousands), the cost is small — xgboost’s tree construction is the dominant work and parallelizes across rows in chunks where SIMD already covers most of the speedup. Larger workloads should prefer <code>threadpoolctl.threadpool_limits</code> so that other parts of the pipeline retain parallelism.</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
@@ -1070,13 +1015,13 @@ window.Quarto = {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../estimation/custom.html" class="pagination-link" aria-label="Custom code: DML and TMLE">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Custom code: DML and TMLE</span>
+      <a href="./estimation/external.html" class="pagination-link" aria-label="External packages: DoubleML, EconML, tlverse">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">External packages: DoubleML, EconML, tlverse</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../troubleshooting.html" class="pagination-link" aria-label="Troubleshooting">
-        <span class="nav-page-text">Troubleshooting</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./developing.html" class="pagination-link" aria-label="Developing">
+        <span class="nav-page-text">Developing</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
