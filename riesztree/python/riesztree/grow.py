@@ -20,10 +20,13 @@ from typing import Sequence
 import numpy as np
 
 from .fast._splitter import (
+    accumulate_hist,
     best_split_at_hist,
     best_split_continuous_fast,
     best_split_continuous_random,
+    find_best_split_in_hist,
     loss_kind_for,
+    partition_idx_by_bin,
     warn_python_fallback,
 )
 from .splitter import (
@@ -424,7 +427,39 @@ def grow_depthwise(
         "best_loss": _holdout_loss(root, valid_features, D_v, C_v, loss),
         "rounds_since_improve": 0,
         "stop": False,
+        "root": root,    # consumed by the PMS path's holdout-loss recompute
     }
+
+    # Parent-minus-sibling (PMS) eligibility: the histogram path can amortise
+    # half its accumulation cost by computing the larger child's histogram via
+    # ``parent_hist - smaller_child_hist`` instead of from rows. We only enable
+    # it when no categorical features and no max_features subsampling are in
+    # play — those would change the candidate-feature set per leaf, breaking
+    # the "subtract from parent" invariant.
+    pms_eligible = (
+        splitter == "hist"
+        and hist_payload is not None
+        and not categorical_features
+        and n_features_to_consider == n_features
+        and fast_loss_kind is not None
+    )
+    if pms_eligible:
+        _recurse_pms_depthwise(
+            root, np.arange(features.shape[0]),
+            features=features, D=D, C=C, hist_payload=hist_payload,
+            leaf_loss=leaf_loss, alpha_at_opt=alpha_at_opt,
+            fast_loss_kind=fast_loss_kind,
+            bounded_lo=bounded_lo, bounded_hi=bounded_hi,
+            min_samples_split=min_samples_split,
+            eff_min_orig_leaf=eff_min_orig_leaf,
+            min_impurity_decrease=min_impurity_decrease,
+            max_depth=max_depth,
+            es_state=es_state,
+            valid_features=valid_features, D_v=D_v, C_v=C_v, loss=loss,
+            early_stopping_rounds=early_stopping_rounds,
+            parent_hist=None,
+        )
+        return root
 
     def _recurse(node: Node, idx: np.ndarray) -> None:
         if es_state["stop"]:
@@ -480,6 +515,201 @@ def grow_depthwise(
 
     _recurse(root, np.arange(features.shape[0]))
     return root
+
+
+# ---------------------------------------------------------------------------
+# Parent-minus-sibling histogram driver.
+#
+# When eligible (``hist`` splitter, no categoricals, no max_features
+# subsampling), the depthwise recursion threads per-leaf histograms down
+# through the tree. After a split:
+#   * accumulate the smaller child's histogram from its rows
+#   * compute the larger child's histogram by ``parent_hist - smaller_hist``
+# This roughly halves the histogram-accumulation work compared to
+# rebuilding both children from scratch.
+
+def _recurse_pms_depthwise(
+    node: Node,
+    idx: np.ndarray,
+    *,
+    features: np.ndarray,
+    D: np.ndarray,
+    C: np.ndarray,
+    hist_payload: dict,
+    leaf_loss,
+    alpha_at_opt,
+    fast_loss_kind: int,
+    bounded_lo: float,
+    bounded_hi: float,
+    min_samples_split: int,
+    eff_min_orig_leaf: int,
+    min_impurity_decrease: float,
+    max_depth: int,
+    es_state: dict,
+    valid_features,
+    D_v,
+    C_v,
+    loss,
+    early_stopping_rounds: int | None,
+    parent_hist,
+) -> None:
+    if es_state["stop"]:
+        return
+    if node.depth >= max_depth:
+        return
+    if node.n_orig < min_samples_split:
+        return
+
+    n_features = features.shape[1]
+    candidate_features = np.arange(n_features, dtype=np.int32)
+
+    # Build this node's histogram (or use the inherited one from parent-minus-
+    # sibling subtraction).
+    if parent_hist is None:
+        hD, hC, hO, total_D, total_C, total_orig = accumulate_hist(
+            hist_payload["X_binned"], D, C, idx,
+            candidate_features, hist_payload["max_bins"],
+        )
+    else:
+        hD, hC, hO, total_D, total_C, total_orig = parent_hist
+
+    found = find_best_split_in_hist(
+        hD, hC, hO, total_D, total_C, total_orig,
+        candidate_features, hist_payload["n_bins_per_feature"],
+        loss_kind=fast_loss_kind,
+        bounded_lo=bounded_lo, bounded_hi=bounded_hi,
+        min_orig_leaf=eff_min_orig_leaf,
+    )
+    if found is None:
+        return
+    best_feat, best_bin, gain = found
+    if gain <= min_impurity_decrease:
+        return
+
+    threshold = float(hist_payload["bin_thresholds"][best_feat][best_bin])
+    left_idx, right_idx = partition_idx_by_bin(
+        hist_payload["X_binned"], idx, best_feat, best_bin,
+    )
+
+    # Mutate node into internal + create child leaves (same as
+    # _split_node_into_children but inlined since we have the split shape
+    # in (gain, threshold, left_idx, right_idx) form).
+    node.is_leaf = False
+    node.split_feature = best_feat
+    node.split_kind = "continuous"
+    node.split_threshold = threshold
+    node.split_left_levels = None
+    node.split_gain = gain
+    node.left = _make_leaf(
+        D, C, left_idx, leaf_loss, alpha_at_opt, depth=node.depth + 1
+    )
+    node.right = _make_leaf(
+        D, C, right_idx, leaf_loss, alpha_at_opt, depth=node.depth + 1
+    )
+
+    if early_stopping_rounds is not None and valid_features is not None:
+        cur = _holdout_loss(
+            # Walk via the root, not ``node`` — ``node`` is now internal but
+            # we want the whole partial tree. We don't have a handle to the
+            # root in this function; use the shared es_state's root reference.
+            es_state["root"], valid_features, D_v, C_v, loss,
+        )
+        if cur < es_state["best_loss"] - 1e-12:
+            es_state["best_loss"] = cur
+            es_state["rounds_since_improve"] = 0
+        else:
+            es_state["rounds_since_improve"] += 1
+            if es_state["rounds_since_improve"] >= early_stopping_rounds:
+                es_state["stop"] = True
+                return
+
+    # PMS subtraction. Build the smaller child's histogram explicitly; the
+    # larger child's hist is ``parent_hist - smaller_hist``. The parent's
+    # histogram is mutated in place (no longer needed after the split) to
+    # avoid allocating a fresh per-split array of size (n_features, max_bins).
+    #
+    # We additionally fall back to plain rebuilding (no subtraction) when
+    # the smaller child is so small that the per-bin subtraction cost
+    # exceeds the per-row accumulation cost. Threshold: if ``n_smaller <
+    # n_features * max_bins / k`` for some small k, plain rebuild wins.
+    # Empirically k≈4 is a good balance on macOS arm64 / numpy 1.x.
+    n_left = left_idx.size
+    n_right = right_idx.size
+    n_smaller = n_left if n_left <= n_right else n_right
+    n_features_h = hD.shape[0]
+    max_bins_h = hD.shape[1]
+    pms_worth_it = n_smaller * 4 > n_features_h * max_bins_h
+
+    if not pms_worth_it:
+        # Rebuild both children's histograms from rows. Cheaper than the
+        # subtraction trick at small leaf sizes.
+        left_hist = accumulate_hist(
+            hist_payload["X_binned"], D, C, left_idx,
+            candidate_features, hist_payload["max_bins"],
+        )
+        right_hist = accumulate_hist(
+            hist_payload["X_binned"], D, C, right_idx,
+            candidate_features, hist_payload["max_bins"],
+        )
+    elif n_left <= n_right:
+        # Smaller = left; build its hist from rows; mutate parent → larger.
+        sm_hD, sm_hC, sm_hO, sm_tD, sm_tC, sm_tO = accumulate_hist(
+            hist_payload["X_binned"], D, C, left_idx,
+            candidate_features, hist_payload["max_bins"],
+        )
+        np.subtract(hD, sm_hD, out=hD)   # in-place: hD now == larger's hist
+        np.subtract(hC, sm_hC, out=hC)
+        np.subtract(hO, sm_hO, out=hO)
+        left_hist = (sm_hD, sm_hC, sm_hO, sm_tD, sm_tC, sm_tO)
+        right_hist = (
+            hD, hC, hO,
+            total_D - sm_tD, total_C - sm_tC, total_orig - sm_tO,
+        )
+    else:
+        # Smaller = right; mirror.
+        sm_hD, sm_hC, sm_hO, sm_tD, sm_tC, sm_tO = accumulate_hist(
+            hist_payload["X_binned"], D, C, right_idx,
+            candidate_features, hist_payload["max_bins"],
+        )
+        np.subtract(hD, sm_hD, out=hD)
+        np.subtract(hC, sm_hC, out=hC)
+        np.subtract(hO, sm_hO, out=hO)
+        right_hist = (sm_hD, sm_hC, sm_hO, sm_tD, sm_tC, sm_tO)
+        left_hist = (
+            hD, hC, hO,
+            total_D - sm_tD, total_C - sm_tC, total_orig - sm_tO,
+        )
+
+    _recurse_pms_depthwise(
+        node.left, left_idx,
+        features=features, D=D, C=C, hist_payload=hist_payload,
+        leaf_loss=leaf_loss, alpha_at_opt=alpha_at_opt,
+        fast_loss_kind=fast_loss_kind,
+        bounded_lo=bounded_lo, bounded_hi=bounded_hi,
+        min_samples_split=min_samples_split,
+        eff_min_orig_leaf=eff_min_orig_leaf,
+        min_impurity_decrease=min_impurity_decrease,
+        max_depth=max_depth,
+        es_state=es_state,
+        valid_features=valid_features, D_v=D_v, C_v=C_v, loss=loss,
+        early_stopping_rounds=early_stopping_rounds,
+        parent_hist=left_hist,
+    )
+    _recurse_pms_depthwise(
+        node.right, right_idx,
+        features=features, D=D, C=C, hist_payload=hist_payload,
+        leaf_loss=leaf_loss, alpha_at_opt=alpha_at_opt,
+        fast_loss_kind=fast_loss_kind,
+        bounded_lo=bounded_lo, bounded_hi=bounded_hi,
+        min_samples_split=min_samples_split,
+        eff_min_orig_leaf=eff_min_orig_leaf,
+        min_impurity_decrease=min_impurity_decrease,
+        max_depth=max_depth,
+        es_state=es_state,
+        valid_features=valid_features, D_v=D_v, C_v=C_v, loss=loss,
+        early_stopping_rounds=early_stopping_rounds,
+        parent_hist=right_hist,
+    )
 
 
 # ---------------------------------------------------------------------------

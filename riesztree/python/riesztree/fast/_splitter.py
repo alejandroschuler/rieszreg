@@ -186,6 +186,64 @@ def loss_kind_for(
     return None
 
 
+def accumulate_hist(
+    X_binned: np.ndarray,
+    D: np.ndarray,
+    C: np.ndarray,
+    idx: np.ndarray,
+    candidate_features: np.ndarray,
+    max_bins: int,
+):
+    """Build per-feature histograms over the rows in ``idx``.
+
+    Returns ``(hD, hC, hO, total_D, total_C, total_orig)``. See
+    :mod:`riesztree.fast._splitter_hist.accumulate_hist_c` for the
+    contract. Used by the parent-minus-sibling path in
+    :mod:`riesztree.grow`.
+    """
+    from . import _splitter_hist  # type: ignore[attr-defined]
+    candidate_features = np.ascontiguousarray(candidate_features, dtype=np.int32)
+    return _splitter_hist.accumulate_hist_c(
+        X_binned, D, C, idx, candidate_features, int(max_bins),
+    )
+
+
+def find_best_split_in_hist(
+    hD: np.ndarray,
+    hC: np.ndarray,
+    hO: np.ndarray,
+    total_D: float,
+    total_C: float,
+    total_orig: int,
+    candidate_features: np.ndarray,
+    n_bins_per_feature: np.ndarray,
+    *,
+    loss_kind: int,
+    bounded_lo: float,
+    bounded_hi: float,
+    min_orig_leaf: int,
+):
+    """Find the best split given pre-built histograms.
+
+    Returns ``(best_feat, best_bin, gain)`` or ``None``.
+    """
+    from . import _splitter_hist  # type: ignore[attr-defined]
+    candidate_features = np.ascontiguousarray(candidate_features, dtype=np.int32)
+    n_bins_per_feature = np.ascontiguousarray(n_bins_per_feature, dtype=np.int32)
+    return _splitter_hist.find_best_split_in_hist_c(
+        hD, hC, hO, float(total_D), float(total_C), int(total_orig),
+        candidate_features, n_bins_per_feature,
+        int(loss_kind), float(bounded_lo), float(bounded_hi),
+        int(min_orig_leaf),
+    )
+
+
+def partition_idx_by_bin(X_binned: np.ndarray, idx: np.ndarray, best_feat: int, best_bin: int):
+    """Partition ``idx`` into (left, right) on ``X_binned[:, best_feat] <= best_bin``."""
+    from . import _splitter_hist  # type: ignore[attr-defined]
+    return _splitter_hist.partition_idx_by_bin_c(X_binned, idx, int(best_feat), int(best_bin))
+
+
 def best_split_at_hist(
     X_binned: np.ndarray,
     D: np.ndarray,
