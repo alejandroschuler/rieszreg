@@ -3,9 +3,13 @@
 Translates a ``LossSpec`` instance to the integer ``loss_kind`` used by
 the compiled kernels, plus the ``(lo, hi)`` parameters needed by
 ``BoundedSquaredLoss``. Custom user losses (anything not in the four
-built-ins) return ``None`` from :func:`loss_kind_for`; the dispatcher
-in :mod:`riesztree.grow` then falls back to the pure-Python splitter
-with a one-time ``UserWarning``.
+built-ins) can plug in via :func:`register_fast_leaf_solver`, which
+registers a Numba ``@cfunc`` (or any C-callable with the matching
+signature) for that loss subclass; the dispatcher in
+:mod:`riesztree.grow` then routes continuous splits through the
+user's compiled kernel at C speed. If no kernel is registered the
+dispatcher falls back to the pure-Python splitter with a one-time
+``UserWarning``.
 """
 
 from __future__ import annotations
@@ -39,22 +43,146 @@ except ImportError:
     LOSS_BOUNDED_SQUARED = 3
 
 
-def loss_kind_for(loss: LossSpec) -> tuple[int, float, float] | None:
-    """Map a LossSpec to ``(loss_kind, bounded_lo, bounded_hi)``.
+# ---------------------------------------------------------------------------
+# User-loss registry: subclass-of-LossSpec →
+# (leaf_loss_cfunc_address, alpha_at_opt_python_callable).
+#
+# The leaf-loss is a C-callable address used by the Cython splitter's
+# tight loop; the alpha-at-opt is a Python callable used by ``_make_leaf``
+# to populate the leaf's α* payload (and by ``cost_complexity_prune``).
 
-    Returns ``None`` for losses outside the four built-ins. The
-    ``bounded_lo`` / ``bounded_hi`` slots are unused for non-bounded
-    losses; we fill them with NaN so any accidental dereference is
-    loud.
+_USER_LOSS_REGISTRY: dict[type, tuple[int, callable]] = {}
+# Side mapping address → cfunc object so the Python-side
+# ``make_leaf_solvers`` can hand a Python-callable wrapper to
+# ``_make_leaf`` / pruning. Numba cfuncs are themselves callable
+# from Python; storing the object keeps that callable alive.
+_USER_CFUNC_OBJECTS: dict[int, callable] = {}
+
+
+def register_fast_leaf_solver(
+    loss_class: type,
+    leaf_loss_addr_or_cfunc,
+    alpha_at_opt,
+) -> None:
+    """Plug a custom loss into the Cython splitter.
+
+    Parameters
+    ----------
+    loss_class
+        The user's LossSpec subclass. The splitter uses MRO to
+        match — registering the most specific class wins.
+    leaf_loss_addr_or_cfunc
+        Either an integer (a raw C-callable address) or an object
+        with a ``.address`` attribute (e.g. a Numba ``@cfunc``).
+        Signature ``double(double, double)``; called from the Cython
+        splitter without the GIL.
+    alpha_at_opt
+        Python callable ``(D, C) -> alpha_star``. Used by
+        ``_make_leaf`` to populate the leaf payload and by pruning to
+        compute the would-be-leaf α at internal nodes. A
+        Numba ``@cfunc`` instance also works (it's a Python callable
+        too); plain ``def`` is fine if perf isn't critical here.
+
+    Worked example::
+
+        import numba
+        from rieszreg import LossSpec
+        from riesztree.fast import register_fast_leaf_solver
+
+        class MyLoss(LossSpec):
+            ...
+
+        @numba.cfunc("float64(float64, float64)", cache=True, nopython=True)
+        def my_leaf_loss(D, C):
+            if D <= 0.0:
+                return 0.0
+            return -C * C / D    # SquaredLoss equivalent
+
+        def my_alpha(D, C):
+            return 0.0 if D <= 0 else -C / D
+
+        register_fast_leaf_solver(MyLoss, my_leaf_loss, my_alpha)
+        # Subsequent fits with loss=MyLoss() now use the C-speed kernel.
     """
+    if hasattr(leaf_loss_addr_or_cfunc, "address"):
+        addr = int(leaf_loss_addr_or_cfunc.address)
+        cfunc_obj = leaf_loss_addr_or_cfunc
+    else:
+        addr = int(leaf_loss_addr_or_cfunc)
+        cfunc_obj = None
+    if addr <= 0:
+        raise ValueError(
+            f"register_fast_leaf_solver: invalid C-callable address {addr!r} "
+            f"for {loss_class.__name__}; expected a positive integer "
+            f"(typically a numba.cfunc's .address)."
+        )
+    if not callable(alpha_at_opt):
+        raise TypeError(
+            f"register_fast_leaf_solver: alpha_at_opt for "
+            f"{loss_class.__name__} must be callable; got "
+            f"{type(alpha_at_opt).__name__}."
+        )
+    _USER_LOSS_REGISTRY[loss_class] = (addr, alpha_at_opt)
+    # Track a Python-callable wrapper for the leaf-loss too, so the
+    # Python paths (pruning, leaf-payload computation, holdout-loss)
+    # can share the same kernel. cfunc instances are themselves
+    # callable from Python; raw addresses lose that ability.
+    if cfunc_obj is not None:
+        _USER_CFUNC_OBJECTS[addr] = cfunc_obj
+
+
+def _lookup_user_kernel(loss: LossSpec) -> tuple[int, callable] | None:
+    """Return ``(leaf_loss_addr, alpha_at_opt_callable)`` for the
+    closest registered ancestor of ``type(loss)``, or ``None``."""
+    for cls in type(loss).__mro__:
+        if cls in _USER_LOSS_REGISTRY:
+            return _USER_LOSS_REGISTRY[cls]
+    return None
+
+
+def lookup_user_alpha_at_opt(loss: LossSpec):
+    """Public accessor: returns the registered Python alpha_at_opt
+    callable for ``loss``, or ``None`` if not registered. Used by
+    ``riesztree.splitter.make_leaf_solvers`` to extend its dispatch
+    to user-registered losses."""
+    found = _lookup_user_kernel(loss)
+    if found is None:
+        return None
+    return found[1]
+
+
+# Sentinel ``loss_kind`` used by :func:`best_split_continuous_fast` to
+# signal "use the user-cfunc entry point". Distinct from the four
+# built-in ``LOSS_*`` values.
+LOSS_USER_CFUNC = -1
+
+
+def loss_kind_for(
+    loss: LossSpec,
+) -> tuple[int, float, float, int] | None:
+    """Map a LossSpec to ``(loss_kind, bounded_lo, bounded_hi, user_addr)``.
+
+    Returns ``None`` only when the loss is *neither* a built-in *nor*
+    in the user registry. For built-ins ``user_addr`` is 0; for
+    user-registered losses ``loss_kind`` is :data:`LOSS_USER_CFUNC`
+    and ``user_addr`` is the registered C-callable address (the
+    other slots are unused).
+
+    The user registry is checked first so that users can override
+    built-in behaviour (e.g. plug in a faster KL kernel).
+    """
+    user_entry = _lookup_user_kernel(loss)
+    if user_entry is not None:
+        addr, _alpha_fn = user_entry
+        return LOSS_USER_CFUNC, np.nan, np.nan, int(addr)
     if isinstance(loss, SquaredLoss):
-        return LOSS_SQUARED, np.nan, np.nan
+        return LOSS_SQUARED, np.nan, np.nan, 0
     if isinstance(loss, KLLoss):
-        return LOSS_KL, np.nan, np.nan
+        return LOSS_KL, np.nan, np.nan, 0
     if isinstance(loss, BernoulliLoss):
-        return LOSS_BERNOULLI, np.nan, np.nan
+        return LOSS_BERNOULLI, np.nan, np.nan, 0
     if isinstance(loss, BoundedSquaredLoss):
-        return LOSS_BOUNDED_SQUARED, float(loss.lo), float(loss.hi)
+        return LOSS_BOUNDED_SQUARED, float(loss.lo), float(loss.hi), 0
     return None
 
 
@@ -68,12 +196,16 @@ def best_split_continuous_fast(
     bounded_lo: float,
     bounded_hi: float,
     min_orig_leaf: int,
+    user_cfunc_addr: int = 0,
 ):
     """Fast Cython best-split sweep on a continuous feature.
 
-    Falls back to the pure-Python ``best_split_continuous`` if the
-    compiled extension hasn't been built. The dtypes are coerced once
-    here so the inner loop sees the layout it expects.
+    Routes between the built-in dispatcher (one of the four
+    ``LOSS_*`` integer kinds) and the user-cfunc entry point
+    (``LOSS_USER_CFUNC``, with ``user_cfunc_addr`` carrying the
+    function address). Falls back to the pure-Python
+    ``best_split_continuous`` if the compiled extension hasn't been
+    built.
     """
     try:
         from . import _splitter_c  # type: ignore[attr-defined]
@@ -94,6 +226,13 @@ def best_split_continuous_fast(
     D = np.ascontiguousarray(D, dtype=np.float64)
     C = np.ascontiguousarray(C, dtype=np.float64)
     idx = np.ascontiguousarray(idx, dtype=np.int64)
+
+    if loss_kind == LOSS_USER_CFUNC:
+        return _splitter_c.best_split_continuous_user_c(
+            feature_col, D, C, idx,
+            int(user_cfunc_addr),
+            int(min_orig_leaf),
+        )
     return _splitter_c.best_split_continuous_c(
         feature_col, D, C, idx,
         int(loss_kind), float(bounded_lo), float(bounded_hi),

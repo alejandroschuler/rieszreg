@@ -15,6 +15,7 @@ compiled extension is required.
 
 from __future__ import annotations
 
+from ._splitter import register_fast_leaf_solver
 from ._tree import (
     FlatTree,
     flat_tree_from_node,
@@ -27,4 +28,5 @@ __all__ = [
     "flat_tree_from_node",
     "node_from_flat_tree",
     "predict_alpha",
+    "register_fast_leaf_solver",
 ]

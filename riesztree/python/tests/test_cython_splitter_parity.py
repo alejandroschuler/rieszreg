@@ -54,11 +54,11 @@ def test_cython_continuous_split_matches_python(loss):
     leaf_loss, _alpha = make_leaf_solvers(loss)
     py_split = best_split_continuous(x, D, C, idx, leaf_loss, min_orig_leaf=10)
 
-    kind, lo, hi = loss_kind_for(loss)
+    kind, lo, hi, addr = loss_kind_for(loss)
     cy_split = best_split_continuous_fast(
         x, D, C, idx,
         loss_kind=kind, bounded_lo=lo, bounded_hi=hi,
-        min_orig_leaf=10,
+        min_orig_leaf=10, user_cfunc_addr=addr,
     )
 
     if py_split is None and cy_split is None:
