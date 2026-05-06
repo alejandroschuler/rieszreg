@@ -37,7 +37,7 @@
     "href": "tuning-and-cross-fitting.html#comparing-learners-with-different-losses",
     "title": "Tuning and Cross-Fitting",
     "section": "Comparing learners with different losses",
-    "text": "Comparing learners with different losses\nTwo estimators trained with different losses produce α̂ in the same units (a per-row real value), so the squared yardstick scores them on the same scale. cross_val_score results are directly comparable.\n\nfrom sklearn.model_selection import cross_val_score\nfrom rieszreg import BoundedSquaredLoss, SquaredLoss, riesz_scorer\n\nbooster_bd = RieszBooster(\n    estimand=ATE(), loss=BoundedSquaredLoss(lo=-50.0, hi=50.0),\n    n_estimators=300, learning_rate=0.05, max_depth=3,\n)\nbooster_sq = RieszBooster(\n    estimand=ATE(), loss=SquaredLoss(),\n    n_estimators=300, learning_rate=0.05, max_depth=3,\n)\n\ns_bd = cross_val_score(booster_bd, df, cv=3)\ns_sq = cross_val_score(booster_sq, df, cv=3)\nprint(f\"BoundedSquared-trained: mean score = {s_bd.mean():.4f}\")\n\nBoundedSquared-trained: mean score = -20.3700\n\nprint(f\"squared-trained:        mean score = {s_sq.mean():.4f}\")\n\nsquared-trained:        mean score = 6.0809\n\n\nA single GridSearchCV can sweep across losses too. Each candidate is fit with its own loss; all candidates are ranked on the squared yardstick.\n\ngrid = GridSearchCV(\n    RieszBooster(\n        estimand=ATE(),\n        n_estimators=300, learning_rate=0.05, max_depth=3,\n    ),\n    param_grid={\"loss\": [BoundedSquaredLoss(lo=-50.0, hi=50.0), SquaredLoss()]},\n    cv=3,\n    n_jobs=1,\n).fit(df)\n\nprint(\"best loss:\", grid.best_params_[\"loss\"])\n\nbest loss: &lt;rieszreg.losses.squared.SquaredLoss object at 0x7f55fc288c10&gt;\n\nprint(f\"best score: {grid.best_score_:.4f}\")\n\nbest score: 6.0809\n\n\nTo rank with a different yardstick, build it with riesz_scorer:\n\nscorer = riesz_scorer(loss=BoundedSquaredLoss(lo=-50.0, hi=50.0))\ns_bd_yard = cross_val_score(booster_bd, df, cv=3, scoring=scorer)\ns_sq_yard = cross_val_score(booster_sq, df, cv=3, scoring=scorer)\nprint(f\"BoundedSquared-trained on bounded yardstick: {s_bd_yard.mean():.4f}\")\n\nBoundedSquared-trained on bounded yardstick: -20.3700\n\nprint(f\"squared-trained on bounded yardstick:        {s_sq_yard.mean():.4f}\")\n\nsquared-trained on bounded yardstick:        6.0809\n\n\nThe yardstick must accept the α the estimator predicts. The squared yardstick has unrestricted α-domain, so it works for any learner; the others have restrictions:\n\n\n\nYardstick\nα-domain\nAccepts α from learners trained with\n\n\n\n\nSquaredLoss\nℝ\nany loss (the default)\n\n\nKLLoss\n(0, ∞)\nKL-trained learners\n\n\nBernoulliLoss\n(0, 1)\nBernoulli-trained learners\n\n\nBoundedSquaredLoss(lo, hi)\n(lo, hi)\nmatching-bounded learners\n\n\n\nPick a yardstick whose domain accepts every candidate’s α. SquaredLoss is always safe.",
+    "text": "Comparing learners with different losses\nTwo estimators trained with different losses produce α̂ in the same units (a per-row real value), so the squared yardstick scores them on the same scale. cross_val_score results are directly comparable.\n\nfrom sklearn.model_selection import cross_val_score\nfrom rieszreg import BoundedSquaredLoss, SquaredLoss, riesz_scorer\n\nbooster_bd = RieszBooster(\n    estimand=ATE(), loss=BoundedSquaredLoss(lo=-50.0, hi=50.0),\n    n_estimators=300, learning_rate=0.05, max_depth=3,\n)\nbooster_sq = RieszBooster(\n    estimand=ATE(), loss=SquaredLoss(),\n    n_estimators=300, learning_rate=0.05, max_depth=3,\n)\n\ns_bd = cross_val_score(booster_bd, df, cv=3)\ns_sq = cross_val_score(booster_sq, df, cv=3)\nprint(f\"BoundedSquared-trained: mean score = {s_bd.mean():.4f}\")\n\nBoundedSquared-trained: mean score = -20.3700\n\nprint(f\"squared-trained:        mean score = {s_sq.mean():.4f}\")\n\nsquared-trained:        mean score = 6.0809\n\n\nA single GridSearchCV can sweep across losses too. Each candidate is fit with its own loss; all candidates are ranked on the squared yardstick.\n\ngrid = GridSearchCV(\n    RieszBooster(\n        estimand=ATE(),\n        n_estimators=300, learning_rate=0.05, max_depth=3,\n    ),\n    param_grid={\"loss\": [BoundedSquaredLoss(lo=-50.0, hi=50.0), SquaredLoss()]},\n    cv=3,\n    n_jobs=1,\n).fit(df)\n\nprint(\"best loss:\", grid.best_params_[\"loss\"])\n\nbest loss: &lt;rieszreg.losses.squared.SquaredLoss object at 0x7fda94b05d90&gt;\n\nprint(f\"best score: {grid.best_score_:.4f}\")\n\nbest score: 6.0809\n\n\nTo rank with a different yardstick, build it with riesz_scorer:\n\nscorer = riesz_scorer(loss=BoundedSquaredLoss(lo=-50.0, hi=50.0))\ns_bd_yard = cross_val_score(booster_bd, df, cv=3, scoring=scorer)\ns_sq_yard = cross_val_score(booster_sq, df, cv=3, scoring=scorer)\nprint(f\"BoundedSquared-trained on bounded yardstick: {s_bd_yard.mean():.4f}\")\n\nBoundedSquared-trained on bounded yardstick: -20.3700\n\nprint(f\"squared-trained on bounded yardstick:        {s_sq_yard.mean():.4f}\")\n\nsquared-trained on bounded yardstick:        6.0809\n\n\nThe yardstick must accept the α the estimator predicts. The squared yardstick has unrestricted α-domain, so it works for any learner; the others have restrictions:\n\n\n\nYardstick\nα-domain\nAccepts α from learners trained with\n\n\n\n\nSquaredLoss\nℝ\nany loss (the default)\n\n\nKLLoss\n(0, ∞)\nKL-trained learners\n\n\nBernoulliLoss\n(0, 1)\nBernoulli-trained learners\n\n\nBoundedSquaredLoss(lo, hi)\n(lo, hi)\nmatching-bounded learners\n\n\n\nPick a yardstick whose domain accepts every candidate’s α. SquaredLoss is always safe.",
     "crumbs": [
       "Usage",
       "Tuning and Cross-Fitting"
@@ -48,7 +48,7 @@
     "href": "tuning-and-cross-fitting.html#cross-fit-ensemble-selection",
     "title": "Tuning and Cross-Fitting",
     "section": "Cross-fit ensemble selection",
-    "text": "Cross-fit ensemble selection\nGoing further than two losses on one backend: the pattern below selects among five learner configurations — two boosting depths, two neural-net architectures, and a forest — using inner 3-fold CV inside each of five outer cross-fitting folds. The inner CV runs entirely on the training portion of each outer fold, so the model selection criterion never sees the held-out data that cross_val_predict predicts.\nThis uses the Pipeline idiom for cross-estimator-type selection: wrap the estimator in a single-step Pipeline named \"riesz\", then pass a list of fully configured instances as the value for that key. GridSearchCV calls pipe.set_params(riesz=candidate), fits, and scores each one on the canonical squared yardstick.\n\nfrom sklearn.pipeline import Pipeline\nfrom riesznet import RieszNet\nfrom forestriesz import ForestRieszRegressor\n\nestimand = ATE()\n\n# Five fully configured candidates across three learner families.\ncandidates = [\n    # Boosting — depth 3, early stopping\n    RieszBooster(\n        estimand=estimand,\n        n_estimators=2000,\n        max_depth=3,\n        early_stopping_rounds=20,\n        validation_fraction=0.2,\n        learning_rate=0.05,\n    ),\n    # Boosting — depth 5, early stopping\n    RieszBooster(\n        estimand=estimand,\n        n_estimators=2000,\n        max_depth=5,\n        early_stopping_rounds=20,\n        validation_fraction=0.2,\n        learning_rate=0.05,\n    ),\n    # Neural net — small MLP with early stopping\n    RieszNet(\n        estimand=estimand,\n        hidden_sizes=(64, 64),\n        epochs=500,\n        early_stopping_rounds=20,\n        validation_fraction=0.2,\n    ),\n    # Neural net — larger MLP with early stopping\n    RieszNet(\n        estimand=estimand,\n        hidden_sizes=(128, 64),\n        epochs=500,\n        early_stopping_rounds=20,\n        validation_fraction=0.2,\n    ),\n    # Forest Riesz\n    ForestRieszRegressor(\n        estimand=estimand,\n        n_estimators=500,\n        min_samples_leaf=10,\n        random_state=0,\n    ),\n]\n\n# Single-step Pipeline so GridSearchCV can swap in any candidate as the step.\npipe = Pipeline([(\"riesz\", candidates[0])])\n\n# Inner CV: 3 folds, selects the best learner+config from the five candidates.\ncv_inner = GridSearchCV(\n    pipe,\n    param_grid=[{\"riesz\": [c]} for c in candidates],\n    cv=3,\n    n_jobs=1,\n    refit=True,\n)\n\n# Outer CV: 5 cross-fitting folds. Each fold:\n#   1. Fits cv_inner on 4/5 of the data (inner CV happens here, on that 4/5).\n#   2. Predicts the held-out 1/5 using the winner from step 1.\n# The inner model selection never touches the held-out slice.\nalpha_oof = cross_val_predict(cv_inner, df, cv=5)\nprint(f\"out-of-fold alpha shape: {alpha_oof.shape}\")\n\nout-of-fold alpha shape: (2000,)\n\nprint(f\"first 5 values:          {alpha_oof[:5]}\")\n\nfirst 5 values:          [-3.49636817 -1.45712268 -0.90962332 -0.85112947  1.53748786]\n\n\nThe call to cross_val_predict is identical to the single-learner case. The only addition is the Pipeline wrapper and the list-valued param_grid entry — everything else is standard sklearn.\nThe same nested cross-fit + per-fold model selection in R uses rsample (tidymodels) for the fold splits and a small loop for the inner-CV winner pick. Each outer fold runs its own inner-CV on its training portion only.\n\n\nLoad forestriesz and riesznet R wrappers\n.project_root &lt;- Sys.getenv(\"QUARTO_PROJECT_DIR\", unset = getwd())\nsuppressMessages(pkgload::load_all(\n  file.path(.project_root, \"../forestriesz/r/forestriesz\"), quiet = TRUE))\nsuppressMessages(pkgload::load_all(\n  file.path(.project_root, \"../riesznet/r/riesznet\"),       quiet = TRUE))\n\n\n\nsuppressPackageStartupMessages(library(rsample))\n\nestimand &lt;- ATE()\nmake_boost_d3 &lt;- function() RieszBooster$new(\n  estimand = estimand, n_estimators = 2000L, max_depth = 3L,\n  early_stopping_rounds = 20L, validation_fraction = 0.2, learning_rate = 0.05\n)\nmake_boost_d5 &lt;- function() RieszBooster$new(\n  estimand = estimand, n_estimators = 2000L, max_depth = 5L,\n  early_stopping_rounds = 20L, validation_fraction = 0.2, learning_rate = 0.05\n)\nmake_net_64  &lt;- function() RieszNet$new(\n  estimand = estimand, hidden_sizes = c(64L, 64L), epochs = 500L,\n  early_stopping_rounds = 20L, validation_fraction = 0.2\n)\nmake_net_128 &lt;- function() RieszNet$new(\n  estimand = estimand, hidden_sizes = c(128L, 64L), epochs = 500L,\n  early_stopping_rounds = 20L, validation_fraction = 0.2\n)\nmake_forest  &lt;- function() ForestRieszRegressor$new(\n  estimand = estimand, n_estimators = 500L, min_samples_leaf = 10L,\n  random_state = 0L\n)\ncandidates &lt;- list(make_boost_d3, make_boost_d5, make_net_64, make_net_128, make_forest)\n\ncv_outer &lt;- vfold_cv(df, v = 5)\nalpha_oof &lt;- numeric(nrow(df))\nfor (split in cv_outer$splits) {\n  tr &lt;- analysis(split); te &lt;- assessment(split); te_idx &lt;- complement(split)\n  cv_inner &lt;- vfold_cv(tr, v = 3)\n  scores &lt;- vapply(candidates, function(make) {\n    mean(vapply(cv_inner$splits, function(s) {\n      m &lt;- make(); m$fit(analysis(s)); m$score(assessment(s))\n    }, numeric(1)))\n  }, numeric(1))\n  best_make &lt;- candidates[[which.max(scores)]]\n  best &lt;- best_make(); best$fit(tr)\n  alpha_oof[te_idx] &lt;- best$predict(te)\n}\nlength(alpha_oof); head(alpha_oof, 5)\n\n[1] 2000\n\n\n[1]  1.2938672  4.7251339  2.0906787 -3.0069799  0.7939973\n\n\nForestRieszRegressor requires loading forestriesz and riesznet is needed for the neural candidates; load those R packages alongside rieszreg and rieszboost per the install instructions.",
+    "text": "Cross-fit ensemble selection\nGoing further than two losses on one backend: the pattern below selects among five learner configurations — two boosting depths, two neural-net architectures, and a forest — using inner 3-fold CV inside each of five outer cross-fitting folds. The inner CV runs entirely on the training portion of each outer fold, so the model selection criterion never sees the held-out data that cross_val_predict predicts.\nThis uses the Pipeline idiom for cross-estimator-type selection: wrap the estimator in a single-step Pipeline named \"riesz\", then pass a list of fully configured instances as the value for that key. GridSearchCV calls pipe.set_params(riesz=candidate), fits, and scores each one on the canonical squared yardstick.\n\nfrom sklearn.pipeline import Pipeline\nfrom riesznet import RieszNet\nfrom forestriesz import ForestRieszRegressor\n\nestimand = ATE()\n\n# Five fully configured candidates across three learner families.\ncandidates = [\n    # Boosting — depth 3, early stopping\n    RieszBooster(\n        estimand=estimand,\n        n_estimators=2000,\n        max_depth=3,\n        early_stopping_rounds=20,\n        validation_fraction=0.2,\n        learning_rate=0.05,\n    ),\n    # Boosting — depth 5, early stopping\n    RieszBooster(\n        estimand=estimand,\n        n_estimators=2000,\n        max_depth=5,\n        early_stopping_rounds=20,\n        validation_fraction=0.2,\n        learning_rate=0.05,\n    ),\n    # Neural net — small MLP with early stopping\n    RieszNet(\n        estimand=estimand,\n        hidden_sizes=(64, 64),\n        epochs=500,\n        early_stopping_rounds=20,\n        validation_fraction=0.2,\n    ),\n    # Neural net — larger MLP with early stopping\n    RieszNet(\n        estimand=estimand,\n        hidden_sizes=(128, 64),\n        epochs=500,\n        early_stopping_rounds=20,\n        validation_fraction=0.2,\n    ),\n    # Forest Riesz\n    ForestRieszRegressor(\n        estimand=estimand,\n        n_estimators=500,\n        min_samples_leaf=10,\n        random_state=0,\n    ),\n]\n\n# Single-step Pipeline so GridSearchCV can swap in any candidate as the step.\npipe = Pipeline([(\"riesz\", candidates[0])])\n\n# Inner CV: 3 folds, selects the best learner+config from the five candidates.\ncv_inner = GridSearchCV(\n    pipe,\n    param_grid=[{\"riesz\": [c]} for c in candidates],\n    cv=3,\n    n_jobs=1,\n    refit=True,\n)\n\n# Outer CV: 5 cross-fitting folds. Each fold:\n#   1. Fits cv_inner on 4/5 of the data (inner CV happens here, on that 4/5).\n#   2. Predicts the held-out 1/5 using the winner from step 1.\n# The inner model selection never touches the held-out slice.\nalpha_oof = cross_val_predict(cv_inner, df, cv=5)\nprint(f\"out-of-fold alpha shape: {alpha_oof.shape}\")\n\nout-of-fold alpha shape: (2000,)\n\nprint(f\"first 5 values:          {alpha_oof[:5]}\")\n\nfirst 5 values:          [-3.49636865 -1.45712292 -0.90962321 -0.85112959  1.53748751]\n\n\nThe call to cross_val_predict is identical to the single-learner case. The only addition is the Pipeline wrapper and the list-valued param_grid entry — everything else is standard sklearn.\nThe same nested cross-fit + per-fold model selection in R uses rsample (tidymodels) for the fold splits and a small loop for the inner-CV winner pick. Each outer fold runs its own inner-CV on its training portion only.\n\n\nLoad forestriesz and riesznet R wrappers\n.project_root &lt;- Sys.getenv(\"QUARTO_PROJECT_DIR\", unset = getwd())\nsuppressMessages(pkgload::load_all(\n  file.path(.project_root, \"../forestriesz/r/forestriesz\"), quiet = TRUE))\nsuppressMessages(pkgload::load_all(\n  file.path(.project_root, \"../riesznet/r/riesznet\"),       quiet = TRUE))\n\n\n\nsuppressPackageStartupMessages(library(rsample))\n\nestimand &lt;- ATE()\nmake_boost_d3 &lt;- function() RieszBooster$new(\n  estimand = estimand, n_estimators = 2000L, max_depth = 3L,\n  early_stopping_rounds = 20L, validation_fraction = 0.2, learning_rate = 0.05\n)\nmake_boost_d5 &lt;- function() RieszBooster$new(\n  estimand = estimand, n_estimators = 2000L, max_depth = 5L,\n  early_stopping_rounds = 20L, validation_fraction = 0.2, learning_rate = 0.05\n)\nmake_net_64  &lt;- function() RieszNet$new(\n  estimand = estimand, hidden_sizes = c(64L, 64L), epochs = 500L,\n  early_stopping_rounds = 20L, validation_fraction = 0.2\n)\nmake_net_128 &lt;- function() RieszNet$new(\n  estimand = estimand, hidden_sizes = c(128L, 64L), epochs = 500L,\n  early_stopping_rounds = 20L, validation_fraction = 0.2\n)\nmake_forest  &lt;- function() ForestRieszRegressor$new(\n  estimand = estimand, n_estimators = 500L, min_samples_leaf = 10L,\n  random_state = 0L\n)\ncandidates &lt;- list(make_boost_d3, make_boost_d5, make_net_64, make_net_128, make_forest)\n\ncv_outer &lt;- vfold_cv(df, v = 5)\nalpha_oof &lt;- numeric(nrow(df))\nfor (split in cv_outer$splits) {\n  tr &lt;- analysis(split); te &lt;- assessment(split); te_idx &lt;- complement(split)\n  cv_inner &lt;- vfold_cv(tr, v = 3)\n  scores &lt;- vapply(candidates, function(make) {\n    mean(vapply(cv_inner$splits, function(s) {\n      m &lt;- make(); m$fit(analysis(s)); m$score(assessment(s))\n    }, numeric(1)))\n  }, numeric(1))\n  best_make &lt;- candidates[[which.max(scores)]]\n  best &lt;- best_make(); best$fit(tr)\n  alpha_oof[te_idx] &lt;- best$predict(te)\n}\nlength(alpha_oof); head(alpha_oof, 5)\n\n[1] 2000\n\n\n[1]  1.2938672  4.7251339  2.0855489 -2.9362645  0.7939973\n\n\nForestRieszRegressor requires loading forestriesz and riesznet is needed for the neural candidates; load those R packages alongside rieszreg and rieszboost per the install instructions.",
     "crumbs": [
       "Usage",
       "Tuning and Cross-Fitting"
@@ -551,91 +551,212 @@
     ]
   },
   {
-    "objectID": "backends/kernel.html",
-    "href": "backends/kernel.html",
-    "title": "Kernel backend (krrr)",
+    "objectID": "backends/neural.html",
+    "href": "backends/neural.html",
+    "title": "Neural-network backend (riesznet)",
     "section": "",
-    "text": "krrr provides KernelRidgeBackend and the KernelRieszRegressor convenience class. It implements Singh, Kernel Ridge Riesz Representers (arXiv:2102.11076) for the full set of estimands, by piping rieszreg’s augmentation engine into a closed-form kernel solve.\nThe augmented dataset gives per-row coefficients \\(a_k\\) and \\(b_k\\). The squared Riesz loss with kernel ridge regularization\n\\[\nL_n(\\alpha) = \\frac{1}{n} \\sum_k \\big[ a_k\\,\\alpha(p_k)^2 + b_k\\,\\alpha(p_k) \\big] + \\lambda\\,\\|\\alpha\\|^2_\\mathcal{H}\n\\]\nhas the representer-theorem solution \\(\\hat\\alpha = \\sum_k \\gamma_k\\,k(\\cdot, p_k)\\) with \\(\\gamma\\) solving the linear system\n\\[\n(\\mathrm{diag}(a)\\,K + n\\lambda\\,I)\\,\\gamma \\;=\\; -b/2.\n\\]\nPartitioning into \\(o = \\{a_k &gt; 0\\}\\) (original rows) and \\(c = \\{a_k = 0\\}\\) (counterfactual evaluation points): \\(\\gamma_c\\) is closed form, and \\(\\gamma_o\\) solves a symmetric PSD system on the o-block. A single eigendecomposition of the rescaled kernel matrix solves the entire λ path.",
+    "text": "riesznet trains the Riesz representer α(x) with a PyTorch model, in the spirit of Chernozhukov et al. (2021), RieszNet and ForestRiesz. It fits the Riesz representer only — outcome regression is handled separately.\nrieszreg exposes the entry point as MomentBackend.fit_rows. The neural backend uses the per-row moment formulation: for each original row z_i,\n\\[\nL_i = \\psi(\\alpha(x_i)) - \\sum_{j} c_j \\cdot \\varphi'(\\alpha(p_j))\n\\]\nwhere the (c_j, p_j) pairs come from rieszreg.trace(estimand, z_i) and the model produces α via a Bregman link. The training loop minimizes the mean of L_i with autograd; no augmented dataset is built.",
     "crumbs": [
       "Backends",
-      "Kernel backend (krrr)"
+      "Neural-network backend (riesznet)"
     ]
   },
   {
-    "objectID": "backends/kernel.html#quickstart",
-    "href": "backends/kernel.html#quickstart",
-    "title": "Kernel backend (krrr)",
-    "section": "Quickstart",
-    "text": "Quickstart\n\nPythonR\n\n\n\nimport numpy as np, pandas as pd\nfrom krrr import KernelRieszRegressor, Gaussian\nfrom rieszreg import ATE\n\nrng = np.random.default_rng(0)\nn = 1000\nx = rng.uniform(0, 1, n)\npi = 1 / (1 + np.exp(-(-0.02*x - x**2 + 4*np.log(x + 0.3) + 1.5)))\na = rng.binomial(1, pi)\ndf = pd.DataFrame({\"a\": a.astype(float), \"x\": x})\n\nkrr = KernelRieszRegressor(\n    estimand=ATE(treatment=\"a\", covariates=(\"x\",)),\n    kernel=Gaussian(length_scale=\"median\"),\n    lambda_grid=np.logspace(-4, 0, 21),\n    solver=\"auto\",\n    validation_fraction=0.25,\n)\nkrr.fit(df)\n\nKernelRieszRegressor(estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                                 m=&lt;function ATE.&lt;locals&gt;.m at 0x163e579c0&gt;,\n                                                 extra_keys=(),\n                                                 name='ATE',\n                                                 factory_spec={'args': {'covariates': ['x'],\n                                                                        'treatment': 'a'},\n                                                               'factory': 'ATE'}),\n                     kernel=Gaussian(length_scale='median',\n                                     _resolved=0.9313282640811966),\n                     lambda_grid=array([1.00000000e-04, 1.58489319e-04, 2.51188643e-04, 3.98107171e-04,\n       6.30957344e-04, 1.00000000e-03, 1.58489319e-03, 2.51188643e-03,\n       3.98107171e-03, 6.30957344e-03, 1.00000000e-02, 1.58489319e-02,\n       2.51188643e-02, 3.98107171e-02, 6.30957344e-02, 1.00000000e-01,\n       1.58489319e-01, 2.51188643e-01, 3.98107171e-01, 6.30957344e-01,\n       1.00000000e+00]),\n                     validation_fraction=0.25)In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.KernelRieszRegressoriFittedKernelRieszRegressor(estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                                 m=&lt;function ATE.&lt;locals&gt;.m at 0x163e579c0&gt;,\n                                                 extra_keys=(),\n                                                 name='ATE',\n                                                 factory_spec={'args': {'covariates': ['x'],\n                                                                        'treatment': 'a'},\n                                                               'factory': 'ATE'}),\n                     kernel=Gaussian(length_scale='median',\n                                     _resolved=0.9313282640811966),\n                     lambda_grid=array([1.00000000e-04, 1.58489319e-04, 2.51188643e-04, 3.98107171e-04,\n       6.30957344e-04, 1.00000000e-03, 1.58489319e-03, 2.51188643e-03,\n       3.98107171e-03, 6.30957344e-03, 1.00000000e-02, 1.58489319e-02,\n       2.51188643e-02, 3.98107171e-02, 6.30957344e-02, 1.00000000e-01,\n       1.58489319e-01, 2.51188643e-01, 3.98107171e-01, 6.30957344e-01,\n       1.00000000e+00]),\n                     validation_fraction=0.25) \n\nalpha_hat  = krr.predict(df)\ntrue_alpha = a / pi - (1 - a) / (1 - pi)\nprint(f\"selected lambda = {krr.lambda_:.4g}\")\n\nselected lambda = 0.0001\n\nprint(f\"corr(α̂, α₀)     = {np.corrcoef(alpha_hat, true_alpha)[0, 1]:.3f}\")\n\ncorr(α̂, α₀)     = 0.953\n\nprint(f\"RMSE             = {np.sqrt(np.mean((alpha_hat - true_alpha)**2)):.3f}\")\n\nRMSE             = 0.772\n\n\n\n\n\n# Load the krrr R wrapper (one-time per session) and configure reticulate.\npkgload::load_all(\"../krrr/r/krrr\")\nuse_python_krrr(file.path(getwd(), \"../rieszboost/.venv/bin/python\"))\n\nset.seed(0)\nn  &lt;- 1000\nx  &lt;- runif(n)\npi &lt;- 1 / (1 + exp(-(-0.02 * x - x^2 + 4 * log(x + 0.3) + 1.5)))\na  &lt;- rbinom(n, 1, pi)\ndf &lt;- data.frame(a = as.numeric(a), x = x)\n\nkrr &lt;- KernelRieszRegressor$new(\n  estimand = ATE(\"a\", \"x\"),\n  kernel = Gaussian(length_scale = \"median\"),\n  lambda_grid = 10^seq(-4, 0, length.out = 21),\n  solver = \"auto\",\n  validation_fraction = 0.25\n)\nkrr$fit(df)\n\nalpha_hat  &lt;- krr$predict(df)\ntrue_alpha &lt;- a / pi - (1 - a) / (1 - pi)\ncat(sprintf(\"selected lambda = %.4g\\n\", reticulate::py_to_r(krr$py$lambda_)))\ncat(sprintf(\"corr             = %.3f\\n\", cor(alpha_hat, true_alpha)))\ncat(sprintf(\"RMSE             = %.3f\\n\", sqrt(mean((alpha_hat - true_alpha)^2))))",
+    "objectID": "backends/neural.html#two-surfaces",
+    "href": "backends/neural.html#two-surfaces",
+    "title": "Neural-network backend (riesznet)",
+    "section": "Two surfaces",
+    "text": "Two surfaces\n\nRieszNet — convenience class with a default MLP. Surfaces hidden_sizes, activation, dropout, learning_rate, weight_decay, epochs, device, dtype. Trains full-batch.\nTorchBackend — power-user surface. Pass any nn.Module factory and any optimizer factory. Compose with rieszreg.RieszEstimator for full control.",
     "crumbs": [
       "Backends",
-      "Kernel backend (krrr)"
+      "Neural-network backend (riesznet)"
     ]
   },
   {
-    "objectID": "backends/kernel.html#kernels",
-    "href": "backends/kernel.html#kernels",
-    "title": "Kernel backend (krrr)",
-    "section": "Kernels",
-    "text": "Kernels\nkrrr ships eight kernels with algebra (Sum, Product, Scaled, Tensor):\nfrom krrr import Gaussian, Matern, Linear, Polynomial, Tensor\n\nGaussian(length_scale=\"median\")          # default; median pairwise distance\nGaussian(length_scale=\"scott\")            # Scott's rule\nGaussian(length_scale=0.5)                # fixed\nMatern(nu=2.5, length_scale=\"median\")     # ν ∈ {0.5, 1.5, 2.5}\nLinear()                                  # k(x, y) = x · y\nPolynomial(degree=3, gamma=1.0, coef0=1.0)\n\n# Algebra\nGaussian() + Linear()                     # Sum\n0.5 * Gaussian()                           # Scaled\nGaussian() * Linear()                      # Product (Hadamard on Gram)\nTensor(Gaussian(), [0, 1], Linear(), [2])  # tensor product over disjoint columns\nLength-scale \"median\", \"scott\", and \"silverman\" heuristics resolve at fit time on the augmented training points, so the bandwidth adapts to whatever scale matters for this dataset.",
+    "objectID": "backends/neural.html#quickstart-ate",
+    "href": "backends/neural.html#quickstart-ate",
+    "title": "Neural-network backend (riesznet)",
+    "section": "Quickstart — ATE",
+    "text": "Quickstart — ATE\n\nPythonR\n\n\n\nimport numpy as np, pandas as pd\nfrom riesznet import RieszNet, ATE\n\nrng = np.random.default_rng(0)\nn = 1500\nx = rng.uniform(0, 1, n)\npi = 1 / (1 + np.exp(-(-0.02*x - x**2 + 4*np.log(x + 0.3) + 1.5)))\na = rng.binomial(1, pi).astype(float)\ndf = pd.DataFrame({\"a\": a, \"x\": x})\n\nrn = RieszNet(\n    estimand=ATE(treatment=\"a\", covariates=(\"x\",)),\n    hidden_sizes=(64, 64),\n    learning_rate=5e-3,\n    epochs=400,\n    batch_size=64,\n    validation_fraction=0.2,\n    early_stopping_rounds=30,\n    random_state=0,\n)\nrn.fit(df)\n\nRieszNet(early_stopping_rounds=30, epochs=400,\n         estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                     m=&lt;function ATE.&lt;locals&gt;.m at 0x171024180&gt;,\n                                     extra_keys=(),\n                                     name='ATE',\n                                     factory_spec={'args': {'covariates': ['x'],\n                                                            'treatment': 'a'},\n                                                   'factory': 'ATE'}),\n         learning_rate=0.005, validation_fraction=0.2)In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.RieszNetiFittedRieszNet(early_stopping_rounds=30, epochs=400,\n         estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                     m=&lt;function ATE.&lt;locals&gt;.m at 0x171024180&gt;,\n                                     extra_keys=(),\n                                     name='ATE',\n                                     factory_spec={'args': {'covariates': ['x'],\n                                                            'treatment': 'a'},\n                                                   'factory': 'ATE'}),\n         learning_rate=0.005, validation_fraction=0.2) \n\nalpha_hat  = rn.predict(df)\ntrue_alpha = a / pi - (1 - a) / (1 - pi)\nprint(f\"corr(α̂, α₀) = {np.corrcoef(alpha_hat, true_alpha)[0, 1]:.3f}\")\n\ncorr(α̂, α₀) = 0.963\n\nprint(f\"RMSE         = {np.sqrt(np.mean((alpha_hat - true_alpha)**2)):.3f}\")\n\nRMSE         = 0.699\n\nprint(f\"best_iter    = {rn.best_iteration_}\")\n\nbest_iter    = 17\n\n\n\n\n\npkgload::load_all(\"../riesznet/r/riesznet\")\nuse_python_riesznet(file.path(getwd(), \"../.venv/bin/python\"))\n\nset.seed(0)\nn  &lt;- 1500\nx  &lt;- runif(n)\npi &lt;- 1 / (1 + exp(-(-0.02 * x - x^2 + 4 * log(x + 0.3) + 1.5)))\na  &lt;- rbinom(n, 1, pi)\ndf &lt;- data.frame(a = as.numeric(a), x = x)\n\nrn &lt;- RieszNet$new(\n  estimand = ATE(treatment = \"a\", covariates = \"x\"),\n  hidden_sizes = c(64L, 64L),\n  learning_rate = 5e-3,\n  epochs = 400L,\n  validation_fraction = 0.2,\n  early_stopping_rounds = 30L,\n  random_state = 0L\n)\nrn$fit(df)\nalpha_hat &lt;- rn$predict(df)",
     "crumbs": [
       "Backends",
-      "Kernel backend (krrr)"
+      "Neural-network backend (riesznet)"
     ]
   },
   {
-    "objectID": "backends/kernel.html#solver-tier",
-    "href": "backends/kernel.html#solver-tier",
-    "title": "Kernel backend (krrr)",
-    "section": "Solver tier",
-    "text": "Solver tier\n\n\n\n\n\n\n\n\nSolver\nWhen to use\nCost\n\n\n\n\n\"direct\"\nn_aug ≤ 3,000\nOne eigendecomposition; entire λ-path is O(n²) per λ. Exact.\n\n\n\"nystrom_cg\"\nn_aug ≤ 50,000\nPreconditioned CG on the o-block; m landmarks.\n\n\n\"rff\"\nn_aug very large; shift-invariant kernel\nPrimal D × D solve via random Fourier features.\n\n\n\"falkon\"\nn_aug very large; GPU available\nWraps the optional falkon package.\n\n\n\"auto\"\ndefault\nDispatches by n_aug.\n\n\n\nThe solver consumes the augmented dataset directly; you never deal with kernel matrices yourself.\n\n\n\n\n\n\nWarningFalkon limitation\n\n\n\nThe Falkon backend currently drops the \\(K_{oc}\\,b_c\\) coupling on the o-block — Falkon’s standalone API only solves vanilla KRR, not the modified-RHS system the augmentation produces. For estimands where \\(n_c\\) is small or λ is moderate the bias is small; for tight overlap or extreme λ it is not. Use solver=\"nystrom_cg\" if exactness matters more than scale.",
+    "objectID": "backends/neural.html#quickstart-tsm-with-kl-loss",
+    "href": "backends/neural.html#quickstart-tsm-with-kl-loss",
+    "title": "Neural-network backend (riesznet)",
+    "section": "Quickstart — TSM with KL loss",
+    "text": "Quickstart — TSM with KL loss\nKLLoss is matched to density-ratio estimands like TSM. The exp link keeps predictions positive without any post-hoc clipping.\n\nfrom riesznet import KLLoss, RieszNet, TSM\n\nrn = RieszNet(\n    estimand=TSM(level=1, treatment=\"a\", covariates=(\"x\",)),\n    loss=KLLoss(),\n    hidden_sizes=(64, 64),\n    learning_rate=5e-3,\n    epochs=400,\n    validation_fraction=0.2,\n    early_stopping_rounds=30,\n    random_state=0,\n)\nrn.fit(df)\n\nRieszNet(early_stopping_rounds=30, epochs=400,\n         estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                     m=&lt;function TSM.&lt;locals&gt;.m at 0x171089940&gt;,\n                                     extra_keys=(),\n                                     name='TSM(level=1)',\n                                     factory_spec={'args': {'covariates': ['x'],\n                                                            'level': 1,\n                                                            'treatment': 'a'},\n                                                   'factory': 'TSM'}),\n         learning_rate=0.005,\n         loss=&lt;rieszreg.losses.kl.KLLoss object at 0x16fd4eba0&gt;,\n         validation_fraction=0.2)In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.RieszNetiFittedRieszNet(early_stopping_rounds=30, epochs=400,\n         estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                     m=&lt;function TSM.&lt;locals&gt;.m at 0x171089940&gt;,\n                                     extra_keys=(),\n                                     name='TSM(level=1)',\n                                     factory_spec={'args': {'covariates': ['x'],\n                                                            'level': 1,\n                                                            'treatment': 'a'},\n                                                   'factory': 'TSM'}),\n         learning_rate=0.005,\n         loss=&lt;rieszreg.losses.kl.KLLoss object at 0x16fd4eba0&gt;,\n         validation_fraction=0.2) \n\nalpha_hat  = rn.predict(df)\ntrue_alpha = (a == 1).astype(float) / pi\nprint(f\"min α̂        = {alpha_hat.min():.4f}  (positive by construction)\")\n\nmin α̂        = 0.0003  (positive by construction)\n\nprint(f\"corr(α̂, α₀) = {np.corrcoef(alpha_hat, true_alpha)[0, 1]:.3f}\")\n\ncorr(α̂, α₀) = 0.977\n\n\nKLLoss and BernoulliLoss reject ATE / ATT / shift-style data at fit time (they require non-negative m-coefficients, which difference-of-evaluations estimands violate). BoundedSquaredLoss(lo, hi) accepts any signed coefficients and clips α̂ into the interval.",
     "crumbs": [
       "Backends",
-      "Kernel backend (krrr)"
+      "Neural-network backend (riesznet)"
     ]
   },
   {
-    "objectID": "backends/kernel.html#λ-selection",
-    "href": "backends/kernel.html#λ-selection",
-    "title": "Kernel backend (krrr)",
-    "section": "λ selection",
-    "text": "λ selection\nPass a grid of λ values; the backend selects by validation Riesz loss when validation_fraction &gt; 0 or eval_set is given.\nkrr = KernelRieszRegressor(\n    estimand=ATE(),\n    lambda_grid=np.logspace(-5, 1, 31),\n    validation_fraction=0.25,\n).fit(df)\nprint(krr.lambda_)   # the chosen λ\nFor consistency theory, λ should scale \\(O(1/n)\\). Cross-fitting users should re-tune per fold (sklearn’s cross_val_predict does this if KernelRieszRegressor is wrapped in GridSearchCV).",
+    "objectID": "backends/neural.html#custom-architectures",
+    "href": "backends/neural.html#custom-architectures",
+    "title": "Neural-network backend (riesznet)",
+    "section": "Custom architectures",
+    "text": "Custom architectures\nThe convenience class RieszNet covers MLPs. For an arbitrary nn.Module, instantiate TorchBackend directly and compose with rieszreg.RieszEstimator:\n\nimport functools\nimport torch\nimport torch.nn as nn\n\nfrom rieszreg import ATE, RieszEstimator\nfrom riesznet import TorchBackend\n\n\ndef my_factory(input_dim):\n    \"\"\"Top-level factory; importable by qualname so save/load works.\"\"\"\n    return nn.Sequential(\n        nn.Linear(input_dim, 32), nn.GELU(),\n        nn.Linear(32, 32), nn.GELU(),\n        nn.Linear(32, 1),\n    )\n\nbackend = TorchBackend(\n    module_factory=my_factory,\n    optimizer_factory=functools.partial(torch.optim.AdamW, lr=3e-4, weight_decay=1e-3),\n    epochs=300,\n    batch_size=256,        # in original rows\n    device=\"cpu\",\n    dtype=\"float32\",\n    grad_clip_norm=1.0,\n    validation_fraction=0.2,\n    early_stopping_rounds=30,\n)\n\nest = RieszEstimator(\n    estimand=ATE(treatment=\"a\", covariates=(\"x\",)),\n    backend=backend,\n    random_state=0,\n)\nest.fit(df)\n\nRieszEstimator(backend=TorchBackend(module_factory=&lt;function my_factory at 0x1710322a0&gt;,\n                                    optimizer_factory=functools.partial(&lt;class 'torch.optim.adamw.AdamW'&gt;, lr=0.0003, weight_decay=0.001),\n                                    scheduler_factory=None,\n                                    epochs=300,\n                                    batch_size=256,\n                                    device='cpu',\n                                    dtype='float32',\n                                    grad_clip_norm=1.0,\n                                    early_stopping_rounds=30,\n                                    validation_fraction=0.2),\n               estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                           m=&lt;function ATE.&lt;locals&gt;.m at 0x1710520c0&gt;,\n                                           extra_keys=(),\n                                           name='ATE',\n                                           factory_spec={'args': {'covariates': ['x'],\n                                                                  'treatment': 'a'},\n                                                         'factory': 'ATE'}))In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.RieszEstimatoriFittedRieszEstimator(backend=TorchBackend(module_factory=&lt;function my_factory at 0x1710322a0&gt;,\n                                    optimizer_factory=functools.partial(&lt;class 'torch.optim.adamw.AdamW'&gt;, lr=0.0003, weight_decay=0.001),\n                                    scheduler_factory=None,\n                                    epochs=300,\n                                    batch_size=256,\n                                    device='cpu',\n                                    dtype='float32',\n                                    grad_clip_norm=1.0,\n                                    early_stopping_rounds=30,\n                                    validation_fraction=0.2),\n               estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                           m=&lt;function ATE.&lt;locals&gt;.m at 0x1710520c0&gt;,\n                                           extra_keys=(),\n                                           name='ATE',\n                                           factory_spec={'args': {'covariates': ['x'],\n                                                                  'treatment': 'a'},\n                                                         'factory': 'ATE'})) \n\nalpha_hat = est.predict(df)\nprint(f\"α̂ range: [{alpha_hat.min():.3f}, {alpha_hat.max():.3f}]\")\n\nα̂ range: [-4.868, 5.654]\n\n\nmodule_factory and optimizer_factory must be top-level callables (functools.partial over a top-level function is fine). Closures and lambdas raise on save() because they cannot be reconstructed by qualname.",
     "crumbs": [
       "Backends",
-      "Kernel backend (krrr)"
+      "Neural-network backend (riesznet)"
     ]
   },
   {
-    "objectID": "backends/kernel.html#loss-support",
-    "href": "backends/kernel.html#loss-support",
-    "title": "Kernel backend (krrr)",
+    "objectID": "backends/neural.html#hyperparameters",
+    "href": "backends/neural.html#hyperparameters",
+    "title": "Neural-network backend (riesznet)",
+    "section": "Hyperparameters",
+    "text": "Hyperparameters\nRieszNet constructor:\n\n\n\n\n\n\n\n\nKnob\nDefault\nNotes\n\n\n\n\nhidden_sizes\n(64, 64)\nMLP layer widths. Empty tuple gives a linear model.\n\n\nactivation\n\"relu\"\nOne of relu, tanh, gelu, elu, silu, leaky_relu.\n\n\ndropout\n0.0\nDropout probability after each activation.\n\n\nlearning_rate\n1e-3\nAdam learning rate.\n\n\nweight_decay\n0.0\nAdam weight decay.\n\n\nepochs\n200\nMax epochs. Combine with early_stopping_rounds for adaptive stopping.\n\n\nbatch_size\n64\nOriginal rows per minibatch. None is full-batch GD.\n\n\ndevice\n\"cpu\"\nAlso \"cuda\", \"mps\", \"auto\".\n\n\ndtype\n\"float32\"\nAlso \"float64\" (slower, more precise).\n\n\ngrad_clip_norm\nNone\nGlobal L2 clip on the gradient.\n\n\nloss\nSquaredLoss()\nAny of the four built-in Bregman losses.\n\n\ninit\nNone\nα-space initialization. Default is m̄ = E[m(Z, 1)] projected into the loss’s domain (the loss-minimizing constant); pass a float to override.\n\n\nvalidation_fraction\n0.0\nHold out for early stopping.\n\n\nearly_stopping_rounds\nNone\nPatience (in epochs) for validation Riesz loss.\n\n\nrandom_state\n0\nSeeds torch, torch.cuda, and the DataLoader generator.\n\n\n\nTorchBackend constructor (power-user surface):\n\n\n\n\n\n\n\n\nKnob\nDefault\nNotes\n\n\n\n\nmodule_factory\nrequired\nCallable[[int], nn.Module] returning a model with scalar output.\n\n\noptimizer_factory\nrequired\nCallable[[Iterable[Parameter]], Optimizer].\n\n\nscheduler_factory\nNone\nOptional Callable[[Optimizer], LRScheduler]. Stepped per epoch.\n\n\nepochs\n200\n\n\n\nbatch_size\nNone\nOriginal-row batch size. None is full-batch.\n\n\ndevice\n\"cpu\"\n\n\n\ndtype\n\"float32\"\n\n\n\ngrad_clip_norm\nNone",
+    "crumbs": [
+      "Backends",
+      "Neural-network backend (riesznet)"
+    ]
+  },
+  {
+    "objectID": "backends/neural.html#save-load",
+    "href": "backends/neural.html#save-load",
+    "title": "Neural-network backend (riesznet)",
+    "section": "Save / load",
+    "text": "Save / load\n\nimport tempfile, os\nwith tempfile.TemporaryDirectory() as tmp:\n    save_dir = os.path.join(tmp, \"fitted\")\n    rn.save(save_dir)\n\n    loaded = RieszNet.load(save_dir)\n    pred_loaded = loaded.predict(df)\n    print(f\"max abs diff after round-trip: {np.max(np.abs(pred_loaded - alpha_hat)):.2e}\")\n\nmax abs diff after round-trip: 9.48e+00\n\n\nSave writes state_dict.pt (PyTorch weights, on CPU) plus predictor.json (carries the factory’s module + qualname, the input dim, and the Bregman-loss spec). Load re-imports the factory by qualname, rebuilds the module, and calls load_state_dict.\nFor built-in estimands the metadata round-trips automatically. For a custom Estimand, pass estimand= to load.",
+    "crumbs": [
+      "Backends",
+      "Neural-network backend (riesznet)"
+    ]
+  },
+  {
+    "objectID": "backends/neural.html#sklearn-integration",
+    "href": "backends/neural.html#sklearn-integration",
+    "title": "Neural-network backend (riesznet)",
+    "section": "Sklearn integration",
+    "text": "Sklearn integration\nRieszNet is a BaseEstimator, so it composes with clone, GridSearchCV, cross_val_predict, Pipeline. See Tuning and cross-fitting.",
+    "crumbs": [
+      "Backends",
+      "Neural-network backend (riesznet)"
+    ]
+  },
+  {
+    "objectID": "backends/neural.html#loss-support",
+    "href": "backends/neural.html#loss-support",
+    "title": "Neural-network backend (riesznet)",
     "section": "Loss support",
-    "text": "Loss support\nKernelRidgeBackend currently supports SquaredLoss only — non-quadratic losses (KLLoss, BernoulliLoss, BoundedSquaredLoss) require Newton iteration on the kernel system, planned for v0.2. Pass an unsupported loss and the backend raises at fit time with a clear error.\nFor non-quadratic losses today, use the boosting backend.",
+    "text": "Loss support\n\n\n\n\n\n\n\n\n\nLoss\nSupported\nLink\nNotes\n\n\n\n\nSquaredLoss\n✅\nidentity\nDefault. Works on every estimand.\n\n\nKLLoss\n✅\nexp\nDensity-ratio targets only (TSM, IPSI). Requires non-negative m-coefficients.\n\n\nBernoulliLoss\n✅\nsigmoid\nForces α̂ ∈ (0, 1). Density-ratio targets only.\n\n\nBoundedSquaredLoss(lo, hi)\n✅\nscaled-sigmoid\nForces α̂ ∈ (lo, hi). Works on every estimand.\n\n\n\nThe autograd implementation matches the analytic gradient in the loss spec exactly — verified per loss in the test suite.",
     "crumbs": [
       "Backends",
-      "Kernel backend (krrr)"
+      "Neural-network backend (riesznet)"
     ]
   },
   {
-    "objectID": "backends/kernel.html#reference-parity",
-    "href": "backends/kernel.html#reference-parity",
-    "title": "Kernel backend (krrr)",
+    "objectID": "backends/neural.html#device-dtype-reproducibility",
+    "href": "backends/neural.html#device-dtype-reproducibility",
+    "title": "Neural-network backend (riesznet)",
+    "section": "Device, dtype, reproducibility",
+    "text": "Device, dtype, reproducibility\nThe training loop seeds torch, torch.cuda, and a torch.Generator for the data loader, so single-device fits are reproducible run-to-run on the same hardware. Bitwise reproducibility on CUDA across machines is not promised; torch.use_deterministic_algorithms is not enabled by default because it slows training significantly.\ndevice=\"auto\" picks cuda → mps → cpu in that order. dtype=\"float64\" runs end-to-end in double precision, useful for tightly-coupled gradient checks but slower.",
+    "crumbs": [
+      "Backends",
+      "Neural-network backend (riesznet)"
+    ]
+  },
+  {
+    "objectID": "backends/index.html",
+    "href": "backends/index.html",
+    "title": "Backends",
+    "section": "",
+    "text": "A backend fits the Riesz representer for a given estimand and loss. Four implementation packages ship today; each slots into RieszEstimator through one of two Protocols. rieszboost and krrr consume the augmented (a, b) dataset (Backend.fit_augmented). forestriesz ships both: a moment-style ForestRieszRegressor that consumes original rows + per-row moments (MomentBackend.fit_rows), and an augmentation-style AugForestRieszRegressor that consumes the augmented dataset directly (Backend.fit_augmented). riesznet consumes original rows + per-row moments via MomentBackend.fit_rows, training a PyTorch model with autograd.",
+    "crumbs": [
+      "Backends",
+      "Backends"
+    ]
+  },
+  {
+    "objectID": "backends/index.html#pick-a-backend",
+    "href": "backends/index.html#pick-a-backend",
+    "title": "Backends",
+    "section": "Pick a backend",
+    "text": "Pick a backend\n\n\n\n\nBoosting (rieszboost)\nKernel ridge (krrr)\nForest (forestriesz)\nNeural (riesznet)\n\n\n\n\nMethod\nGradient boosting (xgboost or sklearn)\nClosed-form solve of \\((\\mathrm{diag}(a) K + n\\lambda I)\\gamma = -b/2\\)\nGRF-based per-leaf moment solve\nPyTorch autograd on the per-row Bregman-Riesz loss\n\n\nAlgorithm\nLee & Schuler (2501.04871)\nSingh (2102.11076)\nChernozhukov, Newey, Quintas-Martínez, Syrgkanis (ICML 2022)\nChernozhukov, Newey, Quintas-Martínez, Syrgkanis (2110.03031)\n\n\nBest for\nTabular data, \\(n \\gtrsim 1{,}000\\), mixed feature types\nSmooth \\(\\alpha_0\\), small/medium \\(n\\), low-dimensional \\(X\\)\nMany covariates, asymptotic CIs on \\(\\alpha(x)\\)\nHigh-dimensional inputs, custom architectures, image / text features\n\n\nIterative?\nYes (rounds + early stopping)\nNo (closed-form per λ)\nNo (single forest fit)\nYes (epochs + early stopping)\n\n\nHyperparameters\nn_estimators, learning_rate, max_depth, reg_lambda, subsample\nkernel, lambda_grid, solver\nn_estimators, max_depth, min_samples_leaf, honest, riesz_feature_fns\nhidden_sizes, learning_rate, epochs, dropout, or any module_factory / optimizer_factory\n\n\nLoss support\nSquaredLoss, KLLoss, BernoulliLoss, BoundedSquaredLoss\nSquaredLoss only (today)\nSquaredLoss only (today)\nSquaredLoss, KLLoss, BernoulliLoss, BoundedSquaredLoss\n\n\nScaling\nLinear in \\(n\\) via xgboost\n\\(O(n^3)\\) direct; Nyström + RFF + Falkon for larger \\(n\\)\n\\(O(n \\log n)\\) per tree\nPer-epoch cost is one forward pass over \\(n + \\sum_i k_i\\) points; scales to GPU\n\n\nConfidence intervals\nNo\nNo\nYes (predict_interval on single-basis fits)\nNo\n\n\nConvenience class\nrieszboost.RieszBooster\nkrrr.KernelRieszRegressor\nforestriesz.ForestRieszRegressor (moment-style) and forestriesz.AugForestRieszRegressor (augmentation-style, fully estimand-agnostic)\nriesznet.RieszNet (default MLP); riesznet.TorchBackend for arbitrary nn.Module factories",
+    "crumbs": [
+      "Backends",
+      "Backends"
+    ]
+  },
+  {
+    "objectID": "backends/index.html#compose-explicitly",
+    "href": "backends/index.html#compose-explicitly",
+    "title": "Backends",
+    "section": "Compose explicitly",
+    "text": "Compose explicitly\nBoth convenience classes are subclasses of rieszreg.RieszEstimator with the backend defaulted. To swap backends or build your own, compose explicitly:\nimport functools\nfrom rieszreg import RieszEstimator, ATE, SquaredLoss\nfrom rieszboost.backends import XGBoostBackend, SklearnBackend\nfrom krrr import KernelRidgeBackend, Gaussian\nfrom forestriesz import ForestRieszBackend\nfrom riesznet import TorchBackend\nfrom riesznet.modules import build_adam, build_mlp\n\n# Default: xgboost\nest = RieszEstimator(estimand=ATE(), backend=XGBoostBackend())\n\n# Sklearn boosting with KernelRidge as the base learner\nfrom sklearn.kernel_ridge import KernelRidge\nest = RieszEstimator(\n    estimand=ATE(),\n    backend=SklearnBackend(lambda: KernelRidge(alpha=1.0, kernel=\"rbf\", gamma=2.0)),\n)\n\n# Kernel ridge directly\nest = RieszEstimator(\n    estimand=ATE(),\n    backend=KernelRidgeBackend(kernel=Gaussian(length_scale=\"median\")),\n)\n\n# Random forest (moment-style backend; fit_rows path)\nest = RieszEstimator(\n    estimand=ATE(),\n    backend=ForestRieszBackend(n_estimators=500),\n)\n\n# Neural network (moment-style backend; fit_rows path)\nest = RieszEstimator(\n    estimand=ATE(),\n    backend=TorchBackend(\n        module_factory=functools.partial(build_mlp, hidden_sizes=(64, 64)),\n        optimizer_factory=functools.partial(build_adam, lr=5e-3),\n        epochs=300,\n    ),\n)\nThe convenience classes are thin subclasses that bake in the backend and surface backend-specific hyperparameters as constructor args, so that they fit cleanly into GridSearchCV. See the boosting, kernel, forest, and neural pages for each.",
+    "crumbs": [
+      "Backends",
+      "Backends"
+    ]
+  },
+  {
+    "objectID": "backends/index.html#adding-a-backend",
+    "href": "backends/index.html#adding-a-backend",
+    "title": "Backends",
+    "section": "Adding a backend",
+    "text": "Adding a backend\nImplement one of two Protocols from rieszreg.backends.base:\n\nBackend.fit_augmented(aug_train, aug_valid, loss, …) — for augmentation-style learners (kernel ridge, gradient boosting). Implementations: KernelRidgeBackend, XGBoostBackend, SklearnBackend.\nMomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, …) — for moment-style learners (random forests, neural nets). Compute per-row moments via rieszreg.trace(estimand, row). Implementations: ForestRieszBackend, TorchBackend.\n\nEither way, return a FitResult whose predictor implements predict_eta and predict_alpha. Register the predictor’s loader for round-trip via:\nfrom rieszreg.backends import register_predictor_loader\nregister_predictor_loader(\"my-kind\", MyPredictor.load)\nSee Developing for the full contract.",
+    "crumbs": [
+      "Backends",
+      "Backends"
+    ]
+  },
+  {
+    "objectID": "backends/boosting.html",
+    "href": "backends/boosting.html",
+    "title": "Boosting backend (rieszboost)",
+    "section": "",
+    "text": "rieszboost provides two boosting backends and the RieszBooster convenience class. XGBoostBackend is the default; SklearnBackend runs Friedman gradient boosting against any sklearn-compatible base learner.\nThe augmentation engine produces per-row quadratic (\\(a\\)) and linear (\\(b\\)) coefficients. Each original row contributes \\(a=1\\), \\(b=0\\); each \\((c, p)\\) pair from \\(m(z, \\cdot)\\) contributes \\(a=0\\), \\(b=-2c\\). The Riesz loss becomes a per-row weighted regression that xgboost handles via its custom-objective interface.",
+    "crumbs": [
+      "Backends",
+      "Boosting backend (rieszboost)"
+    ]
+  },
+  {
+    "objectID": "backends/boosting.html#xgboostbackend",
+    "href": "backends/boosting.html#xgboostbackend",
+    "title": "Boosting backend (rieszboost)",
+    "section": "XGBoostBackend",
+    "text": "XGBoostBackend\nThe default. Boosts in η-space; the predictor applies the loss spec’s link to convert to α.\nXGBoostBackend(hessian_floor=2.0, gradient_only=False)\nhessian_floor is the lower bound on the per-row Hessian fed to xgboost. Counterfactual rows have \\(H = 2a = 0\\); without a floor, xgboost’s leaf-weight Newton step (-G/(H+λ)) is degenerate at those leaves. The default of 2.0 matches the natural Hessian on original rows.\ngradient_only short-circuits the second-order Hessian and uses \\(H = 1\\) everywhere — first-order gradient boosting (Friedman 2001 / Lee-Schuler Algorithm 2). Set True to reproduce the Lee-Schuler reference implementation exactly.\nmax_depth, reg_lambda, subsample, learning_rate, n_estimators, and early_stopping_rounds are passed through from the RieszBooster constructor.",
+    "crumbs": [
+      "Backends",
+      "Boosting backend (rieszboost)"
+    ]
+  },
+  {
+    "objectID": "backends/boosting.html#tuning-recipe",
+    "href": "backends/boosting.html#tuning-recipe",
+    "title": "Boosting backend (rieszboost)",
+    "section": "Tuning recipe",
+    "text": "Tuning recipe\n\n\n\n\n\n\n\n\n\nKnob\nDefault\nWhen to change\nEffect\n\n\n\n\nmax_depth\n4\nDrop to 2–3 for extrapolation outliers\nShallow trees can’t carve out a high-magnitude leaf for a single point.\n\n\nlearning_rate\n0.05\nDrop to 0.02 for harder problems\nSmaller updates per tree; pair with higher n_estimators.\n\n\nn_estimators + early_stopping_rounds\n200, None\nSet n_estimators=1000-2000 and early_stopping_rounds=20\nThe validation split picks the iteration count.\n\n\nvalidation_fraction\n0.0\nSet to 0.2 with early_stopping_rounds\nInternal split for early stopping. Alternative: pass eval_set= explicitly.\n\n\nreg_lambda\n1.0\nBump to 5–10 for low-overlap data\nxgboost L2 on leaf weights; damps the magnitude of any single leaf.\n\n\nsubsample\n1.0\nTry 0.5–0.8 with very large \\(n\\)\nStochastic boosting.\n\n\n\nXGBoostBackend exposes two more knobs:\n\n\n\n\n\n\n\n\nKnob\nDefault\nWhen to change\n\n\n\n\ngradient_only\nFalse\nSet True to reproduce Lee-Schuler Algorithm 2 / Friedman 2001 exactly.\n\n\nhessian_floor\n2.0\nLower bound on the per-row Hessian. The default matches the natural Hessian of original-data rows.\n\n\n\nSee the diagnostics page for the warnings each knob addresses.",
+    "crumbs": [
+      "Backends",
+      "Boosting backend (rieszboost)"
+    ]
+  },
+  {
+    "objectID": "backends/boosting.html#sklearnbackend",
+    "href": "backends/boosting.html#sklearnbackend",
+    "title": "Boosting backend (rieszboost)",
+    "section": "SklearnBackend",
+    "text": "SklearnBackend\nTo use a non-tree base learner, pass a base_learner_factory: a zero-arg callable returning a fresh sklearn-compatible regressor each round.\nThe backend implements first-order gradient boosting with closed-form line search. Each round: fit the weak learner to the negative gradient of the Riesz loss, solve for the optimal step size under a quadratic surrogate, update the running prediction.\n\nPythonR\n\n\n\nimport numpy as np, pandas as pd\nfrom sklearn.kernel_ridge import KernelRidge\nfrom rieszboost import RieszBooster, SklearnBackend\nfrom rieszreg import ATE\n\nrng = np.random.default_rng(0)\nn = 1000\nx = rng.uniform(0, 1, n)\npi = 1 / (1 + np.exp(-(8 * x - 4)))\na = rng.binomial(1, pi)\ndf = pd.DataFrame({\"a\": a.astype(float), \"x\": x})\n\nbooster = RieszBooster(\n    estimand=ATE(),\n    backend=SklearnBackend(\n        base_learner_factory=lambda: KernelRidge(alpha=1.0, kernel=\"rbf\", gamma=2.0),\n        n_estimators=80,\n        learning_rate=0.05,\n        early_stopping_rounds=10,\n        validation_fraction=0.2,\n    ),\n).fit(df)\n\nalpha_hat  = booster.predict(df)\ntrue_alpha = a / pi - (1 - a) / (1 - pi)\nprint(f\"corr = {np.corrcoef(alpha_hat, true_alpha)[0,1]:.3f}, \"\n      f\"RMSE = {np.sqrt(np.mean((alpha_hat - true_alpha)**2)):.3f}\")\n\ncorr = 0.913, RMSE = 1.663\n\n\n\n\n\nset.seed(0)\nn  &lt;- 1000\nx  &lt;- runif(n)\npi &lt;- 1 / (1 + exp(-(8 * x - 4)))\na  &lt;- rbinom(n, 1, pi)\ndf &lt;- data.frame(a = as.numeric(a), x = x)\n\n# Build the Python factory directly via reticulate so each round gets a\n# fresh sklearn object.\nsk_kr &lt;- reticulate::import(\"sklearn.kernel_ridge\", convert = FALSE)\nfactory &lt;- reticulate::py_func(function() sk_kr$KernelRidge(alpha = 1.0,\n                                                             kernel = \"rbf\",\n                                                             gamma = 2.0))\n\nbooster &lt;- RieszBooster$new(\n  estimand = ATE(),\n  backend = SklearnBackend(\n    base_learner_factory = factory,\n    n_estimators = 80L,\n    learning_rate = 0.05,\n    early_stopping_rounds = 10L,\n    validation_fraction = 0.2\n  )\n)\nbooster$fit(df)\n\nalpha_hat  &lt;- booster$predict(df)\ntrue_alpha &lt;- a / pi - (1 - a) / (1 - pi)\ncat(sprintf(\"corr = %.3f, RMSE = %.3f\\n\",\n            cor(alpha_hat, true_alpha),\n            sqrt(mean((alpha_hat - true_alpha)^2))))\n\ncorr = 0.928, RMSE = 1.579\n\n\n\n\n\nSklearnBackend is slower than XGBoostBackend (no parallel tree splits). Use it when the data is better fit by a non-tree learner (e.g. low-dimensional problems where kernel ridge dominates), or when xgboost is unavailable in your environment.\n\n\n\n\n\n\nTipSkipping xgboost\n\n\n\nSklearnBackend does not import xgboost. The library lazy-imports xgboost only when XGBoostBackend is used, so you can run rieszboost in xgboost-hostile environments (alpine containers, builds without OpenMP) by passing backend=SklearnBackend(...) and never installing xgboost.",
+    "crumbs": [
+      "Backends",
+      "Boosting backend (rieszboost)"
+    ]
+  },
+  {
+    "objectID": "backends/boosting.html#reference-parity",
+    "href": "backends/boosting.html#reference-parity",
+    "title": "Boosting backend (rieszboost)",
     "section": "Reference parity",
-    "text": "Reference parity\nkrrr exercises a TSM1 numerical-parity test against the dml-tmle R reference at tolerance 1e-8.",
+    "text": "Reference parity\nrieszboost cross-checks against Lee’s reference implementation. With gradient_only=True, learning_rate = lr_ref / 2, and reg_lambda=0, predictions match to Pearson 0.998 / 0.986 on the binary-DGP example. See rieszboost/examples/lee_schuler/COMPARISON.md for the full report.",
     "crumbs": [
       "Backends",
-      "Kernel backend (krrr)"
-    ]
-  },
-  {
-    "objectID": "backends/kernel.html#sharp-edges",
-    "href": "backends/kernel.html#sharp-edges",
-    "title": "Kernel backend (krrr)",
-    "section": "Sharp edges",
-    "text": "Sharp edges\n\nMedian-heuristic bandwidth on the augmented dataset. The median is computed on augmented points (originals + counterfactuals from \\(m\\)). For shift-style estimands this includes the shifted treatment values.\nsolver=\"falkon\" drops \\(K_{oc}\\,b_c\\). See callout above.",
-    "crumbs": [
-      "Backends",
-      "Kernel backend (krrr)"
+      "Boosting backend (rieszboost)"
     ]
   },
   {
@@ -760,212 +881,256 @@
     ]
   },
   {
-    "objectID": "backends/boosting.html",
-    "href": "backends/boosting.html",
-    "title": "Boosting backend (rieszboost)",
+    "objectID": "backends/kernel.html",
+    "href": "backends/kernel.html",
+    "title": "Kernel backend (krrr)",
     "section": "",
-    "text": "rieszboost provides two boosting backends and the RieszBooster convenience class. XGBoostBackend is the default; SklearnBackend runs Friedman gradient boosting against any sklearn-compatible base learner.\nThe augmentation engine produces per-row quadratic (\\(a\\)) and linear (\\(b\\)) coefficients. Each original row contributes \\(a=1\\), \\(b=0\\); each \\((c, p)\\) pair from \\(m(z, \\cdot)\\) contributes \\(a=0\\), \\(b=-2c\\). The Riesz loss becomes a per-row weighted regression that xgboost handles via its custom-objective interface.",
+    "text": "krrr provides KernelRidgeBackend and the KernelRieszRegressor convenience class. It implements Singh, Kernel Ridge Riesz Representers (arXiv:2102.11076) for the full set of estimands, by piping rieszreg’s augmentation engine into a closed-form kernel solve.\nThe augmented dataset gives per-row coefficients \\(a_k\\) and \\(b_k\\). The squared Riesz loss with kernel ridge regularization\n\\[\nL_n(\\alpha) = \\frac{1}{n} \\sum_k \\big[ a_k\\,\\alpha(p_k)^2 + b_k\\,\\alpha(p_k) \\big] + \\lambda\\,\\|\\alpha\\|^2_\\mathcal{H}\n\\]\nhas the representer-theorem solution \\(\\hat\\alpha = \\sum_k \\gamma_k\\,k(\\cdot, p_k)\\) with \\(\\gamma\\) solving the linear system\n\\[\n(\\mathrm{diag}(a)\\,K + n\\lambda\\,I)\\,\\gamma \\;=\\; -b/2.\n\\]\nPartitioning into \\(o = \\{a_k &gt; 0\\}\\) (original rows) and \\(c = \\{a_k = 0\\}\\) (counterfactual evaluation points): \\(\\gamma_c\\) is closed form, and \\(\\gamma_o\\) solves a symmetric PSD system on the o-block. A single eigendecomposition of the rescaled kernel matrix solves the entire λ path.",
     "crumbs": [
       "Backends",
-      "Boosting backend (rieszboost)"
+      "Kernel backend (krrr)"
     ]
   },
   {
-    "objectID": "backends/boosting.html#xgboostbackend",
-    "href": "backends/boosting.html#xgboostbackend",
-    "title": "Boosting backend (rieszboost)",
-    "section": "XGBoostBackend",
-    "text": "XGBoostBackend\nThe default. Boosts in η-space; the predictor applies the loss spec’s link to convert to α.\nXGBoostBackend(hessian_floor=2.0, gradient_only=False)\nhessian_floor is the lower bound on the per-row Hessian fed to xgboost. Counterfactual rows have \\(H = 2a = 0\\); without a floor, xgboost’s leaf-weight Newton step (-G/(H+λ)) is degenerate at those leaves. The default of 2.0 matches the natural Hessian on original rows.\ngradient_only short-circuits the second-order Hessian and uses \\(H = 1\\) everywhere — first-order gradient boosting (Friedman 2001 / Lee-Schuler Algorithm 2). Set True to reproduce the Lee-Schuler reference implementation exactly.\nmax_depth, reg_lambda, subsample, learning_rate, n_estimators, and early_stopping_rounds are passed through from the RieszBooster constructor.",
+    "objectID": "backends/kernel.html#quickstart",
+    "href": "backends/kernel.html#quickstart",
+    "title": "Kernel backend (krrr)",
+    "section": "Quickstart",
+    "text": "Quickstart\n\nPythonR\n\n\n\nimport numpy as np, pandas as pd\nfrom krrr import KernelRieszRegressor, Gaussian\nfrom rieszreg import ATE\n\nrng = np.random.default_rng(0)\nn = 1000\nx = rng.uniform(0, 1, n)\npi = 1 / (1 + np.exp(-(-0.02*x - x**2 + 4*np.log(x + 0.3) + 1.5)))\na = rng.binomial(1, pi)\ndf = pd.DataFrame({\"a\": a.astype(float), \"x\": x})\n\nkrr = KernelRieszRegressor(\n    estimand=ATE(treatment=\"a\", covariates=(\"x\",)),\n    kernel=Gaussian(length_scale=\"median\"),\n    lambda_grid=np.logspace(-4, 0, 21),\n    solver=\"auto\",\n    validation_fraction=0.25,\n)\nkrr.fit(df)\n\nKernelRieszRegressor(estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                                 m=&lt;function ATE.&lt;locals&gt;.m at 0x163e579c0&gt;,\n                                                 extra_keys=(),\n                                                 name='ATE',\n                                                 factory_spec={'args': {'covariates': ['x'],\n                                                                        'treatment': 'a'},\n                                                               'factory': 'ATE'}),\n                     kernel=Gaussian(length_scale='median',\n                                     _resolved=0.9313282640811966),\n                     lambda_grid=array([1.00000000e-04, 1.58489319e-04, 2.51188643e-04, 3.98107171e-04,\n       6.30957344e-04, 1.00000000e-03, 1.58489319e-03, 2.51188643e-03,\n       3.98107171e-03, 6.30957344e-03, 1.00000000e-02, 1.58489319e-02,\n       2.51188643e-02, 3.98107171e-02, 6.30957344e-02, 1.00000000e-01,\n       1.58489319e-01, 2.51188643e-01, 3.98107171e-01, 6.30957344e-01,\n       1.00000000e+00]),\n                     validation_fraction=0.25)In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.KernelRieszRegressoriFittedKernelRieszRegressor(estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                                 m=&lt;function ATE.&lt;locals&gt;.m at 0x163e579c0&gt;,\n                                                 extra_keys=(),\n                                                 name='ATE',\n                                                 factory_spec={'args': {'covariates': ['x'],\n                                                                        'treatment': 'a'},\n                                                               'factory': 'ATE'}),\n                     kernel=Gaussian(length_scale='median',\n                                     _resolved=0.9313282640811966),\n                     lambda_grid=array([1.00000000e-04, 1.58489319e-04, 2.51188643e-04, 3.98107171e-04,\n       6.30957344e-04, 1.00000000e-03, 1.58489319e-03, 2.51188643e-03,\n       3.98107171e-03, 6.30957344e-03, 1.00000000e-02, 1.58489319e-02,\n       2.51188643e-02, 3.98107171e-02, 6.30957344e-02, 1.00000000e-01,\n       1.58489319e-01, 2.51188643e-01, 3.98107171e-01, 6.30957344e-01,\n       1.00000000e+00]),\n                     validation_fraction=0.25) \n\nalpha_hat  = krr.predict(df)\ntrue_alpha = a / pi - (1 - a) / (1 - pi)\nprint(f\"selected lambda = {krr.lambda_:.4g}\")\n\nselected lambda = 0.0001\n\nprint(f\"corr(α̂, α₀)     = {np.corrcoef(alpha_hat, true_alpha)[0, 1]:.3f}\")\n\ncorr(α̂, α₀)     = 0.953\n\nprint(f\"RMSE             = {np.sqrt(np.mean((alpha_hat - true_alpha)**2)):.3f}\")\n\nRMSE             = 0.772\n\n\n\n\n\n# Load the krrr R wrapper (one-time per session) and configure reticulate.\npkgload::load_all(\"../krrr/r/krrr\")\nuse_python_krrr(file.path(getwd(), \"../rieszboost/.venv/bin/python\"))\n\nset.seed(0)\nn  &lt;- 1000\nx  &lt;- runif(n)\npi &lt;- 1 / (1 + exp(-(-0.02 * x - x^2 + 4 * log(x + 0.3) + 1.5)))\na  &lt;- rbinom(n, 1, pi)\ndf &lt;- data.frame(a = as.numeric(a), x = x)\n\nkrr &lt;- KernelRieszRegressor$new(\n  estimand = ATE(\"a\", \"x\"),\n  kernel = Gaussian(length_scale = \"median\"),\n  lambda_grid = 10^seq(-4, 0, length.out = 21),\n  solver = \"auto\",\n  validation_fraction = 0.25\n)\nkrr$fit(df)\n\nalpha_hat  &lt;- krr$predict(df)\ntrue_alpha &lt;- a / pi - (1 - a) / (1 - pi)\ncat(sprintf(\"selected lambda = %.4g\\n\", reticulate::py_to_r(krr$py$lambda_)))\ncat(sprintf(\"corr             = %.3f\\n\", cor(alpha_hat, true_alpha)))\ncat(sprintf(\"RMSE             = %.3f\\n\", sqrt(mean((alpha_hat - true_alpha)^2))))",
     "crumbs": [
       "Backends",
-      "Boosting backend (rieszboost)"
+      "Kernel backend (krrr)"
     ]
   },
   {
-    "objectID": "backends/boosting.html#tuning-recipe",
-    "href": "backends/boosting.html#tuning-recipe",
-    "title": "Boosting backend (rieszboost)",
-    "section": "Tuning recipe",
-    "text": "Tuning recipe\n\n\n\n\n\n\n\n\n\nKnob\nDefault\nWhen to change\nEffect\n\n\n\n\nmax_depth\n4\nDrop to 2–3 for extrapolation outliers\nShallow trees can’t carve out a high-magnitude leaf for a single point.\n\n\nlearning_rate\n0.05\nDrop to 0.02 for harder problems\nSmaller updates per tree; pair with higher n_estimators.\n\n\nn_estimators + early_stopping_rounds\n200, None\nSet n_estimators=1000-2000 and early_stopping_rounds=20\nThe validation split picks the iteration count.\n\n\nvalidation_fraction\n0.0\nSet to 0.2 with early_stopping_rounds\nInternal split for early stopping. Alternative: pass eval_set= explicitly.\n\n\nreg_lambda\n1.0\nBump to 5–10 for low-overlap data\nxgboost L2 on leaf weights; damps the magnitude of any single leaf.\n\n\nsubsample\n1.0\nTry 0.5–0.8 with very large \\(n\\)\nStochastic boosting.\n\n\n\nXGBoostBackend exposes two more knobs:\n\n\n\n\n\n\n\n\nKnob\nDefault\nWhen to change\n\n\n\n\ngradient_only\nFalse\nSet True to reproduce Lee-Schuler Algorithm 2 / Friedman 2001 exactly.\n\n\nhessian_floor\n2.0\nLower bound on the per-row Hessian. The default matches the natural Hessian of original-data rows.\n\n\n\nSee the diagnostics page for the warnings each knob addresses.",
+    "objectID": "backends/kernel.html#kernels",
+    "href": "backends/kernel.html#kernels",
+    "title": "Kernel backend (krrr)",
+    "section": "Kernels",
+    "text": "Kernels\nkrrr ships eight kernels with algebra (Sum, Product, Scaled, Tensor):\nfrom krrr import Gaussian, Matern, Linear, Polynomial, Tensor\n\nGaussian(length_scale=\"median\")          # default; median pairwise distance\nGaussian(length_scale=\"scott\")            # Scott's rule\nGaussian(length_scale=0.5)                # fixed\nMatern(nu=2.5, length_scale=\"median\")     # ν ∈ {0.5, 1.5, 2.5}\nLinear()                                  # k(x, y) = x · y\nPolynomial(degree=3, gamma=1.0, coef0=1.0)\n\n# Algebra\nGaussian() + Linear()                     # Sum\n0.5 * Gaussian()                           # Scaled\nGaussian() * Linear()                      # Product (Hadamard on Gram)\nTensor(Gaussian(), [0, 1], Linear(), [2])  # tensor product over disjoint columns\nLength-scale \"median\", \"scott\", and \"silverman\" heuristics resolve at fit time on the augmented training points, so the bandwidth adapts to whatever scale matters for this dataset.",
     "crumbs": [
       "Backends",
-      "Boosting backend (rieszboost)"
+      "Kernel backend (krrr)"
     ]
   },
   {
-    "objectID": "backends/boosting.html#sklearnbackend",
-    "href": "backends/boosting.html#sklearnbackend",
-    "title": "Boosting backend (rieszboost)",
-    "section": "SklearnBackend",
-    "text": "SklearnBackend\nTo use a non-tree base learner, pass a base_learner_factory: a zero-arg callable returning a fresh sklearn-compatible regressor each round.\nThe backend implements first-order gradient boosting with closed-form line search. Each round: fit the weak learner to the negative gradient of the Riesz loss, solve for the optimal step size under a quadratic surrogate, update the running prediction.\n\nPythonR\n\n\n\nimport numpy as np, pandas as pd\nfrom sklearn.kernel_ridge import KernelRidge\nfrom rieszboost import RieszBooster, SklearnBackend\nfrom rieszreg import ATE\n\nrng = np.random.default_rng(0)\nn = 1000\nx = rng.uniform(0, 1, n)\npi = 1 / (1 + np.exp(-(8 * x - 4)))\na = rng.binomial(1, pi)\ndf = pd.DataFrame({\"a\": a.astype(float), \"x\": x})\n\nbooster = RieszBooster(\n    estimand=ATE(),\n    backend=SklearnBackend(\n        base_learner_factory=lambda: KernelRidge(alpha=1.0, kernel=\"rbf\", gamma=2.0),\n        n_estimators=80,\n        learning_rate=0.05,\n        early_stopping_rounds=10,\n        validation_fraction=0.2,\n    ),\n).fit(df)\n\nalpha_hat  = booster.predict(df)\ntrue_alpha = a / pi - (1 - a) / (1 - pi)\nprint(f\"corr = {np.corrcoef(alpha_hat, true_alpha)[0,1]:.3f}, \"\n      f\"RMSE = {np.sqrt(np.mean((alpha_hat - true_alpha)**2)):.3f}\")\n\ncorr = 0.913, RMSE = 1.663\n\n\n\n\n\nset.seed(0)\nn  &lt;- 1000\nx  &lt;- runif(n)\npi &lt;- 1 / (1 + exp(-(8 * x - 4)))\na  &lt;- rbinom(n, 1, pi)\ndf &lt;- data.frame(a = as.numeric(a), x = x)\n\n# Build the Python factory directly via reticulate so each round gets a\n# fresh sklearn object.\nsk_kr &lt;- reticulate::import(\"sklearn.kernel_ridge\", convert = FALSE)\nfactory &lt;- reticulate::py_func(function() sk_kr$KernelRidge(alpha = 1.0,\n                                                             kernel = \"rbf\",\n                                                             gamma = 2.0))\n\nbooster &lt;- RieszBooster$new(\n  estimand = ATE(),\n  backend = SklearnBackend(\n    base_learner_factory = factory,\n    n_estimators = 80L,\n    learning_rate = 0.05,\n    early_stopping_rounds = 10L,\n    validation_fraction = 0.2\n  )\n)\nbooster$fit(df)\n\nalpha_hat  &lt;- booster$predict(df)\ntrue_alpha &lt;- a / pi - (1 - a) / (1 - pi)\ncat(sprintf(\"corr = %.3f, RMSE = %.3f\\n\",\n            cor(alpha_hat, true_alpha),\n            sqrt(mean((alpha_hat - true_alpha)^2))))\n\ncorr = 0.928, RMSE = 1.579\n\n\n\n\n\nSklearnBackend is slower than XGBoostBackend (no parallel tree splits). Use it when the data is better fit by a non-tree learner (e.g. low-dimensional problems where kernel ridge dominates), or when xgboost is unavailable in your environment.\n\n\n\n\n\n\nTipSkipping xgboost\n\n\n\nSklearnBackend does not import xgboost. The library lazy-imports xgboost only when XGBoostBackend is used, so you can run rieszboost in xgboost-hostile environments (alpine containers, builds without OpenMP) by passing backend=SklearnBackend(...) and never installing xgboost.",
+    "objectID": "backends/kernel.html#solver-tier",
+    "href": "backends/kernel.html#solver-tier",
+    "title": "Kernel backend (krrr)",
+    "section": "Solver tier",
+    "text": "Solver tier\n\n\n\n\n\n\n\n\nSolver\nWhen to use\nCost\n\n\n\n\n\"direct\"\nn_aug ≤ 3,000\nOne eigendecomposition; entire λ-path is O(n²) per λ. Exact.\n\n\n\"nystrom_cg\"\nn_aug ≤ 50,000\nPreconditioned CG on the o-block; m landmarks.\n\n\n\"rff\"\nn_aug very large; shift-invariant kernel\nPrimal D × D solve via random Fourier features.\n\n\n\"falkon\"\nn_aug very large; GPU available\nWraps the optional falkon package.\n\n\n\"auto\"\ndefault\nDispatches by n_aug.\n\n\n\nThe solver consumes the augmented dataset directly; you never deal with kernel matrices yourself.\n\n\n\n\n\n\nWarningFalkon limitation\n\n\n\nThe Falkon backend currently drops the \\(K_{oc}\\,b_c\\) coupling on the o-block — Falkon’s standalone API only solves vanilla KRR, not the modified-RHS system the augmentation produces. For estimands where \\(n_c\\) is small or λ is moderate the bias is small; for tight overlap or extreme λ it is not. Use solver=\"nystrom_cg\" if exactness matters more than scale.",
     "crumbs": [
       "Backends",
-      "Boosting backend (rieszboost)"
+      "Kernel backend (krrr)"
     ]
   },
   {
-    "objectID": "backends/boosting.html#reference-parity",
-    "href": "backends/boosting.html#reference-parity",
-    "title": "Boosting backend (rieszboost)",
-    "section": "Reference parity",
-    "text": "Reference parity\nrieszboost cross-checks against Lee’s reference implementation. With gradient_only=True, learning_rate = lr_ref / 2, and reg_lambda=0, predictions match to Pearson 0.998 / 0.986 on the binary-DGP example. See rieszboost/examples/lee_schuler/COMPARISON.md for the full report.",
+    "objectID": "backends/kernel.html#λ-selection",
+    "href": "backends/kernel.html#λ-selection",
+    "title": "Kernel backend (krrr)",
+    "section": "λ selection",
+    "text": "λ selection\nPass a grid of λ values; the backend selects by validation Riesz loss when validation_fraction &gt; 0 or eval_set is given.\nkrr = KernelRieszRegressor(\n    estimand=ATE(),\n    lambda_grid=np.logspace(-5, 1, 31),\n    validation_fraction=0.25,\n).fit(df)\nprint(krr.lambda_)   # the chosen λ\nFor consistency theory, λ should scale \\(O(1/n)\\). Cross-fitting users should re-tune per fold (sklearn’s cross_val_predict does this if KernelRieszRegressor is wrapped in GridSearchCV).",
     "crumbs": [
       "Backends",
-      "Boosting backend (rieszboost)"
+      "Kernel backend (krrr)"
     ]
   },
   {
-    "objectID": "backends/index.html",
-    "href": "backends/index.html",
-    "title": "Backends",
-    "section": "",
-    "text": "A backend fits the Riesz representer for a given estimand and loss. Four implementation packages ship today; each slots into RieszEstimator through one of two Protocols. rieszboost and krrr consume the augmented (a, b) dataset (Backend.fit_augmented). forestriesz ships both: a moment-style ForestRieszRegressor that consumes original rows + per-row moments (MomentBackend.fit_rows), and an augmentation-style AugForestRieszRegressor that consumes the augmented dataset directly (Backend.fit_augmented). riesznet consumes original rows + per-row moments via MomentBackend.fit_rows, training a PyTorch model with autograd.",
-    "crumbs": [
-      "Backends",
-      "Backends"
-    ]
-  },
-  {
-    "objectID": "backends/index.html#pick-a-backend",
-    "href": "backends/index.html#pick-a-backend",
-    "title": "Backends",
-    "section": "Pick a backend",
-    "text": "Pick a backend\n\n\n\n\nBoosting (rieszboost)\nKernel ridge (krrr)\nForest (forestriesz)\nNeural (riesznet)\n\n\n\n\nMethod\nGradient boosting (xgboost or sklearn)\nClosed-form solve of \\((\\mathrm{diag}(a) K + n\\lambda I)\\gamma = -b/2\\)\nGRF-based per-leaf moment solve\nPyTorch autograd on the per-row Bregman-Riesz loss\n\n\nAlgorithm\nLee & Schuler (2501.04871)\nSingh (2102.11076)\nChernozhukov, Newey, Quintas-Martínez, Syrgkanis (ICML 2022)\nChernozhukov, Newey, Quintas-Martínez, Syrgkanis (2110.03031)\n\n\nBest for\nTabular data, \\(n \\gtrsim 1{,}000\\), mixed feature types\nSmooth \\(\\alpha_0\\), small/medium \\(n\\), low-dimensional \\(X\\)\nMany covariates, asymptotic CIs on \\(\\alpha(x)\\)\nHigh-dimensional inputs, custom architectures, image / text features\n\n\nIterative?\nYes (rounds + early stopping)\nNo (closed-form per λ)\nNo (single forest fit)\nYes (epochs + early stopping)\n\n\nHyperparameters\nn_estimators, learning_rate, max_depth, reg_lambda, subsample\nkernel, lambda_grid, solver\nn_estimators, max_depth, min_samples_leaf, honest, riesz_feature_fns\nhidden_sizes, learning_rate, epochs, dropout, or any module_factory / optimizer_factory\n\n\nLoss support\nSquaredLoss, KLLoss, BernoulliLoss, BoundedSquaredLoss\nSquaredLoss only (today)\nSquaredLoss only (today)\nSquaredLoss, KLLoss, BernoulliLoss, BoundedSquaredLoss\n\n\nScaling\nLinear in \\(n\\) via xgboost\n\\(O(n^3)\\) direct; Nyström + RFF + Falkon for larger \\(n\\)\n\\(O(n \\log n)\\) per tree\nPer-epoch cost is one forward pass over \\(n + \\sum_i k_i\\) points; scales to GPU\n\n\nConfidence intervals\nNo\nNo\nYes (predict_interval on single-basis fits)\nNo\n\n\nConvenience class\nrieszboost.RieszBooster\nkrrr.KernelRieszRegressor\nforestriesz.ForestRieszRegressor (moment-style) and forestriesz.AugForestRieszRegressor (augmentation-style, fully estimand-agnostic)\nriesznet.RieszNet (default MLP); riesznet.TorchBackend for arbitrary nn.Module factories",
-    "crumbs": [
-      "Backends",
-      "Backends"
-    ]
-  },
-  {
-    "objectID": "backends/index.html#compose-explicitly",
-    "href": "backends/index.html#compose-explicitly",
-    "title": "Backends",
-    "section": "Compose explicitly",
-    "text": "Compose explicitly\nBoth convenience classes are subclasses of rieszreg.RieszEstimator with the backend defaulted. To swap backends or build your own, compose explicitly:\nimport functools\nfrom rieszreg import RieszEstimator, ATE, SquaredLoss\nfrom rieszboost.backends import XGBoostBackend, SklearnBackend\nfrom krrr import KernelRidgeBackend, Gaussian\nfrom forestriesz import ForestRieszBackend\nfrom riesznet import TorchBackend\nfrom riesznet.modules import build_adam, build_mlp\n\n# Default: xgboost\nest = RieszEstimator(estimand=ATE(), backend=XGBoostBackend())\n\n# Sklearn boosting with KernelRidge as the base learner\nfrom sklearn.kernel_ridge import KernelRidge\nest = RieszEstimator(\n    estimand=ATE(),\n    backend=SklearnBackend(lambda: KernelRidge(alpha=1.0, kernel=\"rbf\", gamma=2.0)),\n)\n\n# Kernel ridge directly\nest = RieszEstimator(\n    estimand=ATE(),\n    backend=KernelRidgeBackend(kernel=Gaussian(length_scale=\"median\")),\n)\n\n# Random forest (moment-style backend; fit_rows path)\nest = RieszEstimator(\n    estimand=ATE(),\n    backend=ForestRieszBackend(n_estimators=500),\n)\n\n# Neural network (moment-style backend; fit_rows path)\nest = RieszEstimator(\n    estimand=ATE(),\n    backend=TorchBackend(\n        module_factory=functools.partial(build_mlp, hidden_sizes=(64, 64)),\n        optimizer_factory=functools.partial(build_adam, lr=5e-3),\n        epochs=300,\n    ),\n)\nThe convenience classes are thin subclasses that bake in the backend and surface backend-specific hyperparameters as constructor args, so that they fit cleanly into GridSearchCV. See the boosting, kernel, forest, and neural pages for each.",
-    "crumbs": [
-      "Backends",
-      "Backends"
-    ]
-  },
-  {
-    "objectID": "backends/index.html#adding-a-backend",
-    "href": "backends/index.html#adding-a-backend",
-    "title": "Backends",
-    "section": "Adding a backend",
-    "text": "Adding a backend\nImplement one of two Protocols from rieszreg.backends.base:\n\nBackend.fit_augmented(aug_train, aug_valid, loss, …) — for augmentation-style learners (kernel ridge, gradient boosting). Implementations: KernelRidgeBackend, XGBoostBackend, SklearnBackend.\nMomentBackend.fit_rows(rows_train, rows_valid, estimand, loss, …) — for moment-style learners (random forests, neural nets). Compute per-row moments via rieszreg.trace(estimand, row). Implementations: ForestRieszBackend, TorchBackend.\n\nEither way, return a FitResult whose predictor implements predict_eta and predict_alpha. Register the predictor’s loader for round-trip via:\nfrom rieszreg.backends import register_predictor_loader\nregister_predictor_loader(\"my-kind\", MyPredictor.load)\nSee Developing for the full contract.",
-    "crumbs": [
-      "Backends",
-      "Backends"
-    ]
-  },
-  {
-    "objectID": "backends/neural.html",
-    "href": "backends/neural.html",
-    "title": "Neural-network backend (riesznet)",
-    "section": "",
-    "text": "riesznet trains the Riesz representer α(x) with a PyTorch model, in the spirit of Chernozhukov et al. (2021), RieszNet and ForestRiesz. It fits the Riesz representer only — outcome regression is handled separately.\nrieszreg exposes the entry point as MomentBackend.fit_rows. The neural backend uses the per-row moment formulation: for each original row z_i,\n\\[\nL_i = \\psi(\\alpha(x_i)) - \\sum_{j} c_j \\cdot \\varphi'(\\alpha(p_j))\n\\]\nwhere the (c_j, p_j) pairs come from rieszreg.trace(estimand, z_i) and the model produces α via a Bregman link. The training loop minimizes the mean of L_i with autograd; no augmented dataset is built.",
-    "crumbs": [
-      "Backends",
-      "Neural-network backend (riesznet)"
-    ]
-  },
-  {
-    "objectID": "backends/neural.html#two-surfaces",
-    "href": "backends/neural.html#two-surfaces",
-    "title": "Neural-network backend (riesznet)",
-    "section": "Two surfaces",
-    "text": "Two surfaces\n\nRieszNet — convenience class with a default MLP. Surfaces hidden_sizes, activation, dropout, learning_rate, weight_decay, epochs, device, dtype. Trains full-batch.\nTorchBackend — power-user surface. Pass any nn.Module factory and any optimizer factory. Compose with rieszreg.RieszEstimator for full control.",
-    "crumbs": [
-      "Backends",
-      "Neural-network backend (riesznet)"
-    ]
-  },
-  {
-    "objectID": "backends/neural.html#quickstart-ate",
-    "href": "backends/neural.html#quickstart-ate",
-    "title": "Neural-network backend (riesznet)",
-    "section": "Quickstart — ATE",
-    "text": "Quickstart — ATE\n\nPythonR\n\n\n\nimport numpy as np, pandas as pd\nfrom riesznet import RieszNet, ATE\n\nrng = np.random.default_rng(0)\nn = 1500\nx = rng.uniform(0, 1, n)\npi = 1 / (1 + np.exp(-(-0.02*x - x**2 + 4*np.log(x + 0.3) + 1.5)))\na = rng.binomial(1, pi).astype(float)\ndf = pd.DataFrame({\"a\": a, \"x\": x})\n\nrn = RieszNet(\n    estimand=ATE(treatment=\"a\", covariates=(\"x\",)),\n    hidden_sizes=(64, 64),\n    learning_rate=5e-3,\n    epochs=400,\n    batch_size=64,\n    validation_fraction=0.2,\n    early_stopping_rounds=30,\n    random_state=0,\n)\nrn.fit(df)\n\nRieszNet(early_stopping_rounds=30, epochs=400,\n         estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                     m=&lt;function ATE.&lt;locals&gt;.m at 0x171024180&gt;,\n                                     extra_keys=(),\n                                     name='ATE',\n                                     factory_spec={'args': {'covariates': ['x'],\n                                                            'treatment': 'a'},\n                                                   'factory': 'ATE'}),\n         learning_rate=0.005, validation_fraction=0.2)In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.RieszNetiFittedRieszNet(early_stopping_rounds=30, epochs=400,\n         estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                     m=&lt;function ATE.&lt;locals&gt;.m at 0x171024180&gt;,\n                                     extra_keys=(),\n                                     name='ATE',\n                                     factory_spec={'args': {'covariates': ['x'],\n                                                            'treatment': 'a'},\n                                                   'factory': 'ATE'}),\n         learning_rate=0.005, validation_fraction=0.2) \n\nalpha_hat  = rn.predict(df)\ntrue_alpha = a / pi - (1 - a) / (1 - pi)\nprint(f\"corr(α̂, α₀) = {np.corrcoef(alpha_hat, true_alpha)[0, 1]:.3f}\")\n\ncorr(α̂, α₀) = 0.963\n\nprint(f\"RMSE         = {np.sqrt(np.mean((alpha_hat - true_alpha)**2)):.3f}\")\n\nRMSE         = 0.699\n\nprint(f\"best_iter    = {rn.best_iteration_}\")\n\nbest_iter    = 17\n\n\n\n\n\npkgload::load_all(\"../riesznet/r/riesznet\")\nuse_python_riesznet(file.path(getwd(), \"../.venv/bin/python\"))\n\nset.seed(0)\nn  &lt;- 1500\nx  &lt;- runif(n)\npi &lt;- 1 / (1 + exp(-(-0.02 * x - x^2 + 4 * log(x + 0.3) + 1.5)))\na  &lt;- rbinom(n, 1, pi)\ndf &lt;- data.frame(a = as.numeric(a), x = x)\n\nrn &lt;- RieszNet$new(\n  estimand = ATE(treatment = \"a\", covariates = \"x\"),\n  hidden_sizes = c(64L, 64L),\n  learning_rate = 5e-3,\n  epochs = 400L,\n  validation_fraction = 0.2,\n  early_stopping_rounds = 30L,\n  random_state = 0L\n)\nrn$fit(df)\nalpha_hat &lt;- rn$predict(df)",
-    "crumbs": [
-      "Backends",
-      "Neural-network backend (riesznet)"
-    ]
-  },
-  {
-    "objectID": "backends/neural.html#quickstart-tsm-with-kl-loss",
-    "href": "backends/neural.html#quickstart-tsm-with-kl-loss",
-    "title": "Neural-network backend (riesznet)",
-    "section": "Quickstart — TSM with KL loss",
-    "text": "Quickstart — TSM with KL loss\nKLLoss is matched to density-ratio estimands like TSM. The exp link keeps predictions positive without any post-hoc clipping.\n\nfrom riesznet import KLLoss, RieszNet, TSM\n\nrn = RieszNet(\n    estimand=TSM(level=1, treatment=\"a\", covariates=(\"x\",)),\n    loss=KLLoss(),\n    hidden_sizes=(64, 64),\n    learning_rate=5e-3,\n    epochs=400,\n    validation_fraction=0.2,\n    early_stopping_rounds=30,\n    random_state=0,\n)\nrn.fit(df)\n\nRieszNet(early_stopping_rounds=30, epochs=400,\n         estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                     m=&lt;function TSM.&lt;locals&gt;.m at 0x171089940&gt;,\n                                     extra_keys=(),\n                                     name='TSM(level=1)',\n                                     factory_spec={'args': {'covariates': ['x'],\n                                                            'level': 1,\n                                                            'treatment': 'a'},\n                                                   'factory': 'TSM'}),\n         learning_rate=0.005,\n         loss=&lt;rieszreg.losses.kl.KLLoss object at 0x16fd4eba0&gt;,\n         validation_fraction=0.2)In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.RieszNetiFittedRieszNet(early_stopping_rounds=30, epochs=400,\n         estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                     m=&lt;function TSM.&lt;locals&gt;.m at 0x171089940&gt;,\n                                     extra_keys=(),\n                                     name='TSM(level=1)',\n                                     factory_spec={'args': {'covariates': ['x'],\n                                                            'level': 1,\n                                                            'treatment': 'a'},\n                                                   'factory': 'TSM'}),\n         learning_rate=0.005,\n         loss=&lt;rieszreg.losses.kl.KLLoss object at 0x16fd4eba0&gt;,\n         validation_fraction=0.2) \n\nalpha_hat  = rn.predict(df)\ntrue_alpha = (a == 1).astype(float) / pi\nprint(f\"min α̂        = {alpha_hat.min():.4f}  (positive by construction)\")\n\nmin α̂        = 0.0003  (positive by construction)\n\nprint(f\"corr(α̂, α₀) = {np.corrcoef(alpha_hat, true_alpha)[0, 1]:.3f}\")\n\ncorr(α̂, α₀) = 0.977\n\n\nKLLoss and BernoulliLoss reject ATE / ATT / shift-style data at fit time (they require non-negative m-coefficients, which difference-of-evaluations estimands violate). BoundedSquaredLoss(lo, hi) accepts any signed coefficients and clips α̂ into the interval.",
-    "crumbs": [
-      "Backends",
-      "Neural-network backend (riesznet)"
-    ]
-  },
-  {
-    "objectID": "backends/neural.html#custom-architectures",
-    "href": "backends/neural.html#custom-architectures",
-    "title": "Neural-network backend (riesznet)",
-    "section": "Custom architectures",
-    "text": "Custom architectures\nThe convenience class RieszNet covers MLPs. For an arbitrary nn.Module, instantiate TorchBackend directly and compose with rieszreg.RieszEstimator:\n\nimport functools\nimport torch\nimport torch.nn as nn\n\nfrom rieszreg import ATE, RieszEstimator\nfrom riesznet import TorchBackend\n\n\ndef my_factory(input_dim):\n    \"\"\"Top-level factory; importable by qualname so save/load works.\"\"\"\n    return nn.Sequential(\n        nn.Linear(input_dim, 32), nn.GELU(),\n        nn.Linear(32, 32), nn.GELU(),\n        nn.Linear(32, 1),\n    )\n\nbackend = TorchBackend(\n    module_factory=my_factory,\n    optimizer_factory=functools.partial(torch.optim.AdamW, lr=3e-4, weight_decay=1e-3),\n    epochs=300,\n    batch_size=256,        # in original rows\n    device=\"cpu\",\n    dtype=\"float32\",\n    grad_clip_norm=1.0,\n    validation_fraction=0.2,\n    early_stopping_rounds=30,\n)\n\nest = RieszEstimator(\n    estimand=ATE(treatment=\"a\", covariates=(\"x\",)),\n    backend=backend,\n    random_state=0,\n)\nest.fit(df)\n\nRieszEstimator(backend=TorchBackend(module_factory=&lt;function my_factory at 0x1710322a0&gt;,\n                                    optimizer_factory=functools.partial(&lt;class 'torch.optim.adamw.AdamW'&gt;, lr=0.0003, weight_decay=0.001),\n                                    scheduler_factory=None,\n                                    epochs=300,\n                                    batch_size=256,\n                                    device='cpu',\n                                    dtype='float32',\n                                    grad_clip_norm=1.0,\n                                    early_stopping_rounds=30,\n                                    validation_fraction=0.2),\n               estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                           m=&lt;function ATE.&lt;locals&gt;.m at 0x1710520c0&gt;,\n                                           extra_keys=(),\n                                           name='ATE',\n                                           factory_spec={'args': {'covariates': ['x'],\n                                                                  'treatment': 'a'},\n                                                         'factory': 'ATE'}))In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.RieszEstimatoriFittedRieszEstimator(backend=TorchBackend(module_factory=&lt;function my_factory at 0x1710322a0&gt;,\n                                    optimizer_factory=functools.partial(&lt;class 'torch.optim.adamw.AdamW'&gt;, lr=0.0003, weight_decay=0.001),\n                                    scheduler_factory=None,\n                                    epochs=300,\n                                    batch_size=256,\n                                    device='cpu',\n                                    dtype='float32',\n                                    grad_clip_norm=1.0,\n                                    early_stopping_rounds=30,\n                                    validation_fraction=0.2),\n               estimand=LinearFormEstimand(feature_keys=('a', 'x'),\n                                           m=&lt;function ATE.&lt;locals&gt;.m at 0x1710520c0&gt;,\n                                           extra_keys=(),\n                                           name='ATE',\n                                           factory_spec={'args': {'covariates': ['x'],\n                                                                  'treatment': 'a'},\n                                                         'factory': 'ATE'})) \n\nalpha_hat = est.predict(df)\nprint(f\"α̂ range: [{alpha_hat.min():.3f}, {alpha_hat.max():.3f}]\")\n\nα̂ range: [-4.868, 5.654]\n\n\nmodule_factory and optimizer_factory must be top-level callables (functools.partial over a top-level function is fine). Closures and lambdas raise on save() because they cannot be reconstructed by qualname.",
-    "crumbs": [
-      "Backends",
-      "Neural-network backend (riesznet)"
-    ]
-  },
-  {
-    "objectID": "backends/neural.html#hyperparameters",
-    "href": "backends/neural.html#hyperparameters",
-    "title": "Neural-network backend (riesznet)",
-    "section": "Hyperparameters",
-    "text": "Hyperparameters\nRieszNet constructor:\n\n\n\n\n\n\n\n\nKnob\nDefault\nNotes\n\n\n\n\nhidden_sizes\n(64, 64)\nMLP layer widths. Empty tuple gives a linear model.\n\n\nactivation\n\"relu\"\nOne of relu, tanh, gelu, elu, silu, leaky_relu.\n\n\ndropout\n0.0\nDropout probability after each activation.\n\n\nlearning_rate\n1e-3\nAdam learning rate.\n\n\nweight_decay\n0.0\nAdam weight decay.\n\n\nepochs\n200\nMax epochs. Combine with early_stopping_rounds for adaptive stopping.\n\n\nbatch_size\n64\nOriginal rows per minibatch. None is full-batch GD.\n\n\ndevice\n\"cpu\"\nAlso \"cuda\", \"mps\", \"auto\".\n\n\ndtype\n\"float32\"\nAlso \"float64\" (slower, more precise).\n\n\ngrad_clip_norm\nNone\nGlobal L2 clip on the gradient.\n\n\nloss\nSquaredLoss()\nAny of the four built-in Bregman losses.\n\n\ninit\nNone\nα-space initialization. Default is m̄ = E[m(Z, 1)] projected into the loss’s domain (the loss-minimizing constant); pass a float to override.\n\n\nvalidation_fraction\n0.0\nHold out for early stopping.\n\n\nearly_stopping_rounds\nNone\nPatience (in epochs) for validation Riesz loss.\n\n\nrandom_state\n0\nSeeds torch, torch.cuda, and the DataLoader generator.\n\n\n\nTorchBackend constructor (power-user surface):\n\n\n\n\n\n\n\n\nKnob\nDefault\nNotes\n\n\n\n\nmodule_factory\nrequired\nCallable[[int], nn.Module] returning a model with scalar output.\n\n\noptimizer_factory\nrequired\nCallable[[Iterable[Parameter]], Optimizer].\n\n\nscheduler_factory\nNone\nOptional Callable[[Optimizer], LRScheduler]. Stepped per epoch.\n\n\nepochs\n200\n\n\n\nbatch_size\nNone\nOriginal-row batch size. None is full-batch.\n\n\ndevice\n\"cpu\"\n\n\n\ndtype\n\"float32\"\n\n\n\ngrad_clip_norm\nNone",
-    "crumbs": [
-      "Backends",
-      "Neural-network backend (riesznet)"
-    ]
-  },
-  {
-    "objectID": "backends/neural.html#save-load",
-    "href": "backends/neural.html#save-load",
-    "title": "Neural-network backend (riesznet)",
-    "section": "Save / load",
-    "text": "Save / load\n\nimport tempfile, os\nwith tempfile.TemporaryDirectory() as tmp:\n    save_dir = os.path.join(tmp, \"fitted\")\n    rn.save(save_dir)\n\n    loaded = RieszNet.load(save_dir)\n    pred_loaded = loaded.predict(df)\n    print(f\"max abs diff after round-trip: {np.max(np.abs(pred_loaded - alpha_hat)):.2e}\")\n\nmax abs diff after round-trip: 9.48e+00\n\n\nSave writes state_dict.pt (PyTorch weights, on CPU) plus predictor.json (carries the factory’s module + qualname, the input dim, and the Bregman-loss spec). Load re-imports the factory by qualname, rebuilds the module, and calls load_state_dict.\nFor built-in estimands the metadata round-trips automatically. For a custom Estimand, pass estimand= to load.",
-    "crumbs": [
-      "Backends",
-      "Neural-network backend (riesznet)"
-    ]
-  },
-  {
-    "objectID": "backends/neural.html#sklearn-integration",
-    "href": "backends/neural.html#sklearn-integration",
-    "title": "Neural-network backend (riesznet)",
-    "section": "Sklearn integration",
-    "text": "Sklearn integration\nRieszNet is a BaseEstimator, so it composes with clone, GridSearchCV, cross_val_predict, Pipeline. See Tuning and cross-fitting.",
-    "crumbs": [
-      "Backends",
-      "Neural-network backend (riesznet)"
-    ]
-  },
-  {
-    "objectID": "backends/neural.html#loss-support",
-    "href": "backends/neural.html#loss-support",
-    "title": "Neural-network backend (riesznet)",
+    "objectID": "backends/kernel.html#loss-support",
+    "href": "backends/kernel.html#loss-support",
+    "title": "Kernel backend (krrr)",
     "section": "Loss support",
-    "text": "Loss support\n\n\n\n\n\n\n\n\n\nLoss\nSupported\nLink\nNotes\n\n\n\n\nSquaredLoss\n✅\nidentity\nDefault. Works on every estimand.\n\n\nKLLoss\n✅\nexp\nDensity-ratio targets only (TSM, IPSI). Requires non-negative m-coefficients.\n\n\nBernoulliLoss\n✅\nsigmoid\nForces α̂ ∈ (0, 1). Density-ratio targets only.\n\n\nBoundedSquaredLoss(lo, hi)\n✅\nscaled-sigmoid\nForces α̂ ∈ (lo, hi). Works on every estimand.\n\n\n\nThe autograd implementation matches the analytic gradient in the loss spec exactly — verified per loss in the test suite.",
+    "text": "Loss support\nKernelRidgeBackend currently supports SquaredLoss only — non-quadratic losses (KLLoss, BernoulliLoss, BoundedSquaredLoss) require Newton iteration on the kernel system, planned for v0.2. Pass an unsupported loss and the backend raises at fit time with a clear error.\nFor non-quadratic losses today, use the boosting backend.",
     "crumbs": [
       "Backends",
-      "Neural-network backend (riesznet)"
+      "Kernel backend (krrr)"
     ]
   },
   {
-    "objectID": "backends/neural.html#device-dtype-reproducibility",
-    "href": "backends/neural.html#device-dtype-reproducibility",
-    "title": "Neural-network backend (riesznet)",
-    "section": "Device, dtype, reproducibility",
-    "text": "Device, dtype, reproducibility\nThe training loop seeds torch, torch.cuda, and a torch.Generator for the data loader, so single-device fits are reproducible run-to-run on the same hardware. Bitwise reproducibility on CUDA across machines is not promised; torch.use_deterministic_algorithms is not enabled by default because it slows training significantly.\ndevice=\"auto\" picks cuda → mps → cpu in that order. dtype=\"float64\" runs end-to-end in double precision, useful for tightly-coupled gradient checks but slower.",
+    "objectID": "backends/kernel.html#reference-parity",
+    "href": "backends/kernel.html#reference-parity",
+    "title": "Kernel backend (krrr)",
+    "section": "Reference parity",
+    "text": "Reference parity\nkrrr exercises a TSM1 numerical-parity test against the dml-tmle R reference at tolerance 1e-8.",
     "crumbs": [
       "Backends",
-      "Neural-network backend (riesznet)"
+      "Kernel backend (krrr)"
+    ]
+  },
+  {
+    "objectID": "backends/kernel.html#sharp-edges",
+    "href": "backends/kernel.html#sharp-edges",
+    "title": "Kernel backend (krrr)",
+    "section": "Sharp edges",
+    "text": "Sharp edges\n\nMedian-heuristic bandwidth on the augmented dataset. The median is computed on augmented points (originals + counterfactuals from \\(m\\)). For shift-style estimands this includes the shifted treatment values.\nsolver=\"falkon\" drops \\(K_{oc}\\,b_c\\). See callout above.",
+    "crumbs": [
+      "Backends",
+      "Kernel backend (krrr)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html",
+    "href": "backends/tree.html",
+    "title": "Tree backend (riesztree)",
+    "section": "",
+    "text": "riesztree fits a single decision tree to estimate the Riesz representer \\(\\alpha_0\\) of a linear functional, by greedy splits on the augmented Bregman-Riesz loss. Each leaf stores a closed-form value \\(\\alpha_\\ell^* = -C_\\ell / D_\\ell\\), projected to the loss’s \\(\\alpha\\)-domain. Loss-aware splits work for every built-in Bregman loss; the per-leaf \\(\\alpha^*\\) formula is universal.\nThe method is new — there is no published reference at this writing. The package is conceptually the simplest of the four learners, and a useful starting point for understanding what every other learner is doing.",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#how-it-works",
+    "href": "backends/tree.html#how-it-works",
+    "title": "Tree backend (riesztree)",
+    "section": "1 How it works",
+    "text": "1 How it works\n\n1.1 The augmented loss\nFor a finite-evaluation estimand \\(m\\), the empirical Bregman-Riesz loss reduces over the augmented dataset to\n\\[\n\\hat L(\\alpha) \\;=\\; \\frac{1}{n}\\sum_{r=1}^{M} \\Big[\\, D_r\\, \\tilde h(\\alpha(z_r)) \\;+\\; C_r\\, h'(\\alpha(z_r)) \\,\\Big],\n\\]\nwith one row per evaluation point \\(z_r\\), weight \\(D_r \\in \\{0, 1\\}\\) (\\(1\\) for original observations, \\(0\\) for counterfactual evaluation points), and linear coefficient \\(C_r\\) accumulating the trace coefficients of \\(m\\) at \\(z_r\\). See Losses for the derivation.\nFor ATE on \\(Z_i = (a_i, x_i)\\) the trace expands to two evaluation points \\((1, x_i)\\) and \\((0, x_i)\\) with coefficients \\(+1\\) and \\(-1\\):\n\n\n\n\n\n\n\n\n\naugmented row\n\\(z_r\\)\n\\(D_r\\)\n\\(C_r\\)\n\n\n\n\noriginal-merged\n\\((a_i, x_i)\\)\n\\(1\\)\n\\(-1\\) if \\(a_i = 1\\), else \\(+1\\)\n\n\ncounterfactual at the other arm\n\\((1 - a_i, x_i)\\)\n\\(0\\)\n\\(+1\\) if \\(a_i = 1\\), else \\(-1\\)\n\n\n\n\n\n1.2 Per-leaf decoupling\nConsider a tree with leaves \\(\\ell = 1, \\ldots, K\\) assigning a constant \\(\\alpha_\\ell\\) in leaf \\(\\ell\\). Let \\(D_\\ell = \\sum_{r \\in \\ell} D_r\\) and \\(C_\\ell = \\sum_{r \\in \\ell} C_r\\). The empirical loss becomes\n\\[\n\\hat L(\\alpha_1, \\ldots, \\alpha_K) = \\frac{1}{n}\\sum_\\ell \\big[\\, D_\\ell\\, \\tilde h(\\alpha_\\ell) + C_\\ell\\, h'(\\alpha_\\ell) \\,\\big].\n\\]\nThe summand for leaf \\(\\ell\\) depends only on \\(\\alpha_\\ell, D_\\ell, C_\\ell\\) — no cross-leaf coupling. Setting the derivative to zero and using the identity \\(\\tilde h'(t) = t \\cdot h''(t)\\) (immediate from \\(\\tilde h = t\\, h' - h\\)):\n\\[\nh''(\\alpha_\\ell) \\cdot (D_\\ell\\, \\alpha_\\ell + C_\\ell) = 0.\n\\]\nSince \\(h\\) is strictly convex, \\(h''(\\alpha_\\ell) &gt; 0\\), so\n\\[\n\\alpha_\\ell^* \\;=\\; -\\,\\frac{C_\\ell}{D_\\ell}\n\\]\n(when \\(-C_\\ell / D_\\ell\\) lies in the loss’s \\(\\alpha\\)-domain; otherwise project to the boundary). This formula is universal across SquaredLoss, KLLoss, BernoulliLoss, and BoundedSquaredLoss — only the link’s \\(\\alpha\\)-domain changes.\n\n\n1.3 Splitting criterion\nFor a candidate split of parent leaf \\(p\\) into children \\(\\ell, r\\), the gain is the reduction in empirical loss at the per-leaf optima:\n\\[\n\\Delta(\\text{split}) \\;=\\; \\hat L_p(\\alpha_p^*) - \\hat L_\\ell(\\alpha_\\ell^*) - \\hat L_r(\\alpha_r^*).\n\\]\nThe gain expression depends on the loss. For squared loss, the per-leaf objective at the optimum is\n\\[\n\\hat L_\\ell(\\alpha_\\ell^*)\n  \\;=\\; D_\\ell\\, (\\alpha_\\ell^*)^2 + 2 C_\\ell\\, \\alpha_\\ell^*\n  \\;=\\; D_\\ell \\!\\left(\\!-\\frac{C_\\ell}{D_\\ell}\\!\\right)^{\\!2} + 2 C_\\ell\\!\\left(\\!-\\frac{C_\\ell}{D_\\ell}\\!\\right)\n  \\;=\\; -\\frac{C_\\ell^2}{D_\\ell},\n\\]\nso\n\\[\n\\Delta_{\\text{sq}} \\;=\\; \\frac{C_\\ell^2}{D_\\ell} + \\frac{C_r^2}{D_r} - \\frac{C_p^2}{D_p}.\n\\]\nSince the augmented rows include \\(D_r = 0\\) counterfactual points contributing only to \\(C_\\ell\\) — these add a linear shift in \\(\\alpha\\) to the within-leaf objective rather than a quadratic — the gain cannot be encoded as a vanilla weighted regression target. A custom Cython criterion plugged into sklearn’s tree builder would work; the package hand-rolls the splitter in pure NumPy, which is fast enough at the \\(n\\) a single tree is sensible for.\nFor other losses the gain has its own analytic form. KL (\\(h(t) = t \\log t - t\\)), for instance, gives \\(\\hat L_\\ell(\\alpha_\\ell^*) = -C_\\ell + C_\\ell \\log(-C_\\ell / D_\\ell)\\) when \\(C_\\ell &lt; 0\\), and the gain is\n\\[\n\\Delta_{\\text{KL}} \\;=\\; -C_\\ell \\log\\!\\frac{-C_\\ell}{D_\\ell} - C_r \\log\\!\\frac{-C_r}{D_r} + C_p \\log\\!\\frac{-C_p}{D_p}.\n\\]\nThe orderings of candidate splits under \\(\\Delta_{\\text{sq}}\\) and \\(\\Delta_{\\text{KL}}\\) can differ — the splits depend on the loss, even though the leaf values given a partition don’t.",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#sec-quickstart",
+    "href": "backends/tree.html#sec-quickstart",
+    "title": "Tree backend (riesztree)",
+    "section": "2 Quickstart",
+    "text": "2 Quickstart\n\nPythonR\n\n\n\nimport numpy as np, pandas as pd\nfrom riesztree import RieszTreeRegressor, ATE\n\nrng = np.random.default_rng(0)\nn = 1500\nx = rng.uniform(0, 1, n)\npi = 1 / (1 + np.exp(-(-0.02*x - x**2 + 4*np.log(x + 0.3) + 1.5)))\na = rng.binomial(1, pi).astype(float)\ndf = pd.DataFrame({\"a\": a, \"x\": x})\n\nest = RieszTreeRegressor(\n    estimand=ATE(treatment=\"a\", covariates=(\"x\",)),\n    max_depth=4,\n    random_state=0,\n)\nest.fit(df)\n\nRieszTreeRegressor(estimand=FiniteEvalEstimand(feature_keys=('a', 'x'),\n                                               m=&lt;function ATE.&lt;locals&gt;.m at 0x139780ea0&gt;,\n                                               name='ATE',\n                                               factory_spec={'args': {'covariates': ['x'],\n                                                                      'treatment': 'a'},\n                                                             'factory': 'ATE'}),\n                   max_depth=4)In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.RieszTreeRegressoriFittedRieszTreeRegressor(estimand=FiniteEvalEstimand(feature_keys=('a', 'x'),\n                                               m=&lt;function ATE.&lt;locals&gt;.m at 0x139780ea0&gt;,\n                                               name='ATE',\n                                               factory_spec={'args': {'covariates': ['x'],\n                                                                      'treatment': 'a'},\n                                                             'factory': 'ATE'}),\n                   max_depth=4) \n\nalpha_hat  = est.predict(df)\ntrue_alpha = a / pi - (1 - a) / (1 - pi)\nprint(f\"corr(α̂, α₀) = {np.corrcoef(alpha_hat, true_alpha)[0, 1]:.3f}\")\n\ncorr(α̂, α₀) = 0.973\n\nprint(f\"RMSE         = {np.sqrt(np.mean((alpha_hat - true_alpha)**2)):.3f}\")\n\nRMSE         = 0.601\n\n\n\n\n\npkgload::load_all(\"../riesztree/r/riesztree\")\nuse_python_riesztree(file.path(getwd(), \"../.venv/bin/python\"))\n\nset.seed(0)\nn  &lt;- 1500\nx  &lt;- runif(n)\npi &lt;- 1 / (1 + exp(-(-0.02 * x - x^2 + 4 * log(x + 0.3) + 1.5)))\na  &lt;- rbinom(n, 1, pi)\ndf &lt;- data.frame(a = as.numeric(a), x = x)\n\nrt &lt;- RieszTreeRegressor$new(\n  estimand = ATE(treatment = \"a\", covariates = \"x\"),\n  max_depth = 4L, random_state = 0L\n)\nrt$fit(df)\nalpha_hat &lt;- as.numeric(rt$predict(df))",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#sec-growth",
+    "href": "backends/tree.html#sec-growth",
+    "title": "Tree backend (riesztree)",
+    "section": "3 Growth strategies",
+    "text": "3 Growth strategies\nTwo growth policies are supported:\n\nDepthwise (growth_policy=\"depthwise\", default). Standard recursive depth-first growth. Stops at max_depth or when min_samples_split blocks the node.\nLeafwise (growth_policy=\"leafwise\"). Best-first growth: at each step split the leaf whose best candidate has the highest gain anywhere in the tree. Termination on max_leaves (the natural cap for this policy) or when no positive-gain split remains.\n\n\nfrom riesztree import RieszTreeRegressor, ATE, n_leaves\n\nest_dw = RieszTreeRegressor(\n    estimand=ATE(treatment=\"a\", covariates=(\"x\",)),\n    growth_policy=\"depthwise\", max_depth=4,\n).fit(df)\n\nest_lw = RieszTreeRegressor(\n    estimand=ATE(treatment=\"a\", covariates=(\"x\",)),\n    growth_policy=\"leafwise\", max_leaves=16, max_depth=20,\n).fit(df)\n\nprint(f\"depthwise leaves: {n_leaves(est_dw.predictor_.tree)}\")\n\ndepthwise leaves: 14\n\nprint(f\"leafwise  leaves: {n_leaves(est_lw.predictor_.tree)}\")\n\nleafwise  leaves: 16",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#sec-pruning",
+    "href": "backends/tree.html#sec-pruning",
+    "title": "Tree backend (riesztree)",
+    "section": "4 Pruning",
+    "text": "4 Pruning\nTwo regularisation paths are available:\n\nCost-complexity pruning via pruning_alpha &gt; 0. Standard Breiman et al. weakest-link algorithm: walk the tree bottom-up, computing per-subtree \\(R_\\alpha(T) = R(T) + \\alpha\\, |\\text{leaves}(T)|\\), and collapse the weakest link until \\(g_{\\min} \\geq \\alpha\\). \\(R(T)\\) is the augmented Bregman training loss summed over leaves.\nEarly stopping via early_stopping_rounds + validation_fraction. Stops growing when the held-out augmented loss has not improved for that many consecutive accepted splits, mirroring rieszboost / riesznet.\n\nBoth are off by default. Combine freely with either growth policy.\n\nest_pruned = RieszTreeRegressor(\n    estimand=ATE(treatment=\"a\", covariates=(\"x\",)),\n    max_depth=10, pruning_alpha=0.5,\n).fit(df)\n\nest_es = RieszTreeRegressor(\n    estimand=ATE(treatment=\"a\", covariates=(\"x\",)),\n    max_depth=10, early_stopping_rounds=3, validation_fraction=0.2,\n).fit(df)\n\nprint(f\"unpruned: {n_leaves(RieszTreeRegressor(estimand=ATE(treatment='a', covariates=('x',)), max_depth=10).fit(df).predictor_.tree)} leaves\")\n\nunpruned: 83 leaves\n\nprint(f\"pruned  : {n_leaves(est_pruned.predictor_.tree)} leaves\")\n\npruned  : 64 leaves\n\nprint(f\"early-stop: {n_leaves(est_es.predictor_.tree)} leaves\")\n\nearly-stop: 9 leaves",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#sec-categorical",
+    "href": "backends/tree.html#sec-categorical",
+    "title": "Tree backend (riesztree)",
+    "section": "5 Categorical predictors",
+    "text": "5 Categorical predictors\nDeclare integer-coded categorical columns via categorical_features=(col_idx, ...). The splitter uses the standard CART trick: order levels by within-level \\(\\alpha_{\\text{level}}^* = -C_{\\text{level}} / D_{\\text{level}}\\), then sweep contiguous splits in that order. The ordering theorem carries over because the augmented Bregman per-leaf objective is convex.\n\nrng = np.random.default_rng(0)\nn_cat = 2000\npi_per_level = rng.uniform(0.1, 0.9, size=8)\ncat = rng.integers(0, 8, size=n_cat).astype(float)\npi_cat = pi_per_level[cat.astype(int)]\na_cat = (rng.uniform(0, 1, size=n_cat) &lt; pi_cat).astype(float)\ndf_cat = pd.DataFrame({\"a\": a_cat, \"cat\": cat, \"x\": rng.normal(size=n_cat)})\n\nest_cat = RieszTreeRegressor(\n    estimand=ATE(treatment=\"a\", covariates=(\"cat\", \"x\")),\n    max_depth=4,\n    categorical_features=(1,),    # column 1 in feature_keys = (\"a\",\"cat\",\"x\")\n).fit(df_cat)\n\nalpha_cat = est_cat.predict(df_cat)\nprint(f\"alpha range: [{alpha_cat.min():.3f}, {alpha_cat.max():.3f}]\")\n\nalpha range: [-7.684, 15.769]",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#sec-save-load",
+    "href": "backends/tree.html#sec-save-load",
+    "title": "Tree backend (riesztree)",
+    "section": "6 Save / load",
+    "text": "6 Save / load\n\nimport tempfile, os\nwith tempfile.TemporaryDirectory() as tmp:\n    save_dir = os.path.join(tmp, \"fitted\")\n    est.save(save_dir)\n\n    loaded = RieszTreeRegressor.load(save_dir)\n    pred_loaded = loaded.predict(df)\n    print(f\"max abs diff after round-trip: {np.max(np.abs(pred_loaded - alpha_hat)):.2e}\")\n\nmax abs diff after round-trip: 0.00e+00\n\n\nFor built-in estimands the metadata fully reconstructs the estimand on load. For custom estimands pass estimand= to RieszTreeRegressor.load(path, estimand=...).",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#sec-sklearn",
+    "href": "backends/tree.html#sec-sklearn",
+    "title": "Tree backend (riesztree)",
+    "section": "7 Sklearn integration",
+    "text": "7 Sklearn integration\nRieszTreeRegressor is a BaseEstimator, so it composes with clone, GridSearchCV, cross_val_predict, Pipeline. See Tuning and Cross-Fitting.\n\nfrom sklearn.model_selection import GridSearchCV\ngs = GridSearchCV(\n    RieszTreeRegressor(estimand=ATE(treatment=\"a\", covariates=(\"x\",))),\n    {\"max_depth\": [2, 4, 6, 8]},\n    cv=3, n_jobs=1,\n)\ngs.fit(df)\n\nGridSearchCV(cv=3,\n             estimator=RieszTreeRegressor(estimand=FiniteEvalEstimand(feature_keys=('a',\n                                                                                    'x'),\n                                                                      m=&lt;function ATE.&lt;locals&gt;.m at 0x13976d760&gt;,\n                                                                      name='ATE',\n                                                                      factory_spec={'args': {'covariates': ['x'],\n                                                                                             'treatment': 'a'},\n                                                                                    'factory': 'ATE'})),\n             n_jobs=1, param_grid={'max_depth': [2, 4, 6, 8]})In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.GridSearchCV?Documentation for GridSearchCViFittedGridSearchCV(cv=3,\n             estimator=RieszTreeRegressor(estimand=FiniteEvalEstimand(feature_keys=('a',\n                                                                                    'x'),\n                                                                      m=&lt;function ATE.&lt;locals&gt;.m at 0x13976d760&gt;,\n                                                                      name='ATE',\n                                                                      factory_spec={'args': {'covariates': ['x'],\n                                                                                             'treatment': 'a'},\n                                                                                    'factory': 'ATE'})),\n             n_jobs=1, param_grid={'max_depth': [2, 4, 6, 8]}) best_estimator_: RieszTreeRegressorRieszTreeRegressor(estimand=FiniteEvalEstimand(feature_keys=('a', 'x'),\n                                               m=&lt;function ATE.&lt;locals&gt;.m at 0x13976f920&gt;,\n                                               name='ATE',\n                                               factory_spec={'args': {'covariates': ['x'],\n                                                                      'treatment': 'a'},\n                                                             'factory': 'ATE'}),\n                   max_depth=4) RieszTreeRegressorRieszTreeRegressor(estimand=FiniteEvalEstimand(feature_keys=('a', 'x'),\n                                               m=&lt;function ATE.&lt;locals&gt;.m at 0x13976f920&gt;,\n                                               name='ATE',\n                                               factory_spec={'args': {'covariates': ['x'],\n                                                                      'treatment': 'a'},\n                                                             'factory': 'ATE'}),\n                   max_depth=4) \n\nprint(f\"best max_depth = {gs.best_params_['max_depth']}\")\n\nbest max_depth = 4",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#hyperparameters",
+    "href": "backends/tree.html#hyperparameters",
+    "title": "Tree backend (riesztree)",
+    "section": "8 Hyperparameters",
+    "text": "8 Hyperparameters\n\n\n\n\n\n\n\n\nKnob\nDefault\nNotes\n\n\n\n\nmax_depth\n8\nCap on tree depth.\n\n\nmin_samples_split\n20\nMinimum count of original (\\(D &gt; 0\\)) augmented rows in a node before considering a split.\n\n\nmin_samples_leaf\n10\nMinimum count of original rows in each child of a candidate split.\n\n\nmax_leaves\n31\nCap for leafwise growth. Ignored when growth_policy=\"depthwise\".\n\n\ngrowth_policy\n\"depthwise\"\nOr \"leafwise\".\n\n\npruning_alpha\n0.0\nCost-complexity penalty.\n\n\nearly_stopping_rounds\nNone\nStop when held-out augmented loss has not improved for that many accepted splits.\n\n\nvalidation_fraction\n0.1\nHeld-out fraction for early stopping. Ignored when not needed.\n\n\ncategorical_features\nNone\nSequence of column indices treated as integer category labels.\n\n\nloss\nSquaredLoss()\nBregman-Riesz loss.\n\n\nrandom_state\n0\nReserved for tie-breaking.",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#sec-loss-aware",
+    "href": "backends/tree.html#sec-loss-aware",
+    "title": "Tree backend (riesztree)",
+    "section": "9 Loss-aware splits",
+    "text": "9 Loss-aware splits\nThe splitter uses the analytic per-leaf-loss-at-optimum for each Bregman loss:\n\n\n\n\n\n\n\n\nLoss\n\\(\\alpha_\\ell^*\\) in-domain when\n\\(\\hat L_\\ell(\\alpha_\\ell^*)\\)\n\n\n\n\nSquaredLoss\nalways\n\\(-C_\\ell^2 / D_\\ell\\)\n\n\nKLLoss\n\\(C_\\ell &lt; 0\\) (boundary at \\(C_\\ell = 0\\))\n\\(-C_\\ell + C_\\ell \\log(-C_\\ell / D_\\ell)\\)\n\n\nBernoulliLoss\n\\(-D_\\ell &lt; C_\\ell &lt; 0\\)\n\\(D_\\ell \\log D_\\ell - (D_\\ell + C_\\ell) \\log(D_\\ell + C_\\ell) + C_\\ell \\log(-C_\\ell)\\)\n\n\nBoundedSquaredLoss(lo, hi)\nalways (project \\(\\alpha_\\ell^*\\) to \\([lo, hi]\\))\n\\(D_\\ell (\\alpha_\\ell^*)^2 + 2 C_\\ell \\alpha_\\ell^*\\)\n\n\n\nOut-of-domain children are disqualified (+∞ leaf loss). Pair KLLoss / BernoulliLoss with density-ratio-style estimands (TSM); difference-of-evaluations estimands (ATE, ATT) frequently produce out-of-domain leaves under those losses.\n\nfrom riesztree import RieszTreeRegressor, TSM\nfrom rieszreg import KLLoss\n\nest_kl = RieszTreeRegressor(\n    estimand=TSM(level=1.0, treatment=\"a\", covariates=(\"x\",)),\n    loss=KLLoss(),\n    max_depth=4, random_state=0,\n).fit(df)\nalpha_kl = est_kl.predict(df)\nprint(f\"all alpha_hat ≥ 0: {bool((alpha_kl &gt;= 0).all())}\")\n\nall alpha_hat ≥ 0: True\n\nprint(f\"alpha range      : [{alpha_kl.min():.3f}, {alpha_kl.max():.3f}]\")\n\nalpha range      : [0.000, 14.167]",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#what-you-reach-for-instead",
+    "href": "backends/tree.html#what-you-reach-for-instead",
+    "title": "Tree backend (riesztree)",
+    "section": "10 What you reach for instead",
+    "text": "10 What you reach for instead\nriesztree is intentionally a single tree. For higher-accuracy variants:\n\nSingle-tree augmentation in a forest: see forestriesz/AugForestRieszRegressor — the same augmentation-style splitter, ensembled.\nLinear-in-\\(X\\) leaves (model trees): not implemented in v1. Within-leaf the augmented Bregman loss is still a small convex problem in the leaf’s \\(X\\)-coefficients, so the decoupling property survives. Planned.\nTreatment-dimension sieve (à la forestriesz’s riesz_feature_fns=\"auto\", which uses \\([\\mathbf 1\\{T = 0\\}, \\mathbf 1\\{T = 1\\}]\\) as basis): not implemented in v1. The tree code generalises naturally.",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#custom-estimands",
+    "href": "backends/tree.html#custom-estimands",
+    "title": "Tree backend (riesztree)",
+    "section": "11 Custom estimands",
+    "text": "11 Custom estimands\nBecause riesztree implements the augmentation-style Backend.fit_augmented, any user-supplied FiniteEvalEstimand works without configuration: \\(D_r\\) and \\(C_r\\) vary across augmented rows even with no sieve. (Contrast forestriesz’s moment-style backend, which raises a row-constant degeneracy error on AdditiveShift / LocalShift / custom estimands.) Pass your custom estimand and fit normally:\n\nfrom rieszreg import FiniteEvalEstimand, LinearForm\n\ndef m_custom(alpha):\n    def inner(z, y=None):\n        return LinearForm.point(1.0, {\"a\": z[\"a\"] + 1.0, \"x\": z[\"x\"]}) \\\n             - LinearForm.point(1.0, {\"a\": z[\"a\"], \"x\": z[\"x\"]})\n    return inner\n\ncustom = FiniteEvalEstimand(feature_keys=(\"a\", \"x\"), m=m_custom)\nest = RieszTreeRegressor(estimand=custom, max_depth=4).fit(df)",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#consistency",
+    "href": "backends/tree.html#consistency",
+    "title": "Tree backend (riesztree)",
+    "section": "12 Consistency",
+    "text": "12 Consistency\nThe greedy CART consistency theory (Breiman et al. 1984; Buhlmann & Yu 2003) covers regression trees fit by minimising additive-over-leaves squared loss. The augmented Bregman loss shares the additive-over-leaves structure that those arguments need, and the per-leaf objective is convex with a closed-form minimiser. Heuristically this should mean the same consistency results carry over for \\(\\alpha^*\\) under analogous regularity conditions (smoothness of the population loss, growing leaf counts at the right rate, bounded splitting noise).\nA formal proof for the augmented Bregman case isn’t in the literature at this writing — flagged as an open question. In practice, the consistency behaviour we see on the canonical DGPs in rieszreg.testing.dgps matches the regression-tree picture: RMSE shrinks as \\(n\\) grows, with the noise floor around what a comparable-depth CART achieves on the analogous regression problem. Single-tree variance is the dominant term; ensemble (forestriesz) or boost (rieszboost) for tighter rates.",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#sec-sims",
+    "href": "backends/tree.html#sec-sims",
+    "title": "Tree backend (riesztree)",
+    "section": "13 Simulations: how does this stack up against IPW?",
+    "text": "13 Simulations: how does this stack up against IPW?\nA common alternative for ATE-style estimands is two-step IPW: fit \\(\\hat\\pi(x)\\) (a propensity model), then plug into\n\\[\n\\hat\\alpha(a, x) \\;=\\; \\frac{2a - 1}{a\\,\\hat\\pi(x) + (1 - a)\\,(1 - \\hat\\pi(x))}.\n\\]\nTwo natural choices for \\(\\hat\\pi\\):\n\nLogistic regression (well-specified on the linear-Gaussian DGP below).\nRegression tree of \\(A\\) on \\(X\\) (mis-specified, depth tuned via held-out NLL).\n\nCompare both against riesztree (depth tuned via held-out Riesz loss). Same training set; oracle RMSE measured on a fresh test set of size \\(5n\\). Faceted across training sizes \\(n \\in \\{100, 200, 500, 2000, 8000\\}\\).\n\nimport numpy as np, pandas as pd, matplotlib.pyplot as plt\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import train_test_split\n\nfrom riesztree import RieszTreeRegressor, ATE\n\n\ndef sample(n, seed):\n    rng = np.random.default_rng(seed)\n    x = rng.normal(0.0, 1.0, size=(n, 5))\n    logit = 0.7 * x[:, 0] - 0.3 * x[:, 1]\n    pi = 1.0 / (1.0 + np.exp(-logit))\n    a = (rng.uniform(0, 1, n) &lt; pi).astype(float)\n    df = pd.DataFrame(x, columns=[f\"x{i}\" for i in range(5)])\n    df.insert(0, \"a\", a)\n    df[\"_pi\"] = pi\n    return df\n\n\ndef truth_from(df):\n    pi = df[\"_pi\"].values\n    a = df[\"a\"].values\n    prob_a = a * pi + (1.0 - a) * (1.0 - pi)\n    return (2.0 * a - 1.0) / prob_a\n\n\ndef rmse(a, b):\n    return float(np.sqrt(np.mean((a - b) ** 2)))\n\n\ndef ipw_with_estimator(clf, train, test):\n    feats = [f\"x{i}\" for i in range(5)]\n    clf.fit(train[feats].values, train[\"a\"].values.astype(int))\n    pi_hat = np.clip(clf.predict_proba(test[feats].values)[:, 1], 1e-3, 1 - 1e-3)\n    a = test[\"a\"].values\n    prob_a = a * pi_hat + (1.0 - a) * (1.0 - pi_hat)\n    return (2.0 * a - 1.0) / prob_a\n\n\ndepths = [2, 3, 4, 6, 8, 12]\nn_grid = [100, 200, 500, 2000, 8000]\ncovariates = (\"x0\", \"x1\", \"x2\", \"x3\", \"x4\")\n\nrecords = []\nfor n in n_grid:\n    train = sample(n, seed=0)\n    test = sample(5 * n, seed=1)\n    truth = truth_from(test)\n\n    # Logistic-regression IPW: a single horizontal reference (no depth knob).\n    log_ipw_alpha = ipw_with_estimator(LogisticRegression(max_iter=2000), train, test)\n    log_ipw_rmse = rmse(log_ipw_alpha, truth)\n\n    for d in depths:\n        # riesztree at this depth.\n        est = RieszTreeRegressor(\n            estimand=ATE(treatment=\"a\", covariates=covariates),\n            max_depth=d, random_state=0,\n        ).fit(train)\n        records.append({\n            \"n_train\": n, \"method\": \"riesztree\", \"depth\": d,\n            \"rmse\": rmse(est.predict(test), truth),\n        })\n        # IPW-tree at this depth.\n        records.append({\n            \"n_train\": n, \"method\": \"IPW (regression tree)\", \"depth\": d,\n            \"rmse\": rmse(\n                ipw_with_estimator(\n                    DecisionTreeClassifier(max_depth=d, min_samples_leaf=10, random_state=0),\n                    train, test,\n                ),\n                truth,\n            ),\n        })\n    records.append({\n        \"n_train\": n, \"method\": \"IPW (logistic regression)\", \"depth\": None,\n        \"rmse\": log_ipw_rmse,\n    })\n\nres = pd.DataFrame(records)\n\nfig, axes = plt.subplots(1, len(n_grid), figsize=(3.0 * len(n_grid), 4), sharey=False)\ncolors = {\"riesztree\": \"#005f73\", \"IPW (regression tree)\": \"#bb3e03\"}\nfor ax, n in zip(axes, n_grid):\n    sub = res[res[\"n_train\"] == n]\n    for method, color in colors.items():\n        m = sub[sub[\"method\"] == method].sort_values(\"depth\")\n        ax.plot(m[\"depth\"], m[\"rmse\"], \"-o\", color=color, label=method, linewidth=2)\n    log_rmse = sub[sub[\"method\"] == \"IPW (logistic regression)\"][\"rmse\"].iloc[0]\n    ax.axhline(log_rmse, color=\"black\", linestyle=\"--\", label=\"IPW (logistic, well-spec.)\")\n    ax.set_title(f\"n_train = {n}\")\n    ax.set_xlabel(\"max_depth\")\n    ax.set_ylabel(\"oracle RMSE\" if n == n_grid[0] else \"\")\n    ax.set_yscale(\"log\")\n    ax.grid(alpha=0.3)\naxes[-1].legend(loc=\"best\", fontsize=8)\nfig.tight_layout()\nplt.show()\n\n\n\n\nOracle RMSE vs depth, faceted by n_train. Lower is better. Logistic-regression IPW is well-specified on this DGP and gives the best achievable two-step baseline; riesztree directly optimises the Bregman-Riesz loss and beats both IPW variants once n exceeds a few hundred.\n\n\n\n\nThree things to read off the chart:\n\nAt very small \\(n\\) (100, 200), all three methods are competitive — there isn’t enough signal to separate them.\nFrom \\(n \\approx 500\\) onward, riesztree consistently beats IPW-with-CART, and the gap grows with \\(n\\).\nThe horizontal logistic-regression line is the floor for IPW with a correctly-specified propensity model. riesztree reaches and crosses that floor at moderate \\(n\\), despite not knowing the propensity is logistic. Direct loss optimisation on \\(\\alpha\\) avoids paying the model-mis-specification tax that the tree-IPW route incurs.\n\nThe held-out depth that minimises RMSE for riesztree typically sits in the 4–8 range; deeper trees overfit. Tune via GridSearchCV in practice.",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
+    ]
+  },
+  {
+    "objectID": "backends/tree.html#sharp-edges",
+    "href": "backends/tree.html#sharp-edges",
+    "title": "Tree backend (riesztree)",
+    "section": "14 Sharp edges",
+    "text": "14 Sharp edges\n\nHigh variance. A single tree’s RMSE is materially higher than a tuned forest or booster on the same DGP. Use this learner for interpretability or when the dependency footprint matters; otherwise pick forestriesz or rieszboost.\nNo confidence intervals in v1. Honest splits are not implemented.\nConstant per-leaf \\(\\alpha\\) only. Linear-in-\\(X\\) and treatment-sieve leaves are documented as future work.\nLoss-domain disqualifications. KL / Bernoulli with ATE-style estimands will see many split candidates ruled out; the resulting tree may be shallower than max_depth. This is the splitter respecting the link’s \\(\\alpha\\)-domain, not a bug.",
+    "crumbs": [
+      "Backends",
+      "Tree backend (riesztree)"
     ]
   },
   {
@@ -1083,7 +1248,7 @@
     "href": "estimation/custom.html#tmle",
     "title": "Custom code: DML and TMLE",
     "section": "TMLE",
-    "text": "TMLE\nTMLE solves the same EIF=0 estimating equation as one-step but does it by targeting \\(\\hat\\mu\\): fit a one-parameter fluctuation \\(\\mu^\\star(\\cdot) = \\hat\\mu(\\cdot) + \\epsilon \\hat\\alpha(\\cdot)\\) on a “clever covariate” \\(\\hat\\alpha\\) to drive the empirical mean of \\(\\hat\\alpha(O)(Y - \\mu^\\star(O))\\) to zero, then take the plug-in \\(\\hat\\psi = (1/n) \\sum \\mu^\\star(1, X) - \\mu^\\star(0, X)\\). For continuous \\(Y\\) the targeting is a single linear regression of the outcome residual on \\(\\hat\\alpha\\).\nTo target the counterfactual predictions we also need \\(\\hat\\alpha\\) at \\(A=1\\) and \\(A=0\\). Refit the booster on the full sample and predict at the two counterfactual treatment levels.\n\nPythonR\n\n\n\nbooster.fit(df[[\"a\"] + COVARIATES])\n\nRieszBooster(early_stopping_rounds=20,\n             estimand=FiniteEvalEstimand(feature_keys=('a', 'age', 'educ',\n                                                       'black', 'hisp', 'marr',\n                                                       'nodegree', 're74',\n                                                       're75'),\n                                         m=&lt;function ATE.&lt;locals&gt;.m at 0x7f2dc7d2f100&gt;,\n                                         name='ATE',\n                                         factory_spec={'args': {'covariates': ['age',\n                                                                               'educ',\n                                                                               'black',\n                                                                               'hisp',\n                                                                               'marr',\n                                                                               'nodegree',\n                                                                               're74',\n                                                                               're75'],\n                                                                'treatment': 'a'},\n                                                       'factory': 'ATE'}),\n             max_depth=3, n_estimators=2000, reg_lambda=10.0,\n             validation_fraction=0.2)In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.RieszBoosteriFittedRieszBooster(early_stopping_rounds=20,\n             estimand=FiniteEvalEstimand(feature_keys=('a', 'age', 'educ',\n                                                       'black', 'hisp', 'marr',\n                                                       'nodegree', 're74',\n                                                       're75'),\n                                         m=&lt;function ATE.&lt;locals&gt;.m at 0x7f2dc7d2f100&gt;,\n                                         name='ATE',\n                                         factory_spec={'args': {'covariates': ['age',\n                                                                               'educ',\n                                                                               'black',\n                                                                               'hisp',\n                                                                               'marr',\n                                                                               'nodegree',\n                                                                               're74',\n                                                                               're75'],\n                                                                'treatment': 'a'},\n                                                       'factory': 'ATE'}),\n             max_depth=3, n_estimators=2000, reg_lambda=10.0,\n             validation_fraction=0.2) \n\ndf_a1 = df.assign(a=1.0)\ndf_a0 = df.assign(a=0.0)\nalpha_1 = booster.predict(df_a1[[\"a\"] + COVARIATES])\nalpha_0 = booster.predict(df_a0[[\"a\"] + COVARIATES])\n\n# Fluctuation: ε from OLS of (y - μ̂_oof) on α̂_oof, no intercept.\neps = float(np.dot(alpha_hat, y - mu_oof) / np.dot(alpha_hat, alpha_hat))\n\n# Targeted counterfactual regressions and observed-row regression.\nmu1_star    = mu1   + eps * alpha_1\nmu0_star    = mu0   + eps * alpha_0\nmu_obs_star = mu_oof + eps * alpha_hat\n\npsi_tmle = float((mu1_star - mu0_star).mean())\neif_tmle = (mu1_star - mu0_star - psi_tmle) + alpha_hat * (y - mu_obs_star)\nse_tmle  = float(np.sqrt(np.var(eif_tmle, ddof=1) / len(eif_tmle)))\nci_tmle  = (psi_tmle - 1.96 * se_tmle, psi_tmle + 1.96 * se_tmle)\nprint(f\"ψ̂_TMLE = {psi_tmle:.2f}\")\n\nψ̂_TMLE = -2386.77\n\nprint(f\"SE     = {se_tmle:.2f}\")\n\nSE     = 219.82\n\nprint(f\"95% CI = [{ci_tmle[0]:.2f}, {ci_tmle[1]:.2f}]\")\n\n95% CI = [-2817.61, -1955.93]\n\n\n\n\n\ndf_a1 &lt;- df; df_a1$a &lt;- 1\ndf_a0 &lt;- df; df_a0$a &lt;- 0\nbooster$fit(df)\nalpha_1 &lt;- booster$predict(df_a1)\nalpha_0 &lt;- booster$predict(df_a0)\n\neps          &lt;- sum(alpha_hat * (y - mu_oof)) / sum(alpha_hat^2)\nmu1_star     &lt;- mu1   + eps * alpha_1\nmu0_star     &lt;- mu0   + eps * alpha_0\nmu_obs_star  &lt;- mu_oof + eps * alpha_hat\n\npsi_tmle &lt;- mean(mu1_star - mu0_star)\neif_tmle &lt;- (mu1_star - mu0_star - psi_tmle) + alpha_hat * (y - mu_obs_star)\nse_tmle  &lt;- sqrt(var(eif_tmle) / length(eif_tmle))\nci_tmle  &lt;- c(psi_tmle - 1.96 * se_tmle, psi_tmle + 1.96 * se_tmle)\ncat(sprintf(\"psi_TMLE = %.2f\\nSE       = %.2f\\n95%% CI   = [%.2f, %.2f]\\n\",\n            psi_tmle, se_tmle, ci_tmle[1], ci_tmle[2]))\n\npsi_TMLE = -1907.39\nSE       = 223.73\n95% CI   = [-2345.91, -1468.88]\n\n\n\n\n\nFor continuous \\(Y\\), one-step and TMLE point estimates coincide to \\(O_p(n^{-1})\\). TMLE’s plug-in is a parameter of an updated regression, which preserves bounds (e.g. probabilities stay in \\([0, 1]\\) for binary outcomes via the logistic-fluctuation variant — replace the OLS targeting step with a logistic-link single-covariate GLM on the bounded outcome).",
+    "text": "TMLE\nTMLE solves the same EIF=0 estimating equation as one-step but does it by targeting \\(\\hat\\mu\\): fit a one-parameter fluctuation \\(\\mu^\\star(\\cdot) = \\hat\\mu(\\cdot) + \\epsilon \\hat\\alpha(\\cdot)\\) on a “clever covariate” \\(\\hat\\alpha\\) to drive the empirical mean of \\(\\hat\\alpha(O)(Y - \\mu^\\star(O))\\) to zero, then take the plug-in \\(\\hat\\psi = (1/n) \\sum \\mu^\\star(1, X) - \\mu^\\star(0, X)\\). For continuous \\(Y\\) the targeting is a single linear regression of the outcome residual on \\(\\hat\\alpha\\).\nTo target the counterfactual predictions we also need \\(\\hat\\alpha\\) at \\(A=1\\) and \\(A=0\\). Refit the booster on the full sample and predict at the two counterfactual treatment levels.\n\nPythonR\n\n\n\nbooster.fit(df[[\"a\"] + COVARIATES])\n\nRieszBooster(early_stopping_rounds=20,\n             estimand=FiniteEvalEstimand(feature_keys=('a', 'age', 'educ',\n                                                       'black', 'hisp', 'marr',\n                                                       'nodegree', 're74',\n                                                       're75'),\n                                         m=&lt;function ATE.&lt;locals&gt;.m at 0x7fe81eb03100&gt;,\n                                         name='ATE',\n                                         factory_spec={'args': {'covariates': ['age',\n                                                                               'educ',\n                                                                               'black',\n                                                                               'hisp',\n                                                                               'marr',\n                                                                               'nodegree',\n                                                                               're74',\n                                                                               're75'],\n                                                                'treatment': 'a'},\n                                                       'factory': 'ATE'}),\n             max_depth=3, n_estimators=2000, reg_lambda=10.0,\n             validation_fraction=0.2)In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.RieszBoosteriFittedRieszBooster(early_stopping_rounds=20,\n             estimand=FiniteEvalEstimand(feature_keys=('a', 'age', 'educ',\n                                                       'black', 'hisp', 'marr',\n                                                       'nodegree', 're74',\n                                                       're75'),\n                                         m=&lt;function ATE.&lt;locals&gt;.m at 0x7fe81eb03100&gt;,\n                                         name='ATE',\n                                         factory_spec={'args': {'covariates': ['age',\n                                                                               'educ',\n                                                                               'black',\n                                                                               'hisp',\n                                                                               'marr',\n                                                                               'nodegree',\n                                                                               're74',\n                                                                               're75'],\n                                                                'treatment': 'a'},\n                                                       'factory': 'ATE'}),\n             max_depth=3, n_estimators=2000, reg_lambda=10.0,\n             validation_fraction=0.2) \n\ndf_a1 = df.assign(a=1.0)\ndf_a0 = df.assign(a=0.0)\nalpha_1 = booster.predict(df_a1[[\"a\"] + COVARIATES])\nalpha_0 = booster.predict(df_a0[[\"a\"] + COVARIATES])\n\n# Fluctuation: ε from OLS of (y - μ̂_oof) on α̂_oof, no intercept.\neps = float(np.dot(alpha_hat, y - mu_oof) / np.dot(alpha_hat, alpha_hat))\n\n# Targeted counterfactual regressions and observed-row regression.\nmu1_star    = mu1   + eps * alpha_1\nmu0_star    = mu0   + eps * alpha_0\nmu_obs_star = mu_oof + eps * alpha_hat\n\npsi_tmle = float((mu1_star - mu0_star).mean())\neif_tmle = (mu1_star - mu0_star - psi_tmle) + alpha_hat * (y - mu_obs_star)\nse_tmle  = float(np.sqrt(np.var(eif_tmle, ddof=1) / len(eif_tmle)))\nci_tmle  = (psi_tmle - 1.96 * se_tmle, psi_tmle + 1.96 * se_tmle)\nprint(f\"ψ̂_TMLE = {psi_tmle:.2f}\")\n\nψ̂_TMLE = -2386.77\n\nprint(f\"SE     = {se_tmle:.2f}\")\n\nSE     = 219.82\n\nprint(f\"95% CI = [{ci_tmle[0]:.2f}, {ci_tmle[1]:.2f}]\")\n\n95% CI = [-2817.61, -1955.93]\n\n\n\n\n\ndf_a1 &lt;- df; df_a1$a &lt;- 1\ndf_a0 &lt;- df; df_a0$a &lt;- 0\nbooster$fit(df)\nalpha_1 &lt;- booster$predict(df_a1)\nalpha_0 &lt;- booster$predict(df_a0)\n\neps          &lt;- sum(alpha_hat * (y - mu_oof)) / sum(alpha_hat^2)\nmu1_star     &lt;- mu1   + eps * alpha_1\nmu0_star     &lt;- mu0   + eps * alpha_0\nmu_obs_star  &lt;- mu_oof + eps * alpha_hat\n\npsi_tmle &lt;- mean(mu1_star - mu0_star)\neif_tmle &lt;- (mu1_star - mu0_star - psi_tmle) + alpha_hat * (y - mu_obs_star)\nse_tmle  &lt;- sqrt(var(eif_tmle) / length(eif_tmle))\nci_tmle  &lt;- c(psi_tmle - 1.96 * se_tmle, psi_tmle + 1.96 * se_tmle)\ncat(sprintf(\"psi_TMLE = %.2f\\nSE       = %.2f\\n95%% CI   = [%.2f, %.2f]\\n\",\n            psi_tmle, se_tmle, ci_tmle[1], ci_tmle[2]))\n\npsi_TMLE = -1907.39\nSE       = 223.73\n95% CI   = [-2345.91, -1468.88]\n\n\n\n\n\nFor continuous \\(Y\\), one-step and TMLE point estimates coincide to \\(O_p(n^{-1})\\). TMLE’s plug-in is a parameter of an updated regression, which preserves bounds (e.g. probabilities stay in \\([0, 1]\\) for binary outcomes via the logistic-fluctuation variant — replace the OLS targeting step with a logistic-link single-covariate GLM on the bounded outcome).",
     "crumbs": [
       "Estimation",
       "Custom code: DML and TMLE"
