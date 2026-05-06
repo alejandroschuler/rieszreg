@@ -146,7 +146,7 @@ alpha_hat <- as.numeric(rt$predict(df))
 Two growth policies are supported:
 
 - **Depthwise** (`growth_policy="depthwise"`, default). Standard recursive depth-first growth. Stops at `max_depth` or when `min_samples_split` blocks the node.
-- **Leafwise** (`growth_policy="leafwise"`). Best-first growth: at each step split the leaf whose best candidate has the highest gain anywhere in the tree. Termination on `max_leaves` (the natural cap for this policy) or when no positive-gain split remains.
+- **Leafwise** (`growth_policy="leafwise"`). Best-first growth: at each step split the leaf whose best candidate has the highest gain anywhere in the tree. Termination on `max_leaf_nodes` (the natural cap for this policy) or when no positive-gain split remains.
 
 ```{python}
 from riesztree import RieszTreeRegressor, ATE, n_leaves
@@ -158,7 +158,7 @@ est_dw = RieszTreeRegressor(
 
 est_lw = RieszTreeRegressor(
     estimand=ATE(treatment="a", covariates=("x",)),
-    growth_policy="leafwise", max_leaves=16, max_depth=20,
+    growth_policy="leafwise", max_leaf_nodes=16, max_depth=20,
 ).fit(df)
 
 print(f"depthwise leaves: {n_leaves(est_dw.predictor_.tree)}")
@@ -169,7 +169,7 @@ print(f"leafwise  leaves: {n_leaves(est_lw.predictor_.tree)}")
 
 Two regularisation paths are available:
 
-- **Cost-complexity pruning** via `pruning_alpha > 0`. Standard Breiman et al. weakest-link algorithm: walk the tree bottom-up, computing per-subtree $R_\alpha(T) = R(T) + \alpha\, |\text{leaves}(T)|$, and collapse the weakest link until $g_{\min} \geq \alpha$. $R(T)$ is the augmented Bregman training loss summed over leaves.
+- **Cost-complexity pruning** via `ccp_alpha > 0`. Standard Breiman et al. weakest-link algorithm: walk the tree bottom-up, computing per-subtree $R_\alpha(T) = R(T) + \alpha\, |\text{leaves}(T)|$, and collapse the weakest link until $g_{\min} \geq \alpha$. $R(T)$ is the augmented Bregman training loss summed over leaves.
 - **Early stopping** via `early_stopping_rounds` + `validation_fraction`. Stops growing when the held-out augmented loss has not improved for that many consecutive accepted splits, mirroring `rieszboost` / `riesznet`.
 
 Both are off by default. Combine freely with either growth policy.
@@ -177,7 +177,7 @@ Both are off by default. Combine freely with either growth policy.
 ```{python}
 est_pruned = RieszTreeRegressor(
     estimand=ATE(treatment="a", covariates=("x",)),
-    max_depth=10, pruning_alpha=0.5,
+    max_depth=10, ccp_alpha=0.5,
 ).fit(df)
 
 est_es = RieszTreeRegressor(
@@ -245,19 +245,78 @@ print(f"best max_depth = {gs.best_params_['max_depth']}")
 
 ## Hyperparameters
 
+Mirrors `sklearn.tree.DecisionTreeRegressor` where the augmented Bregman-Riesz setting allows.
+
 | Knob | Default | Notes |
 |---|---|---|
 | `max_depth` | 8 | Cap on tree depth. |
 | `min_samples_split` | 20 | Minimum count of original ($D > 0$) augmented rows in a node before considering a split. |
 | `min_samples_leaf` | 10 | Minimum count of original rows in each child of a candidate split. |
-| `max_leaves` | 31 | Cap for leafwise growth. Ignored when `growth_policy="depthwise"`. |
+| `min_weight_fraction_leaf` | 0.0 | Sklearn parity. With unit weights, leaves must hold $\geq \lceil \text{frac} \cdot n_{\text{orig}} \rceil$ original rows (combined with `min_samples_leaf` via `max(...)`). |
+| `max_leaf_nodes` | 31 | Cap for leafwise growth. Ignored when `growth_policy="depthwise"`. |
+| `max_features` | None | Per-split feature subsample. `None`, `"sqrt"`, `"log2"`, an int, or a float in $(0, 1]$. Critical for forest decorrelation. |
 | `growth_policy` | `"depthwise"` | Or `"leafwise"`. |
-| `pruning_alpha` | 0.0 | Cost-complexity penalty. |
+| `min_impurity_decrease` | 0.0 | Reject splits with gain $\leq$ this threshold. |
+| `ccp_alpha` | 0.0 | Cost-complexity pruning penalty. Sklearn name. |
 | `early_stopping_rounds` | None | Stop when held-out augmented loss has not improved for that many accepted splits. |
 | `validation_fraction` | 0.1 | Held-out fraction for early stopping. Ignored when not needed. |
 | `categorical_features` | None | Sequence of column indices treated as integer category labels. |
 | `loss` | `SquaredLoss()` | Bregman-Riesz loss. |
-| `random_state` | 0 | Reserved for tie-breaking. |
+| `random_state` | 0 | Seeds the per-split feature subsample (`max_features`) and the per-feature random threshold (`splitter='random'`). |
+| `splitter` | `"exact"` | One of `"exact"` (Cython per-feature sweep), `"hist"` (Cython quantile-binned histogram, fastest at large $n$), `"random"` (sklearn ExtraTrees-style), `"python"` (legacy; deprecated, removed in v0.0.3). |
+| `max_bins` | 255 | Quantile bins per feature when `splitter="hist"`. Sklearn HGB convention; fits in `uint8`. |
+
+The v0.0.1 names `max_leaves` and `pruning_alpha` are accepted as deprecated aliases for `max_leaf_nodes` and `ccp_alpha`; passing them emits a `FutureWarning`.
+
+## Splitter modes {#sec-splitters}
+
+`riesztree` ships three Cython splitter paths plus a legacy Python fallback:
+
+```{python}
+# Compare splitter modes on the same data — predictions and timings.
+import time
+from riesztree import RieszTreeRegressor, ATE, n_leaves
+
+estimand = ATE(treatment="a", covariates=("x",))
+
+for sp in ["exact", "hist", "random"]:
+    t0 = time.perf_counter()
+    est = RieszTreeRegressor(estimand=estimand, max_depth=4, splitter=sp).fit(df)
+    fit_ms = (time.perf_counter() - t0) * 1000
+    print(f"splitter={sp:6s}  fit={fit_ms:6.1f} ms  leaves={n_leaves(est.predictor_.tree)}")
+```
+
+- `"exact"` (default): per-feature linear scan over distinct values. Best partition; same byte-for-byte as the legacy Python splitter on the four built-in losses.
+- `"hist"`: pre-binned (default 255 quantile bins per feature). `O(n_{\text{leaf}} + \text{max\_bins})` per feature per leaf instead of `O(n_{\text{leaf}} \log n_{\text{leaf}})`. Fastest at large $n$; threshold lands on a bin boundary so split-ranking is approximate but the leaf $\alpha^\star$ itself is exact.
+- `"random"`: sklearn ExtraTrees-style. One uniform threshold per feature per leaf; useful for forest decorrelation when combined with `max_features="sqrt"`.
+
+For losses outside the four built-ins (`SquaredLoss`, `KLLoss`, `BernoulliLoss`, `BoundedSquaredLoss`), the Cython splitter routes through a registered Numba `@cfunc` if one was registered via `riesztree.fast.register_fast_leaf_solver` — otherwise it falls back to the Python path with a one-time `UserWarning`.
+
+## Custom-loss extension hook {#sec-extension-hook}
+
+```python
+import numba
+from rieszreg import LossSpec
+from riesztree.fast import register_fast_leaf_solver
+
+class MyLoss(LossSpec):
+    ...   # implement the LossSpec interface
+
+@numba.cfunc("float64(float64, float64)", cache=True, nopython=True)
+def my_leaf_loss(D, C):
+    if D <= 0.0:
+        return 0.0
+    return -C * C / D       # SquaredLoss-equivalent here
+
+def my_alpha(D, C):
+    return 0.0 if D <= 0 else -C / D
+
+register_fast_leaf_solver(MyLoss, my_leaf_loss, my_alpha)
+
+# Subsequent fits with loss=MyLoss() use the C-speed Cython splitter.
+```
+
+The cfunc is called from the Cython splitter's tight loop without the GIL — same per-evaluation cost as the four built-in losses. See [riesztree's BENCH_BASELINE.md](https://github.com/rieszreg/riesztree/blob/main/BENCH_BASELINE.md) for the locked baselines and a comparison vs sklearn / LightGBM / XGBoost.
 
 ## Loss-aware splits {#sec-loss-aware}
 
