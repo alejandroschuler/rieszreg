@@ -54,27 +54,24 @@ jobs:
         with:
           r-version: 'release'
 
-      # rieszreg's R DESCRIPTION only declares CRAN deps (R6, reticulate,
-      # testthat, pkgload); pak can resolve those. The sibling packages'
-      # DESCRIPTIONs declare 'rieszreg' as an Import, which pak can't
-      # resolve from CRAN — so we point setup-r-dependencies at rieszreg's
-      # DESCRIPTION (working-directory) for installing system deps via pak,
-      # and rely on pkgload::load_all to bring in the workspace-local
-      # rieszreg + sibling packages at test time.
+      # Install rieszreg + the sibling under test from their workspace-local
+      # paths. pak's solver sees both DESCRIPTIONs at once, so the sibling's
+      # `Imports: rieszreg (>= 0.0.1)` resolves against the local rieszreg
+      # rather than falling through to CRAN.
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          working-directory: packages/rieszreg/r/rieszreg
-          extra-packages: |
-            any::xgboost
-            any::rsample
+          packages: |
+            local::./packages/rieszreg/r/rieszreg
+            local::./packages/${{ matrix.package }}/r/${{ matrix.package }}
+            any::testthat
 
       - name: Run R parity tests
         run: |
           export RETICULATE_PYTHON=$(uv run python -c 'import sys; print(sys.executable)')
           Rscript -e '
-            pkgload::load_all("packages/rieszreg/r/rieszreg")
             pkg <- "${{ matrix.package }}"
-            pkgload::load_all(file.path("packages", pkg, "r", pkg))
+            library(rieszreg)
+            library(pkg, character.only = TRUE)
             test_dir <- file.path("packages", pkg, "r", pkg, "tests", "testthat")
             if (dir.exists(test_dir)) {
               testthat::test_dir(test_dir)

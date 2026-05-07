@@ -93,24 +93,25 @@ Provide a convenience class subclassing `rieszreg.RieszEstimator`. Subclass `rie
 ## Run tests
 
 ```sh
-.venv/bin/python -m pytest rieszreg/python/tests -q
-.venv/bin/python -m pytest rieszboost/python/tests -q
-.venv/bin/python -m pytest krrr/python/tests -q
-.venv/bin/python -m pytest forestriesz/python/tests -q
-.venv/bin/python -m pytest riesznet/python/tests -q
+uv run pytest packages/rieszreg/python/tests -q
+uv run pytest packages/rieszboost/python/tests -q
+uv run pytest packages/krrr/python/tests -q
+uv run pytest packages/forestriesz/python/tests -q
+uv run pytest packages/riesznet/python/tests -q
+uv run pytest packages/riesztree/python/tests -q
 
-Rscript -e '
-  Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))
-  pkgload::load_all("rieszreg/r/rieszreg")
-  pkgload::load_all("rieszboost/r/rieszboost")
-  testthat::test_dir("rieszboost/r/rieszboost/tests/testthat")
-  pkgload::load_all("krrr/r/krrr")
-  testthat::test_dir("krrr/r/krrr/tests/testthat")
-  pkgload::load_all("forestriesz/r/forestriesz")
-  testthat::test_dir("forestriesz/r/forestriesz/tests/testthat")
-  pkgload::load_all("riesznet/r/riesznet")
-  testthat::test_dir("riesznet/r/riesznet/tests/testthat")
-'
+# R workspace install (one-time; pak resolves workspace-local cross-deps).
+Rscript tools/r/install.R
+
+# R parity tests for each impl package.
+RETICULATE_PYTHON=$(uv run python -c 'import sys; print(sys.executable)') \
+  Rscript -e '
+    library(rieszreg)
+    for (pkg in c("rieszboost", "krrr", "forestriesz", "riesznet", "riesztree")) {
+      library(pkg, character.only = TRUE)
+      testthat::test_dir(file.path("packages", pkg, "r", pkg, "tests", "testthat"))
+    }
+  '
 ```
 
 ## Doc-tone rules (enforced by .githooks/pre-commit)
