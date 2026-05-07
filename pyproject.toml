@@ -1,0 +1,28 @@
+[project]
+name = "rieszreg-workspace"
+version = "0"
+description = "Workspace root for the rieszreg package family. Not a publishable package; see individual members under <pkg>/python/."
+requires-python = ">=3.10"
+
+[tool.uv.workspace]
+members = [
+    "packages/rieszreg/python",
+    "packages/rieszboost/python",
+    "packages/krrr/python",
+    "packages/forestriesz/python",
+    "packages/riesznet/python",
+    "packages/riesztree/python",
+]
+
+[tool.uv.sources]
+rieszreg = { workspace = true }
+
+[dependency-groups]
+docs = [
+    "matplotlib>=3.7",
+    "pandas>=2.0",
+    "causaldata",
+    "xgboost>=2.0",
+    "jax>=0.4",
+    "torch>=2.0",
+]

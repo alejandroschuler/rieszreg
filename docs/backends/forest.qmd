@@ -126,7 +126,7 @@ print(f"RMSE         = {np.sqrt(np.mean((alpha_hat - true_alpha)**2)):.3f}")
 
 ```{r}
 #| eval: false
-pkgload::load_all("../forestriesz/r/forestriesz")
+pkgload::load_all("../packages/forestriesz/r/forestriesz")
 use_python_forestriesz(file.path(getwd(), "../.venv/bin/python"))
 
 set.seed(0)
@@ -207,7 +207,7 @@ print(f"mean coverage of α̂ in [lb, ub] = {((lb <= alpha_hat) & (alpha_hat <= 
 
 ```{r}
 #| eval: false
-pkgload::load_all("../forestriesz/r/forestriesz")
+pkgload::load_all("../packages/forestriesz/r/forestriesz")
 use_python_forestriesz(file.path(getwd(), "../.venv/bin/python"))
 
 fr <- ForestRieszRegressor$new(

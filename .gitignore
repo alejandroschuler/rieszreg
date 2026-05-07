@@ -1,18 +1,9 @@
-# Sibling implementation packages live in their own repos.
-rieszboost/
-krrr/
-forestriesz/
-riesznet/
-riesztree/
-
-# riesztree design / proof-of-concept artifacts (the canonical version lives
-# in the docs at docs/backends/tree.qmd and the package at rieszreg/riesztree).
-RIESZTREE_DESIGN.html
-RIESZTREE_DESIGN_files/
-
 # Local virtualenvs
 .venv/
 **/.venv/
+
+# uv artifacts
+.uv-cache/
 
 # Python build artifacts
 __pycache__/
@@ -30,6 +21,8 @@ dist/
 # Quarto build outputs (the docs/_freeze cache IS committed, on purpose)
 docs/_site/
 docs/.quarto/
+docs/**/*.html
+docs/**/*_files/
 
 # OS / editor cruft
 .DS_Store
@@ -47,3 +40,6 @@ docs/.quarto/
 reference/*/
 !reference/.gitignore
 !reference/README.md
+
+# Claude Code / agent worktrees (transient working directories)
+.claude/worktrees/

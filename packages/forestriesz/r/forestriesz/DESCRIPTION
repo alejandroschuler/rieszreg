@@ -1,0 +1,20 @@
+Package: forestriesz
+Type: Package
+Title: Random-Forest Riesz Regression
+Version: 0.0.1
+Authors@R: person("Alejandro", "Schuler", role = c("aut", "cre"), email = "alejandro.schuler@gmail.com")
+Description: R wrapper around the Python 'forestriesz' package — random-forest
+    estimation of the Riesz representer of a linear functional, following
+    Chernozhukov, Newey, Quintas-Martínez, Syrgkanis (2022). Sister package to
+    'krrr' and 'rieszboost'. Reuses 'rieszreg' for estimand specification.
+License: file LICENSE
+Encoding: UTF-8
+Imports:
+    R6,
+    reticulate (>= 1.30),
+    rieszreg (>= 0.0.1)
+Suggests:
+    testthat (>= 3.0.0),
+    pkgload
+Config/testthat/edition: 3
+RoxygenNote: 7.3.2

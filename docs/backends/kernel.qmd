@@ -59,8 +59,8 @@ print(f"RMSE             = {np.sqrt(np.mean((alpha_hat - true_alpha)**2)):.3f}")
 ```{r}
 #| eval: false
 # Load the krrr R wrapper (one-time per session) and configure reticulate.
-pkgload::load_all("../krrr/r/krrr")
-use_python_krrr(file.path(getwd(), "../rieszboost/.venv/bin/python"))
+pkgload::load_all("../packages/krrr/r/krrr")
+use_python_krrr(file.path(getwd(), "../.venv/bin/python"))
 
 set.seed(0)
 n  <- 1000
