@@ -291,9 +291,9 @@ The same nested cross-fit + per-fold model selection in R uses [`rsample`](https
 #| code-summary: "Load forestriesz and riesznet R wrappers"
 .project_root <- Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd())
 suppressMessages(pkgload::load_all(
-  file.path(.project_root, "../forestriesz/r/forestriesz"), quiet = TRUE))
+  file.path(.project_root, "../packages/forestriesz/r/forestriesz"), quiet = TRUE))
 suppressMessages(pkgload::load_all(
-  file.path(.project_root, "../riesznet/r/riesznet"),       quiet = TRUE))
+  file.path(.project_root, "../packages/riesznet/r/riesznet"),       quiet = TRUE))
 ```
 
 ```{r}

@@ -59,7 +59,7 @@ print(f"best_iter    = {rn.best_iteration_}")
 
 ```{r}
 #| eval: false
-pkgload::load_all("../riesznet/r/riesznet")
+pkgload::load_all("../packages/riesznet/r/riesznet")
 use_python_riesznet(file.path(getwd(), "../.venv/bin/python"))
 
 set.seed(0)

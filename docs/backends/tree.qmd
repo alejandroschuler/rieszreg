@@ -121,7 +121,7 @@ print(f"RMSE         = {np.sqrt(np.mean((alpha_hat - true_alpha)**2)):.3f}")
 
 ```{r}
 #| eval: false
-pkgload::load_all("../riesztree/r/riesztree")
+pkgload::load_all("../packages/riesztree/r/riesztree")
 use_python_riesztree(file.path(getwd(), "../.venv/bin/python"))
 
 set.seed(0)

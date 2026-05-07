@@ -139,7 +139,7 @@ print(f"95% CI = [{ci[0]:.3f}, {ci[1]:.3f}]")
 #| code-summary: "Load riesznet R wrapper"
 .project_root <- Sys.getenv("QUARTO_PROJECT_DIR", unset = getwd())
 suppressMessages(pkgload::load_all(
-  file.path(.project_root, "../riesznet/r/riesznet"), quiet = TRUE))
+  file.path(.project_root, "../packages/riesznet/r/riesznet"), quiet = TRUE))
 ```
 
 ```{r}

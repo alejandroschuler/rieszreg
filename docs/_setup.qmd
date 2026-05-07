@@ -11,26 +11,23 @@ if (is.na(.project_root) || .project_root == "") {
   .project_root <- .here
 }
 
-# Point reticulate at the project venv. The top-level .venv holds
-# rieszreg + rieszboost + krrr + forestriesz (editable installs).
+# Point reticulate at the workspace venv (one venv at the monorepo root,
+# editable-installs all six packages).
 if (Sys.getenv("RETICULATE_PYTHON") == "") {
-  for (cand in c(file.path(.project_root, "../.venv"),
-                 file.path(.project_root, "../rieszboost/.venv"))) {
-    if (dir.exists(cand)) {
-      reticulate::use_virtualenv(normalizePath(cand, mustWork = FALSE), required = TRUE)
-      break
-    }
+  cand <- file.path(.project_root, "../.venv")
+  if (dir.exists(cand)) {
+    reticulate::use_virtualenv(normalizePath(cand, mustWork = FALSE), required = TRUE)
   }
 }
 
 # Dev-load rieszreg first (every backend imports from it), then rieszboost.
 # krrr's and forestriesz's R wrappers are loaded on demand by pages that use them.
 suppressMessages(pkgload::load_all(
-  file.path(.project_root, "../rieszreg/r/rieszreg"),
+  file.path(.project_root, "../packages/rieszreg/r/rieszreg"),
   quiet = TRUE
 ))
 suppressMessages(pkgload::load_all(
-  file.path(.project_root, "../rieszboost/r/rieszboost"),
+  file.path(.project_root, "../packages/rieszboost/r/rieszboost"),
   quiet = TRUE
 ))
 ```
