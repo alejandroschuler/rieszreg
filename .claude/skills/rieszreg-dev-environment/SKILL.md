@@ -1,95 +1,106 @@
 ---
 name: rieszreg-dev-environment
-description: Operational rules for running tests, rendering docs, or executing code in the rieszreg meta-project. Triggers when running `pytest` across multiple packages, `quarto render` on the docs site, R parity tests, or anything that crosses package boundaries (rieszreg + rieszboost / krrr / forestriesz / riesznet / riesztree). Especially important inside `.claude/worktrees/*` — worktree clones do not contain the shared `.venv`.
+description: Operational rules for the rieszreg uv-workspace monorepo. Use when running `uv sync` or `uv run pytest`, creating or working inside a `git worktree`, rendering the Quarto docs site (`docs/`), or doing anything that touches the workspace `.venv`. Triggers any time you cd into a fresh checkout of `rieszreg/rieszreg` or one of its worktrees.
 ---
 
-# rieszreg dev-environment rules
+# rieszreg dev environment
 
-## The repo is a uv-workspace monorepo
+The repo is a single `uv` workspace at `github.com/rieszreg/rieszreg`. Six packages live under `packages/<pkg>/`. One `.venv/` at the workspace root, with all six packages editable-installed via uv. Worktrees get their own `.venv/` (one `uv sync` per worktree).
 
-`/Users/aschuler/Desktop/RieszReg/` is a single git repo (`github.com/rieszreg/rieszreg`). All six packages live under `packages/`:
-
-```
-RieszReg/
-├── packages/
-│   ├── rieszreg/                 ← meta-package (Python + R)
-│   ├── rieszboost/               ← XGBoost backend
-│   ├── krrr/                     ← kernel ridge backend
-│   ├── forestriesz/              ← random forest backend
-│   ├── riesznet/                 ← neural-net backend
-│   └── riesztree/                ← single-tree backend
-├── docs/                         ← Quarto user guide
-├── tools/r/install.R             ← R workspace installer (pak)
-├── pyproject.toml                ← uv workspace root
-└── .venv/                        ← editable installs of all 6 Python packages
-```
-
-The Python side is a uv workspace: `uv sync --all-packages` produces a single `.venv` with editable installs of every package. The R side uses pak to install the same 6 packages from their workspace-local paths.
-
-## Running things from a worktree
-
-A `git worktree` checkout (e.g. `.claude/worktrees/<name>/`) contains the full source tree but **not** the shared `.venv`. The venv at `/Users/aschuler/Desktop/RieszReg/.venv/` belongs to the main checkout.
-
-| Operation | Works in worktree? | Notes |
-|---|---|---|
-| `pytest packages/<any>/python/tests` | ✓ if you set up a venv | `uv sync --all-packages` creates one inside the worktree |
-| `quarto render docs/` | ✓ if you set up a venv | docs `_setup.qmd` reads from the active venv via reticulate |
-| Running R parity tests | ✓ if R workspace is installed | `Rscript tools/r/install.R` installs all 6 R packages |
-| Editing notation across all packages | ✓ | The full source tree is present |
-
-**Two ways to run:**
-
-1. **Use the main checkout's `.venv` directly** (fastest, no install). Reference it by absolute path:
-   ```sh
-   /Users/aschuler/Desktop/RieszReg/.venv/bin/python -m pytest packages/rieszreg/python/tests -q
-   ```
-   The editable installs there resolve `import rieszreg` etc., regardless of which worktree you're in. Files paths inside `.venv` resolve to the main checkout, so this verifies code from the main checkout, not the worktree.
-
-2. **Build a fresh venv in the worktree** (verifies worktree code). From the worktree root:
-   ```sh
-   uv sync --all-packages --all-extras
-   uv run pytest packages/rieszreg/python/tests -q
-   ```
-
-For **R parity tests in the worktree**, use option 2 (the R packages need to point at the worktree's editable Python installs):
+## First-time setup
 
 ```sh
+git clone https://github.com/rieszreg/rieszreg.git
+cd rieszreg
+uv sync --all-packages --all-extras    # creates .venv with all six pkgs editable
+```
+
+`uv` (Astral's package manager) must be installed: `brew install uv` on macOS, or `curl -LsSf https://astral.sh/uv/install.sh | sh`.
+
+## Running things
+
+Two equivalent forms:
+
+```sh
+uv run pytest packages/rieszreg/python/tests -q     # uv handles activation
+.venv/bin/python -m pytest packages/rieszreg/python/tests -q     # direct
+```
+
+Use `uv run <cmd>` when in doubt — it ensures the workspace `.venv` is current before running.
+
+For an interactive REPL on the workspace:
+
+```sh
+uv run python
+```
+
+## Worktrees
+
+`git worktree add ../wt-feature feature-branch` creates a worktree. Each worktree has its own `.venv/` once you run `uv sync` inside it. From the worktree:
+
+```sh
+cd ../wt-feature
 uv sync --all-packages --all-extras
-Rscript tools/r/install.R              # installs all 6 R packages via pak
-RETICULATE_PYTHON=$(uv run python -c 'import sys; print(sys.executable)') \
-  Rscript -e '
-    library(rieszreg); library(rieszboost)
-    testthat::test_dir("packages/rieszboost/r/rieszboost/tests/testthat")
-  '
+.venv/bin/python -c "import rieszreg; print(rieszreg.__file__)"
+# expected: <wt-feature>/packages/rieszreg/python/rieszreg/__init__.py
 ```
 
-## R workspace install (one-time setup)
+The path printed must be **inside the worktree**. If it's not — if it points to the main checkout or any other location — there is a leftover `rieszreg/` directory at the workspace root namespace-shadowing the editable install. Remove it: `rm -rf rieszreg` (the directory at the root, *not* `packages/rieszreg/`).
 
-`tools/r/install.R` installs all six R packages plus testthat via pak. It uses `local::./packages/<pkg>/r/<pkg>` refs, so pak resolves cross-package deps against the workspace-local DESCRIPTIONs (rather than failing on a CRAN lookup of the not-yet-published `rieszreg` package).
+## Adding extras you need ad-hoc
+
+The workspace pyproject has a `[dependency-groups] docs = [...]` group with matplotlib, pandas, causaldata, xgboost, jax, torch. To get those in your venv:
 
 ```sh
-Rscript tools/r/install.R                # all six packages
-Rscript tools/r/install.R rieszboost     # rieszreg + just rieszboost
+uv sync --all-packages --all-extras --group docs
 ```
 
-After installation, R sessions can load packages directly:
+Other groups can be added to the root `pyproject.toml` — keep them at the workspace root, not in member pyprojects, when they're cross-cutting.
 
-```r
-library(rieszreg)
-library(rieszboost)
-testthat::test_dir("packages/rieszboost/r/rieszboost/tests/testthat")
+## Quarto docs
+
+The unified docs site lives at `docs/` and Quarto-renders to `docs/_site/` (gitignored). The `_freeze/` cache **is** committed — that's what lets the gh-pages publish workflow skip re-executing chunks.
+
+```sh
+quarto render docs/                       # full site (10+ minutes)
+quarto render docs/<page>.qmd             # single page
 ```
 
-No `pkgload::load_all` dance needed. The CI rtests job uses the same pak-based workspace install through `r-lib/actions/setup-r-dependencies` with explicit `local::` refs.
+If a render seems stuck, check whether chunks actually executed:
 
-When a sibling's DESCRIPTION changes (new Imports, version bump), re-run `Rscript tools/r/install.R <sibling>` to pick up the changes.
+```sh
+ls -lt docs/_freeze/<page>/execute-results/   # most-recently-modified files
+```
+
+If the timestamps are old, the chunks haven't run and Quarto is using the cache. To force fresh execution: delete the relevant `_freeze/<page>/` and re-render.
+
+To kill a stuck render and any orphan chunk processes:
+
+```sh
+pkill -f "quarto render"
+ps -ef | grep -E '(quarto|knitr|R --slave|python.*chunk)' | grep -v grep
+```
+
+## R parity tests
+
+R uses the workspace's Python venv via reticulate. Run from the workspace root:
+
+```sh
+uv run Rscript -e '
+  pkgload::load_all("packages/rieszreg/r/rieszreg")
+  for (p in c("rieszboost","krrr","forestriesz","riesznet","riesztree")) {
+    pkgload::load_all(file.path("packages", p, "r", p))
+    testthat::test_dir(file.path("packages", p, "r", p, "tests", "testthat"))
+  }
+'
+```
+
+R packages are *not* uv-managed — uv only handles Python. R deps come from CRAN at test time. The `rieszreg` R package isn't on CRAN; sibling R packages declare it in their `DESCRIPTION` Imports, which means `pak::pkg_deps` (used by `r-lib/actions/setup-r-dependencies`) can't resolve a sibling's deps directly. CI works around this by setting up R deps from rieszreg's DESCRIPTION (which only has CRAN deps) and relying on `pkgload::load_all` for the local rieszreg + sibling at test time.
 
 ## Sanity-check before claiming a local verification worked
 
-Before reporting "I verified locally", confirm the operation didn't silently fall back to a no-op:
+- `uv run pytest <path> -q` collected and ran the expected test count (compare with CI numbers in the workflow logs).
+- `quarto render`: did the chunks actually execute? `ls -lt docs/_freeze/<page>/` timestamps should be recent.
+- R parity test: did `pkgload::load_all` succeed and was `testthat::test_dir` actually invoked? Look for `[ FAIL 0 | … ]` or `OK` in the output.
 
-- `quarto render`: did chunks actually execute, or did `_freeze` absorb them? Check with `ls docs/_freeze/<page>/` timestamps.
-- pytest: did it collect tests, or skip the directory? Check the test count in the summary.
-- R parity test: did `library(<pkg>)` succeed, or fall back to a stale install? `find.package("<pkg>")` shows where R found it.
-
-If a verification can't be run inside the worktree (e.g. you don't want to install the R workspace just to check a typo fix), **say so explicitly** — don't claim verification you didn't do. Push to a branch and let CI run, or run from the main checkout.
+If the worktree environment can't run a verification, say so explicitly — don't pretend the fix is verified. Push to a feature branch and let CI verify.
