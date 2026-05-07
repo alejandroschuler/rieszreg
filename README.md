@@ -116,26 +116,28 @@ What's distinctive here:
 
 ## Tests
 
-```sh
-.venv/bin/python -m pytest rieszreg/python/tests -q
-.venv/bin/python -m pytest rieszboost/python/tests -q
-.venv/bin/python -m pytest krrr/python/tests -q
-.venv/bin/python -m pytest forestriesz/python/tests -q
-.venv/bin/python -m pytest riesznet/python/tests -q
+Python tests use the uv workspace:
 
-Rscript -e '
-  RETICULATE_PYTHON <- file.path(getwd(), ".venv/bin/python")
-  Sys.setenv(RETICULATE_PYTHON = RETICULATE_PYTHON)
-  pkgload::load_all("rieszreg/r/rieszreg")
-  pkgload::load_all("rieszboost/r/rieszboost")
-  testthat::test_dir("rieszboost/r/rieszboost/tests/testthat")
-  pkgload::load_all("krrr/r/krrr")
-  testthat::test_dir("krrr/r/krrr/tests/testthat")
-  pkgload::load_all("forestriesz/r/forestriesz")
-  testthat::test_dir("forestriesz/r/forestriesz/tests/testthat")
-  pkgload::load_all("riesznet/r/riesznet")
-  testthat::test_dir("riesznet/r/riesznet/tests/testthat")
-'
+```sh
+uv sync --all-packages --all-extras
+for pkg in rieszreg rieszboost krrr forestriesz riesznet riesztree; do
+  uv run pytest "packages/$pkg/python/tests" -q
+done
+```
+
+R parity tests use a one-time pak install of the workspace, then `library()` + `testthat::test_dir`:
+
+```sh
+Rscript tools/r/install.R   # installs all 6 R packages from packages/*/r/*/
+
+RETICULATE_PYTHON=$(uv run python -c 'import sys; print(sys.executable)') \
+  Rscript -e '
+    library(rieszreg)
+    for (pkg in c("rieszboost", "krrr", "forestriesz", "riesznet", "riesztree")) {
+      library(pkg, character.only = TRUE)
+      testthat::test_dir(file.path("packages", pkg, "r", pkg, "tests", "testthat"))
+    }
+  '
 ```
 
 ## Contributing a new learner package
