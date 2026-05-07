@@ -23,8 +23,9 @@ RieszReg/
 │   └── r/riesznet/   # R6 wrapper subclassing rieszreg::RieszEstimatorR6
 ├── docs/             # unified Quarto user guide (sklearn-style sectioning)
 ├── reference/        # arXiv paper index, shared across packages
-├── .githooks/        # canonical pre-commit hook (living-doc rule + tone lint)
-├── .github/workflows # canonical CI (pytest + R parity, docs deploy)
+├── .githooks/        # pre-commit hook + shared lint-docs.sh (living-doc rule + tone lint)
+├── .github/workflows # CI (pytest + R parity, docs deploy, doc-tone lint)
+├── scripts/          # setup-hooks.sh (one-time per-clone hook activation)
 └── rieszreg/DESIGN.md  # meta-package design + learner-package contract
 ```
 
@@ -99,7 +100,7 @@ Each learner package also ships a convenience subclass (`RieszBooster`, `KernelR
 
 A few existing tools cover overlapping ground.
 
-[**genriesz**](https://github.com/MasaKat0/genriesz) (Kato, 2026) is a single Python package implementing the Bregman-unified Riesz regression framework from [arXiv:2601.07752](https://arxiv.org/abs/2601.07752). It exposes `LinearFunctional` and `BregmanGenerator` abstractions, analogous to this project's `Estimand` and `LossSpec`. It ships several basis-function classes (polynomial, random Fourier features, Nyström, KNN catchments, random-forest leaves, PyTorch embeddings) inside the package itself. Third parties cannot publish their own learners against a stable protocol. It is Python only.
+[**genriesz**](https://github.com/MasaKat0/genriesz) (Kato, 2026) is a single Python package implementing the Bregman-unified Riesz regression framework from [arXiv:2601.07752](https://arxiv.org/abs/2601.07752). It exposes `LinearFunctional` and `BregmanGenerator` abstractions, analogous to this project's `Estimand` and `Loss`. It ships several basis-function classes (polynomial, random Fourier features, Nyström, KNN catchments, random-forest leaves, PyTorch embeddings) inside the package itself. Third parties cannot publish their own learners against a stable protocol. It is Python only.
 
 [**EconML**](https://github.com/py-why/EconML) (Microsoft) provides `RieszNet`, `ForestRiesz`, and an `automatic_debiased_ml` module. The `forestriesz` package in this repo wraps EconML's `BaseGRF`. EconML is monolithic, with no third-party backend protocol, and Python only.
 
@@ -141,7 +142,7 @@ RETICULATE_PYTHON=$(uv run python -c 'import sys; print(sys.executable)') \
 
 ## Contributing a new learner package
 
-`RIESZREG_DESIGN.md` (Part B) is the contract: depend on `rieszreg`, implement either the `Backend` Protocol (augmentation-style — for kernel ridge, gradient boosting) or the `MomentBackend` Protocol (moment-style — for random forests, neural nets), satisfy the sklearn-conformance subset, contribute docs pages to `docs/`, follow the doc-tone and living-doc rules. The pre-commit hook at `.githooks/pre-commit` enforces the doc-tone and API-changes-update-docs rules.
+`RIESZREG_DESIGN.md` (Part B) is the contract: depend on `rieszreg`, implement either the `Backend` Protocol (augmentation-style — for kernel ridge, gradient boosting) or the `MomentBackend` Protocol (moment-style — for random forests, neural nets), satisfy the sklearn-conformance subset, contribute docs pages to `docs/`, follow the doc-tone and living-doc rules. The pre-commit hook at `.githooks/pre-commit` enforces the doc-tone and API-changes-update-docs rules; activate it once per clone with `bash scripts/setup-hooks.sh`. The `lint-docs` job in `.github/workflows/test.yml` mirrors the doc-tone check in CI.
 
 ## References
 
