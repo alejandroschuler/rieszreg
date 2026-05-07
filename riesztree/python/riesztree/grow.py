@@ -261,7 +261,7 @@ def _resolve_fast_loss_args(
                 "splitter='hist' for the Cython-backed paths; both are "
                 "byte-equivalent or numerically very close to the legacy "
                 "Python splitter on the four built-in losses. For custom "
-                "LossSpec subclasses, register a Cython kernel via "
+                "Loss subclasses, register a Cython kernel via "
                 "riesztree.fast.register_fast_leaf_solver(...) instead of "
                 "relying on the python fallback.",
                 DeprecationWarning,
@@ -443,6 +443,34 @@ def grow_depthwise(
         and n_features_to_consider == n_features
         and fast_loss_kind is not None
     )
+    # Iterative-grow Cython driver eligibility: PMS-eligible AND no early
+    # stopping (the Cython driver doesn't yet support the held-out-loss
+    # callback). When eligible, we skip the Python recursion entirely and
+    # let the Cython worklist drive growth into a pre-allocated flat-array
+    # tree, which we then convert back to a Node tree at fit-end.
+    cython_iterative_eligible = (
+        pms_eligible
+        and early_stopping_rounds is None
+        and aug_valid is None
+    )
+    if cython_iterative_eligible:
+        from .fast._grow_c import grow_depthwise_hist_c
+        from .fast._tree import node_from_growable_flat_tree
+        growable = grow_depthwise_hist_c(
+            hist_payload["X_binned"], D, C,
+            np.ascontiguousarray(hist_payload["n_bins_per_feature"], dtype=np.int32),
+            list(hist_payload["bin_thresholds"]),
+            int(hist_payload["max_bins"]),
+            int(max_depth),
+            int(min_samples_split),
+            int(eff_min_orig_leaf),
+            float(min_impurity_decrease),
+            int(fast_loss_kind),
+            float(bounded_lo),
+            float(bounded_hi),
+        )
+        return node_from_growable_flat_tree(growable, loss=loss)
+
     if pms_eligible:
         _recurse_pms_depthwise(
             root, np.arange(features.shape[0]),

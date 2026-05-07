@@ -1,6 +1,6 @@
 """Python-side facade for the Cython splitter.
 
-Translates a ``LossSpec`` instance to the integer ``loss_kind`` used by
+Translates a ``Loss`` instance to the integer ``loss_kind`` used by
 the compiled kernels, plus the ``(lo, hi)`` parameters needed by
 ``BoundedSquaredLoss``. Custom user losses (anything not in the four
 built-ins) can plug in via :func:`register_fast_leaf_solver`, which
@@ -23,7 +23,7 @@ from rieszreg import (
     BernoulliLoss,
     BoundedSquaredLoss,
     KLLoss,
-    LossSpec,
+    Loss,
     SquaredLoss,
 )
 
@@ -44,7 +44,7 @@ except ImportError:
 
 
 # ---------------------------------------------------------------------------
-# User-loss registry: subclass-of-LossSpec →
+# User-loss registry: subclass-of-Loss →
 # (leaf_loss_cfunc_address, alpha_at_opt_python_callable).
 #
 # The leaf-loss is a C-callable address used by the Cython splitter's
@@ -69,7 +69,7 @@ def register_fast_leaf_solver(
     Parameters
     ----------
     loss_class
-        The user's LossSpec subclass. The splitter uses MRO to
+        The user's Loss subclass. The splitter uses MRO to
         match — registering the most specific class wins.
     leaf_loss_addr_or_cfunc
         Either an integer (a raw C-callable address) or an object
@@ -86,10 +86,10 @@ def register_fast_leaf_solver(
     Worked example::
 
         import numba
-        from rieszreg import LossSpec
+        from rieszreg import Loss
         from riesztree.fast import register_fast_leaf_solver
 
-        class MyLoss(LossSpec):
+        class MyLoss(Loss):
             ...
 
         @numba.cfunc("float64(float64, float64)", cache=True, nopython=True)
@@ -131,7 +131,7 @@ def register_fast_leaf_solver(
         _USER_CFUNC_OBJECTS[addr] = cfunc_obj
 
 
-def _lookup_user_kernel(loss: LossSpec) -> tuple[int, callable] | None:
+def _lookup_user_kernel(loss: Loss) -> tuple[int, callable] | None:
     """Return ``(leaf_loss_addr, alpha_at_opt_callable)`` for the
     closest registered ancestor of ``type(loss)``, or ``None``."""
     for cls in type(loss).__mro__:
@@ -140,7 +140,7 @@ def _lookup_user_kernel(loss: LossSpec) -> tuple[int, callable] | None:
     return None
 
 
-def lookup_user_alpha_at_opt(loss: LossSpec):
+def lookup_user_alpha_at_opt(loss: Loss):
     """Public accessor: returns the registered Python alpha_at_opt
     callable for ``loss``, or ``None`` if not registered. Used by
     ``riesztree.splitter.make_leaf_solvers`` to extend its dispatch
@@ -158,9 +158,9 @@ LOSS_USER_CFUNC = -1
 
 
 def loss_kind_for(
-    loss: LossSpec,
+    loss: Loss,
 ) -> tuple[int, float, float, int] | None:
-    """Map a LossSpec to ``(loss_kind, bounded_lo, bounded_hi, user_addr)``.
+    """Map a Loss to ``(loss_kind, bounded_lo, bounded_hi, user_addr)``.
 
     Returns ``None`` only when the loss is *neither* a built-in *nor*
     in the user registry. For built-ins ``user_addr`` is 0; for
@@ -374,7 +374,7 @@ def best_split_continuous_fast(
 _WARNED_FALLBACK: set[type] = set()
 
 
-def warn_python_fallback(loss: LossSpec) -> None:
+def warn_python_fallback(loss: Loss) -> None:
     """Emit a one-time UserWarning when the user's loss isn't in the four
     built-ins and growth has to use the Python splitter."""
     cls = type(loss)

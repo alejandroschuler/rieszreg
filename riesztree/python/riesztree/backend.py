@@ -19,9 +19,8 @@ import numpy as np
 from rieszreg import (
     AugmentedDataset,
     FitResult,
-    LossSpec,
+    Loss,
     SquaredLoss,
-    aug_loss_alpha,
 )
 
 from .grow import grow_depthwise, grow_leafwise
@@ -32,7 +31,7 @@ from .tree import Node
 
 
 def _holdout_riesz_loss(
-    tree: Node, aug_valid: AugmentedDataset, loss: LossSpec
+    tree: Node, aug_valid: AugmentedDataset, loss: Loss
 ) -> float:
     """Final-fit held-out Riesz loss reported via ``FitResult.best_score``.
 
@@ -44,8 +43,8 @@ def _holdout_riesz_loss(
     flat = flat_tree_from_node(tree)
     alpha_hat = _flat_predict(flat, aug_valid.features)
     return float(
-        np.sum(aug_loss_alpha(
-            loss, aug_valid.is_original, aug_valid.potential_deriv_coef, alpha_hat
+        np.sum(loss.aug_loss_alpha(
+            aug_valid.is_original, aug_valid.potential_deriv_coef, alpha_hat
         ))
         / aug_valid.n_rows
     )
@@ -131,7 +130,7 @@ class RieszTreeBackend:
         self,
         aug_train: AugmentedDataset,
         aug_valid: AugmentedDataset | None,
-        loss: LossSpec,
+        loss: Loss,
         *,
         base_score: float,
         random_state: int,

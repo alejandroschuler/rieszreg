@@ -21,7 +21,7 @@ from rieszreg import (
     Estimand,
     KLLoss,
     LocalShift,
-    LossSpec,
+    Loss,
     SquaredLoss,
     TSM,
 )
@@ -43,7 +43,7 @@ __all__ = [
     "Estimand",
     "KLLoss",
     "LocalShift",
-    "LossSpec",
+    "Loss",
     "Node",
     "RieszTreeBackend",
     "RieszTreePredictor",

@@ -71,7 +71,7 @@ alpha_hat = est.predict(df)
 - **R wrapper**: R6 mirror via reticulate.
 - **Cython prediction**: `predict` walks a flat-array tree (built once per fit) at C speed. The `Node` tree continues to back diagnostics, pruning, and serialization.
 - **Three Cython splitter paths**: `splitter="exact"` (default; per-feature threshold sweep), `splitter="hist"` (quantile-binned histogram, fastest at large `n`), `splitter="random"` (sklearn ExtraTrees-style; one uniform threshold per feature). `splitter="python"` keeps the legacy pure-Python path (deprecated, scheduled for removal in v0.0.3).
-- **Custom-loss extension hook**: `riesztree.fast.register_fast_leaf_solver(LossClass, leaf_loss_cfunc, alpha_at_opt)` plugs a Numba `@cfunc` (signature `float64(float64, float64)`) into the Cython splitter for any user `LossSpec` subclass.
+- **Custom-loss extension hook**: `riesztree.fast.register_fast_leaf_solver(LossClass, leaf_loss_cfunc, alpha_at_opt)` plugs a Numba `@cfunc` (signature `float64(float64, float64)`) into the Cython splitter for any user `Loss` subclass.
 - **122 Python tests** covering decoupling, Backend Protocol, growth policies, pruning, early stopping, categorical, sklearn integration, save/load round-trip per estimand, KL on TSM, BoundedSquared clipping, leaf-self-parity, sklearn-style hyperparameter parity, flat-tree predict parity, Cython↔Python splitter parity, user-loss registration, histogram splitter parity, random splitter, deprecation of the python splitter.
 
 ## Hyperparameters
@@ -106,17 +106,17 @@ The v0.0.1 names `max_leaves` and `pruning_alpha` are accepted as deprecated ali
 | `"random"` | ExtraTrees-style forests; cheap baseline. | One uniform threshold per feature per leaf; single Cython pass. |
 | `"python"` | Legacy / debugging. Deprecated, removed in v0.0.3. | Pure-Python sweep over distinct values. |
 
-Custom user `LossSpec` subclasses are routed to the Cython exact / hist / random paths once registered via [`riesztree.fast.register_fast_leaf_solver`](#custom-loss-extension-hook); unregistered ones fall back to the Python path with a one-time warning.
+Custom user `Loss` subclasses are routed to the Cython exact / hist / random paths once registered via [`riesztree.fast.register_fast_leaf_solver`](#custom-loss-extension-hook); unregistered ones fall back to the Python path with a one-time warning.
 
 ## Custom loss extension hook
 
 ```python
 import numba
-from rieszreg import LossSpec
+from rieszreg import Loss
 from riesztree.fast import register_fast_leaf_solver
 
-class MyLoss(LossSpec):
-    ...   # implement the LossSpec interface
+class MyLoss(Loss):
+    ...   # implement the Loss interface
 
 @numba.cfunc("float64(float64, float64)", cache=True, nopython=True)
 def my_leaf_loss(D, C):

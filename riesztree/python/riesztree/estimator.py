@@ -15,7 +15,7 @@ from __future__ import annotations
 import warnings
 from typing import Sequence
 
-from rieszreg import Estimand, LossSpec, RieszEstimator, SquaredLoss
+from rieszreg import Estimand, Loss, RieszEstimator, SquaredLoss
 
 from .backend import RieszTreeBackend
 
@@ -32,7 +32,7 @@ class RieszTreeRegressor(RieszEstimator):
     ----------
     estimand : rieszreg.Estimand
         Carries ``feature_keys`` and the ``m(alpha)(z, y)`` operator.
-    loss : rieszreg.LossSpec, default=None
+    loss : rieszreg.Loss, default=None
         Bregman-Riesz loss. ``None`` resolves to ``SquaredLoss()``. Built-in
         support: ``SquaredLoss``, ``KLLoss``, ``BernoulliLoss``,
         ``BoundedSquaredLoss``.
@@ -80,7 +80,7 @@ class RieszTreeRegressor(RieszEstimator):
     def __init__(
         self,
         estimand: Estimand,
-        loss: LossSpec | None = None,
+        loss: Loss | None = None,
         max_depth: int = 8,
         min_samples_split: int = 20,
         min_samples_leaf: int = 10,
@@ -155,7 +155,7 @@ class RieszTreeRegressor(RieszEstimator):
 
     # ---- backend construction ----
 
-    def _resolved_loss(self) -> LossSpec:
+    def _resolved_loss(self) -> Loss:
         return self.loss if self.loss is not None else SquaredLoss()
 
     def _resolved_backend(self) -> RieszTreeBackend:
