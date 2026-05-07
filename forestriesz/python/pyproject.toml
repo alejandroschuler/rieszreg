@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "forestriesz"
+version = "0.0.1"
+description = "Random-forest backend for Riesz regression (Chernozhukov, Newey, Quintas-Martínez, Syrgkanis 2022). Sister package to rieszboost and krrr."
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "scikit-learn>=1.3",
+    "econml>=0.15",
+    "joblib>=1.3",
+    "rieszreg>=0.0.1",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7", "pandas>=2.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["forestriesz*"]
