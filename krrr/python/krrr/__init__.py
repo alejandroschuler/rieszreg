@@ -4,7 +4,7 @@ A learner package in the RieszReg family. Estimates the Riesz representer α
 of a linear estimand ψ = E[m(μ)(Z)] using kernel ridge regression.
 
 Reuses ``rieszreg``'s ``Estimand``, ``Tracer``, ``AugmentedDataset``,
-``LossSpec``, ``Diagnostics``, and sklearn glue. The kernel solve plugs in
+``Loss``, ``Diagnostics``, and sklearn glue. The kernel solve plugs in
 through the ``Backend`` Protocol from ``rieszreg``.
 
     from rieszreg import ATE
@@ -44,7 +44,7 @@ from rieszreg import (
     Estimand,
     FiniteEvalEstimand,
     LocalShift,
-    LossSpec,
+    Loss,
     SquaredLoss,
     TSM,
 )
@@ -80,7 +80,7 @@ __all__ = [
     "Estimand",
     "FiniteEvalEstimand",
     "LocalShift",
-    "LossSpec",
+    "Loss",
     "SquaredLoss",
     "TSM",
 ]

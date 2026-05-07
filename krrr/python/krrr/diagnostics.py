@@ -68,11 +68,10 @@ def diagnose_kernel(regressor: KernelRieszRegressor, Z) -> KernelDiagnostics:
         kernel = regressor.predictor_.kernel
         # Re-derive K̃_oo on the o-block (is_original > 0 rows). We reproduce the
         # construction in solvers/direct.py — a small redundant cost.
-        from rieszreg import build_augmented
-        from rieszreg.estimator import _rows_from_Z
+        from rieszreg.estimator import _features_from_Z
 
-        rows = _rows_from_Z(Z, regressor.estimand)
-        aug = build_augmented(rows, regressor.estimand)
+        feats = _features_from_Z(Z, regressor.estimand)
+        aug = regressor.estimand.augment(feats)
         n_rows = aug.n_rows
         o_mask = aug.is_original > 0
         p_o = aug.features[o_mask]
