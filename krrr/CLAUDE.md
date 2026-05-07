@@ -7,7 +7,7 @@
 
 Kernel-ridge backend for the [RieszReg meta-package](../README.md), implementing Singh ([arXiv:2102.11076](https://arxiv.org/abs/2102.11076)) for the full set of estimands the rieszreg framework supports.
 
-This package depends on `rieszreg` for the shared abstractions (`Estimand`, `LossSpec`, `AugmentedDataset`, `build_augmented`, `Diagnostics`, `Backend` Protocol, `RieszEstimator` orchestrator). `krrr` contributes:
+This package depends on `rieszreg` for the shared abstractions (`Estimand`, `Loss`, `AugmentedDataset`, `Diagnostics`, `Backend` Protocol, `RieszEstimator` orchestrator). `krrr` contributes:
 
 - `KernelRidgeBackend` — `Backend` Protocol implementation; closed-form solve over the augmented dataset.
 - `KernelRieszRegressor` — convenience subclass of `rieszreg.RieszEstimator` with kernel-specific hyperparameters (`kernel`, `lambda_grid`, `solver`, ...) on the constructor.
@@ -63,12 +63,12 @@ R-side mirrors this: R6 classes (`KernelRieszRegressor$new(estimand=, kernel=, .
 
 `krrr` depends on `rieszreg` and reuses, without modification:
 
-- `Estimand`, `Tracer`/`LinearForm`, `build_augmented`, `AugmentedDataset` — the moment-functional abstraction and its data-augmentation engine.
-- `LossSpec`, `SquaredLoss` — the Bregman-Riesz loss framework. (KLLoss / Bernoulli / BoundedSquared are NOT yet supported by the kernel backend; v0.2.)
+- `Estimand`, `Tracer`/`LinearForm`, `Estimand.augment`, `AugmentedDataset` — the moment-functional abstraction and its data-augmentation engine.
+- `Loss`, `SquaredLoss` — the Bregman-Riesz loss framework. (KLLoss / Bernoulli / BoundedSquared are NOT yet supported by the kernel backend; v0.2.)
 - `Diagnostics`, `diagnose` — base diagnostics (`KernelDiagnostics` extends with kernel-specific extras).
 - `RieszEstimator` — orchestration; `KernelRieszRegressor` is a thin subclass with the kernel backend defaulted.
 
-The integration point is `rieszreg`'s `Backend` Protocol (`rieszreg/backends/base.py`). `KernelRidgeBackend.fit_augmented(...)` consumes an `AugmentedDataset` + `LossSpec` and returns a `FitResult` whose predictor exposes `predict_eta` / `predict_alpha`. `KernelPredictor` registers itself for the registry-based save/load path on import via `register_predictor_loader("krrr", ...)`.
+The integration point is `rieszreg`'s `Backend` Protocol (`rieszreg/backends/base.py`). `KernelRidgeBackend.fit_augmented(...)` consumes an `AugmentedDataset` + `Loss` and returns a `FitResult` whose predictor exposes `predict_eta` / `predict_alpha`. `KernelPredictor` registers itself for the registry-based save/load path on import via `register_predictor_loader("krrr", ...)`.
 
 ### Augmentation → kernel solve
 
@@ -80,7 +80,7 @@ The representer theorem gives `α̂ = Σ_k γ_k k(·, p_k)` and the first-order 
 
     (diag(a) K + n λ I) γ = − b / 2
 
-`build_augmented` produces `a_k ∈ {0, 1}` (1 for the original observation row, 0 for counterfactual evaluation points introduced by `m`). Partition `o = {a_k > 0}` and `c = {a_k = 0}`:
+`Estimand.augment` produces `a_k ∈ {0, 1}` (1 for the original observation row, 0 for counterfactual evaluation points introduced by `m`). Partition `o = {a_k > 0}` and `c = {a_k = 0}`:
 
 - Row k ∈ c reduces to `n λ γ_k = − b_k / 2`, so `γ_c = − b_c / (2 n λ)` is closed-form.
 - Row k ∈ o solves a symmetric PSD system via the substitution γ̃ = D^{1/2} γ:

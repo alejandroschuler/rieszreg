@@ -15,7 +15,7 @@ import numpy as np
 
 from rieszreg.estimands.base import Estimand
 from rieszreg.estimator import RieszEstimator, _features_from_rows, _rows_from_Z
-from rieszreg.losses import LossSpec, SquaredLoss
+from rieszreg.losses import Loss, SquaredLoss
 
 from .backend import KernelRidgeBackend
 from .kernels import Gaussian, Kernel
@@ -41,7 +41,7 @@ class KernelRieszRegressor(RieszEstimator):
     solver : {"auto", "direct", "nystrom_cg", "rff", "falkon"}, default="auto"
         "auto" picks "direct" for n_aug ≤ 3000, "nystrom_cg" for ≤ 50k,
         else "falkon" if installed otherwise "nystrom_cg".
-    loss : rieszreg.LossSpec, default=SquaredLoss()
+    loss : rieszreg.Loss, default=SquaredLoss()
         Currently only SquaredLoss is supported in the kernel backend.
     n_landmarks : int or None
         Nyström landmarks (for "nystrom_cg" / "falkon").
@@ -66,7 +66,7 @@ class KernelRieszRegressor(RieszEstimator):
         kernel: Kernel | None = None,
         lambda_grid: Sequence[float] | None = None,
         solver: str = "auto",
-        loss: LossSpec | None = None,
+        loss: Loss | None = None,
         n_landmarks: int | None = None,
         n_features: int = 1024,
         cg_tol: float = 1e-6,
@@ -103,7 +103,7 @@ class KernelRieszRegressor(RieszEstimator):
             return tuple(10.0 ** np.linspace(-4, 0, 21))
         return tuple(float(x) for x in self.lambda_grid)
 
-    def _resolved_loss(self) -> LossSpec:
+    def _resolved_loss(self) -> Loss:
         return self.loss if self.loss is not None else SquaredLoss()
 
     def _resolved_backend(self) -> KernelRidgeBackend:

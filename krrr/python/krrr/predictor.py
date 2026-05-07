@@ -13,7 +13,7 @@ from typing import Sequence
 import numpy as np
 
 from rieszreg.backends.base import register_predictor_loader
-from rieszreg.losses import LossSpec, loss_from_spec
+from rieszreg.losses import Loss, loss_from_spec
 
 from .kernels import Kernel, kernel_from_spec
 from .solvers import SolveResult
@@ -31,7 +31,7 @@ class KernelPredictor:
     """
 
     kernel: Kernel
-    loss: LossSpec
+    loss: Loss
     result: SolveResult
     base_score: float = 0.0
     feature_keys: tuple[str, ...] = ()

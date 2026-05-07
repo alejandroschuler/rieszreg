@@ -1,6 +1,6 @@
 """KernelRidgeBackend — implements `rieszreg.backends.base.Backend`.
 
-Consumes the `AugmentedDataset` produced by `rieszreg.build_augmented` and
+Consumes the `AugmentedDataset` produced by `Estimand.augment` and
 returns a `FitResult` whose `predictor` is a `KernelPredictor`. Iterates over
 `lambda_grid` and picks the best λ either by validation Riesz loss
 (`aug_valid` provided) or the smallest λ (no validation set).
@@ -15,7 +15,7 @@ import numpy as np
 
 from rieszreg import AugmentedDataset
 from rieszreg.backends.base import FitResult
-from rieszreg.losses import LossSpec, SquaredLoss
+from rieszreg.losses import Loss, SquaredLoss
 
 from .kernels import Gaussian, Kernel
 from .predictor import KernelPredictor
@@ -57,7 +57,7 @@ class KernelRidgeBackend:
         self,
         aug_train: AugmentedDataset,
         aug_valid: AugmentedDataset | None,
-        loss: LossSpec,
+        loss: Loss,
         *,
         base_score: float,
         random_state: int,
